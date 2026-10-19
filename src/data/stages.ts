@@ -213,6 +213,13 @@ export const STAGES: StageDef[] = [
 
 export const STAGE_BY_ID: Record<string, StageDef> = Object.fromEntries(STAGES.map((st) => [st.id, st]));
 
+/** Bài hướng dẫn (không nằm trong STAGES → không hiện trên bản đồ, không tính độ dốc độ khó): sân tập, địch do TutorialScene đẻ ra */
+export const TUTORIAL_STAGE_ID = 'tutorial';
+STAGE_BY_ID[TUTORIAL_STAGE_ID] = {
+  id: TUTORIAL_STAGE_ID, kind: 'stage', name: 'Tutorial', area: 'Pallet', x: 0, y: 0, playable: true, biome: 'forest',
+  waves: [[]], catchable: ['rattata'], levels: [3, 5], money: 0, parTimeS: 999,
+};
+
 /** Ải được mở khi ải chơi được ngay trước nó đã thắng */
 export function isUnlocked(index: number, cleared: (id: string) => boolean): boolean {
   const st = STAGES[index];

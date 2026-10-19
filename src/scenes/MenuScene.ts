@@ -136,6 +136,7 @@ export class MenuScene extends Phaser.Scene {
         sub: !cloudEnabled ? t('menu.accountOff') : user ? t('menu.accountUser', { name: user.trainerName }) : t('menu.accountGuest'),
       },
       { icon: 'gear', title: t('menu.settings'), sub: t('menu.settingsSub'), enabled: true, run: () => this.openSettings() },
+      { icon: 'book', title: t('tut.menu'), sub: t('tut.menuSub'), enabled: !!g, run: () => this.go('Battle', { kind: 'stage', stageId: 'tutorial', replay: true }) },
     ];
     const mx = 800;
     const mw = 452;
@@ -169,7 +170,7 @@ export class MenuScene extends Phaser.Scene {
 
     // ---- thẻ đội + huy hiệu ----
     if (g) {
-      const ty = my + 5 * (rh + 8) + 6;
+      const ty = my + this.items.length * (rh + 8) + 6;
       const th = 86;
       const card = this.add.graphics();
       card.fillStyle(0x000000, 0.35).fillRoundedRect(mx + 3, ty + 5, mw, th, 16);

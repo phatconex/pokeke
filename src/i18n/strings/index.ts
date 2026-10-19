@@ -17,5 +17,6 @@ import stats from './stats';
 import lab from './lab';
 import evo from './evo';
 import unlock from './unlock';
+import tutorial from './tutorial';
 
-export const STRING_TABLES = [common, settings, menu, account, character, region, starter, map, center, team, dex, evolution, hud, battle, stats, lab, evo, unlock];
+export const STRING_TABLES = [common, settings, menu, account, character, region, starter, map, center, team, dex, evolution, hud, battle, stats, lab, evo, unlock, tutorial];

@@ -6,7 +6,7 @@ import { makeFrame } from '../art/chapters';
 import { arenaLayout, generateArena } from '../art/arenaArt';
 import { METRONOME_POOL, MOVES, MoveDef, slotScaledMove, STATUS_COLOR, upgradeMove } from '../data/moves';
 import { hasUltimate, POKEMON, SKILL_SLOTS, SkillSlot } from '../data/pokemon';
-import { STAGES, STAGE_BY_ID, StageDef } from '../data/stages';
+import { STAGES, STAGE_BY_ID, StageDef, TUTORIAL_STAGE_ID } from '../data/stages';
 import { CRIT_MULT } from '../data/stats';
 import { BADGES, GYMS, GymDef } from '../data/trainers';
 import { effectiveness, PokemonType, TYPE_COLOR } from '../data/types';
@@ -88,7 +88,7 @@ function survivalWaveName(name: string): string {
 /** Cấu hình trận: chế độ Sinh tồn, hoặc một ải trên bản đồ */
 export type BattleConfig =
   | { kind: 'survival' }
-  | { kind: 'stage'; stageId: string; /** bỏ đoạn mở màn hội quán (kiểm thử) */ skipIntro?: boolean }
+  | { kind: 'stage'; stageId: string; /** bỏ đoạn mở màn hội quán (kiểm thử) */ skipIntro?: boolean; /** bài hướng dẫn xem lại (không thưởng / không giữ Pokémon bắt được) */ replay?: boolean }
   /** Skill Lab: một Pokémon (không lấy từ save) + hình nộm vô hạn máu; không thưởng / không lưu / không EXP */
   | { kind: 'lab'; speciesId: string; level: number }
   /** Thử thách chiêu (U): chỉ một Pokémon (uid trong Hộp), sân theo hệ, bẫy lan dần, sống sót + hạ đủ địch (SKILL_UNLOCK.trial) */
@@ -314,6 +314,11 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private armorUntil = 0;
   private armorGainAt = 0;
   private toxicTickAt = 0;
+  /** Bài hướng dẫn: bộ đếm hành động cho TutorialScene đọc */
+  tutorial = false;
+  tutReplay = false;
+  tut = { moved: 0, dashes: 0, kills: 0, throws: 0, caught: 0, potions: 0, casts: {} as Record<string, number> };
+  private tutItems: Record<string, number> | null = null;
   private swarmUntil = 0;
   private swarmReadyAt = 0;
   private swarmLastT = 0;
@@ -493,6 +498,15 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         return;
       }
       this.gym = this.stage.gymId ? gymText(GYMS[this.stage.gymId]) : this.stage.rival ? buildRivalGym(game, this.stage) : null;
+      this.tutorial = this.stage.id === TUTORIAL_STAGE_ID;
+      this.tutReplay = this.tutorial && !!cfg.replay;
+      this.tut = { moved: 0, dashes: 0, kills: 0, throws: 0, caught: 0, potions: 0, casts: {} };
+      this.tutItems = null;
+      if (this.tutorial) {
+        this.tutItems = { ...game.items };
+        game.items.pokeball = Math.max(game.items.pokeball, 4);
+        game.items.potion = Math.max(game.items.potion, 2);
+      }
     } else if (cfg.kind === 'trial') {
       const m = game?.box.find((b) => b.uid === cfg.uid);
       if (!game || !m) {
@@ -564,8 +578,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     // ---- đội ----
     const team: PartyMember[] = cfg.kind === 'lab' ? [makeMember(cfg.speciesId, cfg.level)] : this.trial ? [this.trial.member] : this.stage ? battleTeam(game!) : [makeMember(SURVIVAL.starter, SURVIVAL.starterLevel)];
     // Skill Lab: không khóa · Sinh tồn: giữ luật cũ theo cấp · Ải / thử thách: học trước các chiêu đã đủ điều kiện ngoài trận (vd. vừa tiến hóa)
-    const free = cfg.kind === 'lab' || cfg.kind === 'survival';
-    const lockMode = cfg.kind === 'lab' ? 'free' : cfg.kind === 'survival' ? 'level' : 'earned';
+    const free = cfg.kind === 'lab' || cfg.kind === 'survival' || this.tutorial;
+    const lockMode = cfg.kind === 'lab' || this.tutorial ? 'free' : cfg.kind === 'survival' ? 'level' : 'earned';
     const learnedAtStart: string[] = [];
     if (!free) {
       for (const m of team) {
@@ -629,7 +643,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       this.waveName = '';
       this.time.delayedCall(500, () => !this.over && this.events.emit('banner', t('trial.intro', { s: SKILL_UNLOCK.trial.durationS, n: SKILL_UNLOCK.trial.kills })));
     } else if (this.stage) {
-      this.startWave(0, 400);
+      if (!this.tutorial) this.startWave(0, 400);
     } else if (lab) {
       this.waveName = '';
       this.labResetDummies();
@@ -665,6 +679,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanup, this);
     this.scene.launch('Hud');
+    if (this.tutorial) this.scene.launch('Tutorial');
     if (this.introActive) this.scene.launch('GymIntro');
   }
 
@@ -764,6 +779,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       x: (k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0),
       y: (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0),
     };
+    if (this.tutorial && (move.x || move.y)) this.tut.moved += (p.speed * dt) / 1000;
     const mode = getSettings().aimMode;
     this.syncCursor(mode);
     const pointer = this.input.activePointer;
@@ -783,6 +799,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if ((k.SPACE.isDown || this.buffered.dash > clock) && p.ready('dash', clock)) {
       this.buffered.dash = 0;
       p.startDash(clock);
+      this.tut.dashes++;
       this.fx.dustPuff(p.x, p.feetY, 6);
       playSfx('dash');
     }
@@ -801,6 +818,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         const sk = p.skill(slot)!;
         p.spendEnergy(slot, clock);
         this.registerCombo(slot);
+        this.tut.casts[slot] = (this.tut.casts[slot] ?? 0) + 1;
         if (slot === 'L' || slot === 'U') this.skillFlair(p, sk.move);
         this.castMove(p, slot, sk.move, this.aimDirection(p, sk.move.speed ?? 340), sk.spec);
         this.castRecoil(p, slot, sk.base);
@@ -998,6 +1016,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       return;
     }
     game.items.potion--;
+    this.tut.potions++;
     this.potionsUsed++;
     this.potionReadyAt = this.clock + POTION.cooldownMs;
     const amount = Math.round(p.maxHp * POTION.healRatio);
@@ -2296,6 +2315,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
 
   private killEnemy(e: Enemy, byCatch = false) {
     this.kills++;
+    if (!byCatch) this.tut.kills++;
     if (this.trial && !byCatch) this.trial.kills++;
     if (!byCatch) this.questEvent('kill');
     if (!byCatch && (e.isBoss || e.trainer)) {
@@ -2356,6 +2376,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     }
     const e = targets.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
     game.items[ballKey]--;
+    this.tut.throws++;
     const ball = CATCH.balls[ballKey];
     const chance = CATCH.chance(POKEMON[e.species.id].catchRate * (e.alpha ? STAGE_TUNING.alpha.catchMult : 1), e.hp / e.maxHp, ball.bonus);
     const success = Math.random() < chance;
@@ -2403,9 +2424,10 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       playSfx('badge');
       this.fx.floatingLabel(e.x, e.topY - 6, t('battle.caught', { name: e.species.name }), '#9fe08a');
       this.tweens.add({ targets: img, y: img.y - 6, alpha: 0, delay: 400, duration: 500, onComplete: () => img.destroy() });
+      this.tut.caught++;
       const m = makeMember(e.species.id, e.level);
       m.caughtAt = this.stage?.id;
-      addToBox(game, m);
+      if (!this.tutReplay) addToBox(game, m);
       // loài mới (chưa có trong Pokédex): thưởng tiền theo cấp
       if (!dexOf(game).caught.includes(m.speciesId) && this.stage) {
         const bonus = STAGE_REWARD.newSpeciesPerLevel * e.level;
@@ -2433,6 +2455,11 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
 
   damageFighter(f: Fighter, amount: number, fromX: number, fromY: number, type: PokemonType) {
     if (this.over) return;
+    // bài hướng dẫn: địch chỉ gây sát thương nhẹ và không bao giờ hạ gục
+    if (this.tutorial) {
+      if (f.hp <= f.maxHp * 0.3) return;
+      amount *= 0.12;
+    }
     if (!f.isInvulnerable(this.clock) && f.tryEvade(this.clock)) {
       // Thu Nhỏ: né hoàn toàn
       f.invulnUntil = this.clock + 250;
@@ -2658,8 +2685,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
 
   /** Chỉ con đang ra sân (con thực sự chiến đấu) nhận EXP; con dự bị không được gì */
   private awardXp(value: number) {
-    // Thử thách chiêu: không thưởng EXP
-    if (this.trial) return;
+    // Thử thách chiêu / bài hướng dẫn: không thưởng EXP
+    if (this.trial || this.tutorial) return;
     const cap = this.stage ? levelCap() : 50;
     this.fighters.forEach((f, i) => {
       if (f.dead || i !== this.activeIdx) return;
@@ -2874,6 +2901,51 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     return this.findSpawnPoint(radius, 160, 360, flank) ?? this.freeSpot(p.x < this.worldW / 2 ? b.right - 40 : b.x + 40, p.y, radius);
   }
 
+  /** còn địch sống (cho TutorialScene) */
+  enemiesAlive() {
+    return this.enemies.some((e) => !e.dead && !e.beingCaught) || this.catching;
+  }
+
+  /** Bài hướng dẫn: đẻ 1 địch yếu quanh người chơi */
+  tutSpawn(speciesId: string, opts: { hpRatio?: number; catchable?: boolean } = {}) {
+    const p = this.player;
+    const a = Math.random() * Math.PI * 2;
+    const x = Phaser.Math.Clamp(p.x + Math.cos(a) * 130, 60, this.worldW - 60);
+    const y = Phaser.Math.Clamp(p.y + Math.sin(a) * 90, 60, this.worldH - 60);
+    const e = new Enemy(this, speciesId, x, y, this.clock, 4, false, false);
+    e.maxHp = e.hp = 26;
+    if (opts.hpRatio) e.hp = Math.max(1, Math.round(e.maxHp * opts.hpRatio));
+    e.dmgMult *= 0.5;
+    e.skillsOff = true;
+    e.speedMult = 0.7;
+    e.catchable = !!opts.catchable;
+    markSeen(getGame(), speciesId);
+    this.addEnemy(e);
+    this.fx.puff('dustpuff', x, y + 6, 6);
+    return e;
+  }
+
+  /** Bài hướng dẫn xong / bỏ qua: trả lại túi đồ, tặng quà (lần đầu), về bản đồ (lần đầu) hoặc Menu (xem lại) */
+  finishTutorial(skipped: boolean) {
+    if (!this.tutorial || this.over) return;
+    const game = getGame();
+    this.stopBattle();
+    if (game && this.tutItems) {
+      for (const k of Object.keys(this.tutItems)) game.items[k as keyof typeof game.items] = this.tutItems[k];
+      if (!this.tutReplay && !skipped) {
+        game.items.pokeball += 3;
+        game.items.potion += 2;
+        game.money += 300;
+      }
+      if (!this.tutReplay) game.flags.tutorialDone = true;
+      saveGame();
+    }
+    const to = this.tutReplay ? 'Menu' : 'StageMap';
+    this.scene.stop('Tutorial');
+    this.scene.stop('Hud');
+    this.scene.start(to, to === 'StageMap' ? { intro: true } : undefined);
+  }
+
   private addEnemy(e: Enemy) {
     this.enemies.push(e);
     this.enemyGroup.add(e.zone);
@@ -2979,7 +3051,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   // ======================================================================= kết thúc
 
   private checkEnd() {
-    if (this.config.kind === 'lab') return;
+    if (this.config.kind === 'lab' || this.tutorial) return;
     if (this.fighters.every((f) => f.dead)) {
       if (this.config.kind === 'survival') this.endSurvival(false);
       else this.endStage('lose');

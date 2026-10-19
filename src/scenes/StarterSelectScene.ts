@@ -1,3 +1,4 @@
+import { getGame } from '../game/state';
 import Phaser from 'phaser';
 import { MOVES } from '../data/moves';
 import { POKEMON, STARTER_CHOICES } from '../data/pokemon';
@@ -140,6 +141,6 @@ export class StarterSelectScene extends Phaser.Scene {
     newGame(this.region, starter);
     playSfx('badge');
     this.cameras.main.fadeOut(400, 0, 0, 0);
-    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('StageMap', { intro: true }));
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => (getGame()?.flags.tutorialDone ? this.scene.start('StageMap', { intro: true }) : this.scene.start('Battle', { kind: 'stage', stageId: 'tutorial' })));
   }
 }
