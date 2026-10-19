@@ -14,7 +14,7 @@ import { pickWeighted, waveAt, WAVES } from '../data/waves';
 import { buildRivalGym, rivalSpeciesPool } from '../data/rival';
 import { ULT_GAIN, ULT_PACING, ultimateFor } from '../data/ultimates';
 import { castArchetype, castUltArchetype } from '../skills/archetypes';
-import { resolveUlt, SPECIES_DMG_MULT } from '../skills/kits';
+import { resolveSkill, resolveUlt, SPECIES_DMG_MULT } from '../skills/kits';
 import type { SkillHost } from '../skills/host';
 import type { SkillSpec } from '../skills/types';
 import { lang, t, tr } from '../i18n';
@@ -214,6 +214,9 @@ const SLOT_KEYS: Record<SkillSlot, KeyName> = { J: 'J', K: 'K', L: 'L', U: 'U' }
 
 const FLAIR_TEX: Partial<Record<string, string>> = { dragon: 'scaleD', rock: 'boulderB', ground: 'mudball', flying: 'featherA', poison: 'goo', bug: 'bugdot', normal: 'star5' };
 
+/** sát thương chiêu huyền thoại địch: mỗi điểm sức mạnh chiêu = tỉ lệ máu tối đa người chơi này (đã nhân chênh cấp) */
+const LEGEND_FOE_DMG = 0.0045;
+
 export class BattleScene extends Phaser.Scene implements BattleCtx {
   clock = 0;
   fx!: Effects;
@@ -319,6 +322,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private armorGainAt = 0;
   private toxicTickAt = 0;
   private rebirthUsed = false;
+  /** Huyền thoại PHE ĐỊCH (ải sự kiện): ra đúng bộ chiêu riêng của loài, nhắm vào người chơi */
+  private legendFoes = new Map<Enemy, { next: number; idx: number; ults: number[]; host: SkillHost; caster: Fighter; target: Enemy }>();
   private staticCharge = 0;
   private staticReady = false;
   /** Bài hướng dẫn: bộ đếm hành động cho TutorialScene đọc */
@@ -480,6 +485,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.armorUntil = 0;
     this.toxicTickAt = 0;
     this.rebirthUsed = false;
+    this.legendFoes = new Map();
     this.staticCharge = 0;
     this.staticReady = false;
     this.swarmUntil = 0;
@@ -875,6 +881,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.updateLegend();
     this.updateTypeMechanics();
     this.updateSwarm();
+    this.updateLegendFoes();
     this.updateCollisions();
     this.updateProjectiles(dt);
     this.updateOrbs(dt);
@@ -2867,6 +2874,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         e.rangedCdMult /= Math.max(0.5, r.dmg);
         if (!trainer && idx < STAGE_RAMP.wildSkillsFromIndex) e.skillsOff = true;
       }
+      // huyền thoại (ải sự kiện): trâu hơn nữa
+      if (!trainer && legendOf(p.species)) e.maxHp = e.hp = Math.round(e.maxHp * CATCH.legendHpMult);
       // Pokémon của thủ lĩnh: đánh đau hơn, ra đòn dồn dập hơn, chạy nhanh hơn (TRAINER)
       if (trainer) {
         const badges = getGame()?.badges.length ?? 0;
@@ -3406,6 +3415,161 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       return { kind: 'swarm', value: on ? (this.swarmUntil - now) / 6000 : 1 - cd / 10000, label: on ? t('mech.swarmOn') : t('mech.swarm'), color: 0x9ac040, ticks: 0, active: on };
     }
     return null;
+  }
+
+  // ======================================================================= huyền thoại phe địch
+  /** Thứ tự ô chiêu của huyền thoại địch: đòn J xen kẽ chiêu lớn; nghỉ (ms) sau mỗi ô */
+  private static readonly LEGEND_FOE_ROT: { slot: SkillSlot; gap: number }[] = [
+    { slot: 'J', gap: 1100 }, { slot: 'K', gap: 1700 }, { slot: 'J', gap: 1100 }, { slot: 'L', gap: 2300 }, { slot: 'J', gap: 1100 }, { slot: 'U', gap: 2600 },
+  ];
+
+  private updateLegendFoes() {
+    if (!this.stage || this.over) return;
+    const p = this.player;
+    if (!p || p.dead || !p.onField) return;
+    for (const e of this.enemies) {
+      if (e.dead || e.dummy || e.beingCaught || !legendOf(e.species.id)) continue;
+      let st = this.legendFoes.get(e);
+      if (!st) {
+        st = { next: this.clock + 1500, idx: 0, ults: [0.7, 0.35], ...this.makeLegendFoe(e) };
+        this.legendFoes.set(e, st);
+      }
+      if (e.isStunned(this.clock) || this.clock < st.next) continue;
+      if (Math.hypot(p.x - e.x, p.y - e.y) > 430) continue;
+      // tuyệt chiêu khi máu tụt qua các mốc 70% / 35%
+      const ratio = e.hp / e.maxHp;
+      if (st.ults.length && ratio <= st.ults[0]) {
+        st.ults.shift();
+        this.legendFoeUlt(e, st);
+        st.next = this.clock + 4200;
+        continue;
+      }
+      const rot = BattleScene.LEGEND_FOE_ROT[st.idx++ % BattleScene.LEGEND_FOE_ROT.length];
+      const sk = e.species.skills.find((x) => x.slot === rot.slot);
+      const move = sk ? MOVES[sk.move] : undefined;
+      st.next = this.clock + rot.gap * (0.9 + Math.random() * 0.2);
+      if (!move) continue;
+      const spec = resolveSkill(e.species.id, e.level, rot.slot, move);
+      if (!spec.archetype) continue;
+      const dir = new Phaser.Math.Vector2(p.x - e.x, p.chestY - e.centerY).normalize();
+      if (rot.slot !== 'J') this.fx.floatingLabel(e.x, e.topY - 12, moveName(move), '#' + TYPE_COLOR[move.type].toString(16).padStart(6, '0'));
+      castArchetype(st.host, st.caster, { ...move, castSlot: undefined, castId: undefined }, spec, dir);
+    }
+    for (const e of [...this.legendFoes.keys()]) if (e.dead || !this.enemies.includes(e)) this.legendFoes.delete(e);
+  }
+
+  /** tuyệt chiêu của huyền thoại địch: báo trước 1s (chữ + rung) rồi tung đúng tuyệt chiêu riêng của loài */
+  private legendFoeUlt(e: Enemy, st: { host: SkillHost; caster: Fighter }) {
+    const style = resolveUlt(e.species.id, e.species.types);
+    if (!style) return;
+    const u = ultimateFor(e.species.types);
+    const type = e.species.types[0];
+    const name = ultName(e.species.types, e.species.id);
+    const mv: MoveDef = {
+      id: 'ultimate', name, desc: u.desc, type, kind: 'burst', power: u.power, cooldownMs: 0, anim: 'charge', animMs: 600,
+      sfx: 'thunder', knockback: 160, icon: 'crown', particle: 'spark', status: u.status,
+    };
+    this.events.emit('banner', `${e.species.name}: ${name}!`);
+    this.fx.addTelegraph({ kind: 'glow', target: e.zone, r: 30, start: this.clock, end: this.clock + 1000, color: TYPE_COLOR[type], owner: e });
+    e.anim.playOnce('charge', 1000);
+    e.stunnedUntil = 0;
+    this.fx.shake(0.008, 600);
+    playSfx('boss');
+    this.schedule(this.clock + 1000, () => {
+      if (this.over || e.dead || e.beingCaught) return;
+      castUltArchetype(st.host, st.caster, style, u, mv, u.power * ULT_PACING.powerMult);
+    });
+  }
+
+  /** Bọc huyền thoại địch thành "người ra chiêu" và người chơi thành "mục tiêu" để dùng lại nguyên khuôn chiêu của phe ta */
+  private makeLegendFoe(e: Enemy): { host: SkillHost; caster: Fighter; target: Enemy } {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const b = this;
+    const store: Record<string | symbol, unknown> = {};
+    const casterOver: Record<string, () => unknown> = {
+      chestY: () => e.centerY,
+      facing: () => {
+        const p = b.player;
+        const v = new Phaser.Math.Vector2(p ? p.x - e.x : 1, p ? p.y - e.y : 0);
+        return v.lengthSq() > 0 ? v.normalize() : new Phaser.Math.Vector2(1, 0);
+      },
+      power: () => 1,
+      onField: () => true,
+      playMove: () => () => e.anim.playOnce('attack', 420),
+      faceTo: () => (x: number, y: number) => (e as unknown as { faceAngle(a: number): void }).faceAngle(Math.atan2(y, x)),
+      heal: () => (n: number) => {
+        e.hp = Math.min(e.maxHp, e.hp + Math.round(n * 0.5));
+      },
+      isBurrowed: () => () => false,
+    };
+    const caster = new Proxy(e as unknown as object, {
+      get: (t, k) => (typeof k === 'string' && k in casterOver ? casterOver[k]() : k in store ? store[k] : Reflect.get(t, k)),
+      set: (_t, k, v) => {
+        store[k] = v;
+        return true;
+      },
+    }) as unknown as Fighter;
+    const targetOver: Record<string, () => unknown> = {
+      targetable: () => !!b.player && !b.player.dead && b.player.onField,
+      centerY: () => b.player.chestY,
+      topY: () => b.player.chestY - 14,
+      radius: () => 10,
+      isBoss: () => true,
+      stunnedUntil: () => 0,
+      chill: () => 0,
+      chillUntil: () => 0,
+      body: () => ({ reset: () => {} }),
+      applySlow: () => () => {},
+      applyStatus: () => () => false,
+      hasStatus: () => () => false,
+      isStunned: () => () => false,
+    };
+    const target = new Proxy({} as object, {
+      get: (_t, k) => (typeof k === 'string' && k in targetOver ? targetOver[k]() : Reflect.get(b.player as unknown as object, k)),
+      set: () => true,
+    }) as unknown as Enemy;
+    // sát thương: theo % máu người chơi × chênh cấp (huyền thoại luôn đáng sợ, không phụ thuộc chỉ số phe ta)
+    const hurt = (power: number, x: number, y: number, type: PokemonType) => {
+      const p = b.player;
+      if (!p || p.dead || !p.onField) return;
+      const lv = Phaser.Math.Clamp(Math.pow(e.level / Math.max(1, p.level), 1.2), 0.6, 2);
+      b.damageFighter(p, power * p.maxHp * LEGEND_FOE_DMG * lv, x, y, type);
+    };
+    const host: SkillHost = {
+      scene: this,
+      get fx() { return b.fx; },
+      get clock() { return b.clock; },
+      get over() { return b.over; },
+      get worldW() { return b.worldW; },
+      get worldH() { return b.worldH; },
+      get aimTarget() { return target; },
+      enemies: () => (b.player && !b.player.dead ? [target] : []),
+      schedule: (at, fn) => b.schedule(at, () => !e.dead && !e.beingCaught && fn()),
+      addFrameTask: (ms, tick, done) => b.addFrameTask(ms, tick, done),
+      damageEnemy: (_t, m, amount) => hurt(amount, e.x, e.y, m.type),
+      stackMult: () => 1,
+      hitStop: (ms) => b.hitStop(Math.min(ms, 50)),
+      armCounter: () => {},
+      setCounterBuff: () => {},
+      addZone: (z) => {
+        const g = b.add.graphics().setDepth(-2950);
+        g.fillStyle(z.color, 0.22).fillCircle(z.x, z.y, z.r).lineStyle(2, z.color, 0.7).strokeCircle(z.x, z.y, z.r);
+        let next = b.clock + z.firstTickMs;
+        b.addFrameTask(z.ms, (now) => {
+          if (now < next) return;
+          next = now + (z.move.zone?.tickMs ?? 450);
+          const p = b.player;
+          if (p && !p.dead && Math.hypot(p.x - z.x, (p.y - z.y) / 0.8) <= z.r + 6) hurt(z.power * 0.6, z.x, z.y, z.move.type);
+        }, () => g.destroy());
+      },
+      spawnShot: (tex, x, y, vx, vy, r, dmg, life, spin) => {
+        const sh = b.enemyShots.spawn(tex, x, y, vx, vy, r, dmg * b.player.maxHp * LEGEND_FOE_DMG, life, spin);
+        sh.type = e.species.types[0];
+        return sh;
+      },
+      meleeSequence: () => {},
+    };
+    return { host, caster, target };
   }
 
   /** Tích điện (Zapdos): đi/lướt tích thanh Tĩnh điện; đầy → chiêu K/L/U kế tiếp miễn phí và hồi chiêu giảm nửa */

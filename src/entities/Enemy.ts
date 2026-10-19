@@ -5,6 +5,7 @@ import type { StatusKind } from '../data/moves';
 import type { BattleCtx } from './types';
 import { PokemonSprite } from './PokemonSprite';
 import { playSfx } from '../systems/sfx';
+import { legendOf } from '../data/legendary';
 import { tickEnemySkill } from './EnemySkills';
 
 type State = 'move' | 'windup' | 'lunge' | 'recover';
@@ -175,7 +176,7 @@ export class Enemy {
     }
     if (!this.isBoss && flinch) this.anim.playOnce('hurt', 180, false);
     // máu thấp → choáng, có thể ném bóng (mỗi con chỉ choáng một lần)
-    if (this.catchable && !this.stunUsed && this.hp / this.maxHp <= CATCH.stunHpRatio) this.stunForCatch(clock);
+    if (this.catchable && !this.stunUsed && this.hp / this.maxHp <= (legendOf(this.species.id) ? CATCH.legendStunHpRatio : CATCH.stunHpRatio)) this.stunForCatch(clock);
   }
 
   /** choáng để ném bóng (sao quay trên đầu) */

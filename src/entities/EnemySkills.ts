@@ -8,6 +8,7 @@ import { impactRays, powBurst } from '../fx/FightFx';
 import { scatter } from '../fx/TypeFx';
 import { dialectFor } from '../skills/dialects';
 import type { FxDialectId } from '../skills/types';
+import { legendOf } from '../data/legendary';
 import { playSfx, type SfxName } from '../systems/sfx';
 import type { Enemy } from './Enemy';
 import type { Fighter } from './Fighter';
@@ -134,7 +135,7 @@ const STUB = { id: 'enemySkill', name: '', type: 'normal', power: 0, cooldownMs:
 
 /** gọi mỗi khung từ Enemy/Boss.update khi đã biết mục tiêu */
 export function tickEnemySkill(e: Enemy, ctx: BattleCtx, target: Fighter, boss = false) {
-  if (e.dead || e.dummy || e.beingCaught || e.skillsOff) return;
+  if (e.dead || e.dummy || e.beingCaught || e.skillsOff || legendOf(e.species.id)) return;
   const now = ctx.clock;
   if (e.nextSkillAt === 0) e.nextSkillAt = now + (e.trainer || boss ? 900 + Math.random() * 1500 : 2500 + Math.random() * 5000);
   if (now < e.nextSkillAt || e.isStunned(now)) return;

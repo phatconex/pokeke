@@ -77,8 +77,12 @@ export const CATCH = {
   /** thứ tự bóng từ rẻ đến tốt (E ném quả rẻ nhất còn có, Q ném quả tốt nhất) */
   ballOrder: ['pokeball', 'greatball', 'ultraball'] as const,
   /** Huyền thoại: tỉ lệ tối thiểu theo bóng (trước đây chỉ ~5–11%) và số lần được ném lại trong một trận (vùng ra → choáng lại sau 1,8s) */
-  legendFloor: { pokeball: 0.12, greatball: 0.2, ultraball: 0.32 } as Record<string, number>,
-  legendTries: 3,
+  legendFloor: { pokeball: 0.05, greatball: 0.1, ultraball: 0.18 } as Record<string, number>,
+  legendTries: 2,
+  /** huyền thoại chỉ choáng (bắt được) khi máu ≤ 12% – phải đánh sát mà không hạ gục */
+  legendStunHpRatio: 0.12,
+  /** huyền thoại ở ải sự kiện: máu nhân thêm (ngoài hệ số con đầu đàn) */
+  legendHpMult: 1.8,
   legendRestunMs: 1800,
   /** tỷ lệ = catchRate/255 × (1 − 0.6×máu%) × bóng × 1.8 (đang choáng); kẹp trong [min, max] */
   chance: (catchRate: number, hpRatio: number, ballBonus: number) =>
