@@ -1,3 +1,4 @@
+import { tickEnemySkill } from './EnemySkills';
 import Phaser from 'phaser';
 import { BOSS, STATS, TRAINER } from '../config/balance';
 import { t } from '../i18n';
@@ -92,6 +93,8 @@ export class Boss extends Enemy {
     const dist = Math.hypot(dx, dy) || 1;
     let vx = 0;
     let vy = 0;
+    const tf = ctx.targetFor(this.x, this.y);
+    if (tf) tickEnemySkill(this, ctx, tf, true);
     if (this.trainer && this.enraged && !this.enrageShown && !this.dead) this.announceEnrage(ctx);
     const speed = this.stats.speed * (this.enraged ? (this.trainer ? TRAINER.enrage.speedMult : 1.3) : 1);
 

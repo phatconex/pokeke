@@ -2054,6 +2054,16 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (this.legendShieldOn) drawHexCluster(this.legendGfx, p.x, p.chestY, 8, lg.colors, 0.55 + 0.25 * Math.sin(this.clock / 110));
   }
 
+  /** Vụ nổ khi trúng nặng: đốm trắng sáng + tia tỏa mọi hướng (chí mạng = lớn, rất hiệu quả = vừa) */
+  private impactFlash(x: number, y: number, k: number, tint: number) {
+    const core = this.add.circle(x, y, 9 * k, 0xffffff, 0.95).setDepth(100000);
+    const halo = this.add.circle(x, y, 15 * k, tint, 0.45).setDepth(99999);
+    this.tweens.add({ targets: core, scale: 2.4, alpha: 0, duration: 200, onComplete: () => core.destroy() });
+    this.tweens.add({ targets: halo, scale: 2.2, alpha: 0, duration: 260, onComplete: () => halo.destroy() });
+    impactRays(this, x, y, k > 0.9 ? 14 : 9, 8 * k, 34 * k, 0xffffff, 240);
+    if (k > 0.9) this.fx.shake(0.004, 90);
+  }
+
   /** nhân sát thương theo cơ chế hệ (Cơn giận, Ăn mòn) + cộng dồn (Da đá, Độc) */
   private typeMechanicsOnHit(e: Enemy, m: MoveDef, amount: number, quiet: boolean): number {
     let k = 1;
@@ -2268,8 +2278,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       this.fx.puff(m.particle ?? 'flamepuff', e.x, e.centerY, 2);
     }
     const color = crit ? '#ff7a3a' : mult >= 2 ? '#ffd34a' : mult < 1 ? '#b8b8b8' : big ? '#ffe9a0' : '#ffffff';
-    this.fx.damageNumber(e.x, e.centerY - 8, dmg, color, (big || mult >= 2 || crit) && !quiet);
-    if (crit && (moveCrit || !quiet)) this.fx.floatingLabel(e.x, e.topY - 4, t('battle.crit'), '#ff9a50');
+    this.fx.damageNumber(e.x, e.centerY - 8, dmg, color, (big || mult >= 2 || crit) && !quiet, crit && !quiet);
+    if (crit && (moveCrit || !quiet)) this.fx.floatingLabel(e.x + 18, e.centerY - 26, t('battle.crit'), '#ffd34a');
+    if ((crit && !quiet) || (big && !quiet && mult >= 2)) this.impactFlash(e.x, e.centerY - 4, crit ? 1 : 0.65, TYPE_COLOR[m.type]);
     const label = effLabel(mult);
     // nhãn khắc hệ: mỗi con 1,5 giây một lần, toàn sân tối đa ~3 nhãn mỗi giây
     if (label && !quiet && (this.labelCooldown.get(e) ?? 0) < this.clock && this.clock >= this.effLabelAt) {

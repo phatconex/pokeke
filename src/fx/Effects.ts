@@ -965,7 +965,7 @@ export class Effects {
     this.dust.explode(count, x, y);
   }
 
-  damageNumber(x: number, y: number, amount: number, color = '#ffffff', big = false) {
+  damageNumber(x: number, y: number, amount: number, color = '#ffffff', big = false, crit = false) {
     let n: DmgNumber;
     if (this.numbers.length >= CAPS.damageNumbers) {
       n = this.numbers.shift()!;
@@ -974,10 +974,11 @@ export class Effects {
       t.setShadow(1, 1, '#1a0a00', 0, false, true).setOrigin(0.5).setDepth(100001);
       n = { text: t, vy: 0, life: 0, maxLife: 0 };
     }
-    n.text.setText(String(Math.round(amount))).setColor(color).setPosition(x + (Math.random() - 0.5) * 8, y).setAlpha(1).setVisible(true).setScale(big ? 2 : 1);
-    n.vy = -40;
+    n.text.setText(String(Math.round(amount))).setColor(color).setPosition(x + (Math.random() - 0.5) * 8, y).setAlpha(1).setVisible(true).setScale(crit ? 2.3 : big ? 2 : 1);
+    n.text.setStroke(crit ? '#ffffff' : '', crit ? 3 : 0);
+    n.vy = crit ? -55 : -40;
     n.life = 0;
-    n.maxLife = 650;
+    n.maxLife = crit ? 900 : 650;
     this.numbers.push(n);
   }
 

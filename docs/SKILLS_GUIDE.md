@@ -124,3 +124,7 @@ Cơ chế riêng (BattleScene.typeMechanicsOnHit): Rồng – Cơn giận (100 �
 - Đất – Cát Lún: vào vùng cát thì chìm dần, chậm tới 75%, chìm đủ 1,2s thì bị kẹt (boss chỉ bị chậm).
 - HUD (`HudScene`): thanh mảnh dưới thanh năng lượng cho Rồng (Cơn giận, nhấp nháy khi đang bùng), Đá (5 vạch Da đá), Bọ (thời gian/hồi Bầy đàn).
 - Cân bằng: `SPECIES_DMG_MULT` trong kits.ts nhân sát thương người chơi theo loài. Đo 1 vòng J-K-L-U Lv40 trên 5 hình nộm: trước 960–1900 (Dragonite 1124), sau 2550–3650 (Fire/Grass/Psychic ~3800–4600, Machamp ~5900). Đo lại bằng t7dps trong scratchpad khi đổi kit.
+
+### Hiệu ứng trúng nặng + chiêu đặc trưng của địch (ải, hội quán, boss)
+- Chí mạng / rất hiệu quả: `BattleScene.impactFlash` (đốm trắng + tia tỏa), số chí mạng to có viền trắng (`damageNumber(..., crit)`), nhãn "Critical hit!" cạnh số.
+- Địch: `src/entities/EnemySkills.ts` – mỗi Pokémon địch (ải, hội quán, boss) có 2 chiêu luân phiên theo HỆ chính (Pidgey = Bay): đạn xòe cùng hệ (volley), ô nổ báo trước theo hệ (zone), sóng xung kích quanh thân (nova). Cooldown: boss 4,2s · hội quán 5,4s · đầu đàn 6,5s · hoang dã 9,5s (nhân rangedCdMult của độ khó). Đòn nào cũng có báo trước; hình nổ dùng chính dialect của hệ đó. Chỉnh bảng `T` trong file để đổi số lượng/tốc độ/màu từng hệ.

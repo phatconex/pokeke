@@ -5,6 +5,7 @@ import type { StatusKind } from '../data/moves';
 import type { BattleCtx } from './types';
 import { PokemonSprite } from './PokemonSprite';
 import { playSfx } from '../systems/sfx';
+import { tickEnemySkill } from './EnemySkills';
 
 type State = 'move' | 'windup' | 'lunge' | 'recover';
 
@@ -27,6 +28,9 @@ export class Enemy {
   readonly alpha: boolean;
   /** hệ số hồi chiêu của đòn đánh xa (độ khó) */
   rangedCdMult = 1;
+  /** chiêu đặc trưng theo hệ (EnemySkills): lần tới + chỉ số luân phiên */
+  nextSkillAt = 0;
+  skillIdx = 0;
   /** hệ số nghỉ giữa các đòn vồ / đào đất (Pokémon thủ lĩnh < 1: dồn dập hơn) */
   attackGapMult = 1;
   /** hệ số tốc độ chạy (Pokémon thủ lĩnh nhanh hơn) */
@@ -279,6 +283,7 @@ export class Enemy {
       this.syncVisual(ctx.clock, dtMs);
       return;
     }
+    tickEnemySkill(this, ctx, p);
     const dx = p.x - this.x;
     const dy = p.y - this.y;
     const dist = Math.hypot(dx, dy) || 1;
