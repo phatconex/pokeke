@@ -21,6 +21,8 @@ export class StageMapScene extends Phaser.Scene {
   private game_!: GameState;
   private cursor = 0;
   private hero!: Phaser.GameObjects.Sprite;
+  /** khung chứa nhân vật: khung di chuyển giữa các ải, nhân vật nhún nhảy bên trong (tách 2 tween y khỏi đè nhau) */
+  private heroBox!: Phaser.GameObjects.Container;
   private ring!: Phaser.GameObjects.Arc;
   private info!: Phaser.GameObjects.Container;
   private topRight: Phaser.GameObjects.Text[] = [];
@@ -61,8 +63,9 @@ export class StageMapScene extends Phaser.Scene {
     const n = STAGES[this.cursor];
     this.ring = this.add.circle(n.x * S, n.y * S, 24).setStrokeStyle(3, 0xffffff, 0.9);
     this.tweens.add({ targets: this.ring, scale: 1.25, alpha: 0, duration: 900, repeat: -1 });
-    this.hero = this.add.sprite(n.x * S, n.y * S - 40, `trainer-${this.game_.avatar ?? 'satoshi'}`, 0).setScale(2).setDepth(10);
-    this.tweens.add({ targets: this.hero, y: '-=4', duration: 450, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    this.hero = this.add.sprite(0, -40, `trainer-${this.game_.avatar ?? 'satoshi'}`, 0).setScale(2);
+    this.heroBox = this.add.container(n.x * S, n.y * S, [this.hero]).setDepth(10);
+    this.tweens.add({ targets: this.hero, y: -44, duration: 450, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
 
     // ---- thanh trên ----
     pixelPanel(this, 10, 8, 440, 64);
@@ -235,15 +238,15 @@ export class StageMapScene extends Phaser.Scene {
     this.moving = true;
     playSfx('talk');
     this.tweens.add({ targets: this.ring, x: n.x * S, y: n.y * S, duration: 220 });
-    this.hero.setFrame(n.x * S > this.hero.x ? 6 : 3);
+    this.hero.setFrame(n.x * S > this.heroBox.x ? 6 : 3);
+    this.tweens.killTweensOf(this.heroBox);
     this.tweens.add({
-      targets: this.hero, x: n.x * S, duration: 260, ease: 'Sine.inOut',
+      targets: this.heroBox, x: n.x * S, y: n.y * S, duration: 260, ease: 'Sine.inOut',
       onComplete: () => {
         this.hero.setFrame(0);
         this.moving = false;
       },
     });
-    this.tweens.add({ targets: this.hero, y: n.y * S - 40, duration: 260 });
     this.refreshInfo();
   }
 
