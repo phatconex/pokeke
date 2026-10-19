@@ -23,10 +23,11 @@ import type { StatusKind } from '../data/moveKit';
  *  trap   – vùng gài, kích hoạt sau một lúc · summon – gọi trợ thủ / tháp bắn tạm thời
  */
 export type ArchetypeId = 'bolt' | 'dashStrike' | 'stream' | 'blast' | 'nova' | 'chain' | 'rain' | 'whip' | 'cloud' | 'tether' | 'telekinesis' | 'blizzard' | 'lance' | 'gale' | 'strike' | 'counter' | 'slam' | 'cross' | 'boomerang' | 'barrier' | 'singularity'
-  | 'fan' | 'sweep' | 'serpent' | 'dive' | 'lob' | 'roll' | 'fallers' | 'ridge' | 'quicksand' | 'ambush' | 'twister' | 'web' | 'swarm' | 'triattack' | 'beam';
+  | 'fan' | 'sweep' | 'serpent' | 'dive' | 'lob' | 'roll' | 'fallers' | 'ridge' | 'quicksand' | 'ambush' | 'twister' | 'web' | 'swarm' | 'triattack' | 'beam'
+  | 'arcshot' | 'phoenixdash' | 'xslash';
 export type PlannedArchetypeId = 'trap' | 'summon';
 export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStrike', 'stream', 'blast', 'nova', 'chain', 'rain', 'whip', 'cloud', 'tether', 'telekinesis', 'blizzard', 'lance', 'gale', 'strike', 'counter', 'slam', 'cross', 'boomerang', 'barrier', 'singularity',
-  'fan', 'sweep', 'serpent', 'dive', 'lob', 'roll', 'fallers', 'ridge', 'quicksand', 'ambush', 'twister', 'web', 'swarm', 'triattack', 'beam'];
+  'fan', 'sweep', 'serpent', 'dive', 'lob', 'roll', 'fallers', 'ridge', 'quicksand', 'ambush', 'twister', 'web', 'swarm', 'triattack', 'beam', 'arcshot', 'phoenixdash', 'xslash'];
 
 /**
  * Nguyên mẫu tuyệt chiêu (phím I).
@@ -35,7 +36,7 @@ export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStri
  *  thunderstorm = trời tối, sét giáng dày đặc + sét nảy chuỗi
  *  bloom        = bão cánh hoa xoay / rễ gai trồi khắp sân + đóa hoa khổng lồ nở rộ (hệ cỏ)
  */
-export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 'timestop' | 'absolutezero' | 'komode' | 'mindbreak' | 'draco' | 'flock' | 'wavefront' | 'chasm' | 'hyperbeam';
+export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 'timestop' | 'absolutezero' | 'komode' | 'mindbreak' | 'draco' | 'flock' | 'wavefront' | 'chasm' | 'hyperbeam' | 'phoenix';
 
 /** "Bộ từ vựng" hiệu ứng (vệt, nổ trúng, khói, vụ nổ, cháy xém, cột, vuốt) – xem dialects.ts */
 export type FxDialectId = 'fire' | 'water' | 'electric' | 'grass' | 'ghost' | 'psychic' | 'ice' | 'fighting' | 'dragon' | 'rock' | 'ground' | 'flying' | 'poison' | 'bug' | 'normal' | 'generic';
@@ -704,6 +705,9 @@ export interface ArchetypeParamMap {
   swarm: LooseParams;
   triattack: LooseParams;
   beam: LooseParams;
+  arcshot: LooseParams;
+  phoenixdash: LooseParams;
+  xslash: LooseParams;
   gale: GaleParams;
 }
 
@@ -743,6 +747,7 @@ export interface UltParamMap {
   wavefront: LooseParams;
   chasm: LooseParams;
   hyperbeam: LooseParams;
+  phoenix: LooseParams;
 }
 
 /** Bậc theo cấp: áp mọi bậc có minLevel ≤ cấp, theo thứ tự (gộp dần). Có thể đổi cả cost. */
@@ -792,6 +797,9 @@ export interface TypeKit {
   swarm?: KitEntry<LooseParams>;
   triattack?: KitEntry<LooseParams>;
   beam?: KitEntry<LooseParams>;
+  arcshot?: KitEntry<LooseParams>;
+  phoenixdash?: KitEntry<LooseParams>;
+  xslash?: KitEntry<LooseParams>;
   gale?: KitEntry<GaleParams>;
   inferno?: Partial<InfernoParams>;
   tsunami?: Partial<TsunamiParams>;
@@ -806,6 +814,7 @@ export interface TypeKit {
   wavefront?: Partial<LooseParams>;
   chasm?: Partial<LooseParams>;
   hyperbeam?: Partial<LooseParams>;
+  phoenix?: Partial<LooseParams>;
 }
 
 /** Ghi đè cho một ô chiêu của một loài */

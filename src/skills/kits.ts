@@ -25,6 +25,9 @@ const shade = (c: number, k: number) => {
 /** Tham số gốc của từng nguyên mẫu – suy ra màu từ hệ của chiêu, hiệu ứng 'generic' */
 export const ARCHETYPE_DEFAULTS: { [A in ArchetypeId]: (m: MoveDef) => ArchetypeParamMap[A] } = {
   fan: () => ({ dialect: 'generic' }),
+  arcshot: () => ({ dialect: 'generic' }),
+  phoenixdash: () => ({ dialect: 'generic' }),
+  xslash: () => ({ dialect: 'generic' }),
   sweep: () => ({ dialect: 'generic' }),
   serpent: () => ({ dialect: 'generic' }),
   dive: () => ({ dialect: 'generic' }),
@@ -150,7 +153,7 @@ const MINDBREAK_DEFAULTS: MindBreakParams = { dialect: 'psychic', windupMs: 800,
 
 const ULT_DEFAULTS: { [U in UltArchetypeId]: UltParamMap[U] } = {
   inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS, timestop: TIMESTOP_DEFAULTS, absolutezero: ABSZERO_DEFAULTS, komode: KOMODE_DEFAULTS, mindbreak: MINDBREAK_DEFAULTS,
-  draco: { dialect: 'dragon', windupMs: 700 }, flock: { dialect: 'flying', windupMs: 700 }, wavefront: { dialect: 'poison', windupMs: 700 }, chasm: { dialect: 'ground', windupMs: 700 }, hyperbeam: { dialect: 'normal', windupMs: 300 },
+  draco: { dialect: 'dragon', windupMs: 700 }, flock: { dialect: 'flying', windupMs: 700 }, wavefront: { dialect: 'poison', windupMs: 700 }, chasm: { dialect: 'ground', windupMs: 700 }, hyperbeam: { dialect: 'normal', windupMs: 300 }, phoenix: { dialect: 'fire', windupMs: 600 },
 };
 
 // ---------------------------------------------------------------------------------- bộ chiêu theo hệ
@@ -924,6 +927,17 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const S = (archetype: string, params: Record<string, unknown> = {}): any => ({ archetype, params, tiers: [] });
 const TK: Record<string, SpeciesKit> = {
+  // --- HUYỀN THOẠI Moltres: lông lửa cong · lướt phượng hoàng + tường lửa · cánh chữ X · mưa lông lửa · Tái Sinh Phượng Hoàng (đặc quyền ở data/legendary.ts + BattleScene)
+  moltres: {
+    kitType: 'fire', ult: 'phoenix',
+    slots: {
+      J: S('arcshot', { dialect: 'fire', n: 3, range: 175, flyMs: 520, curve: 46, scale: 1.3 }),
+      K: S('phoenixdash', { dialect: 'fire', len: 175, ms: 260, wallMs: 3000, powerMult: 1.2 }),
+      L: S('xslash', { dialect: 'fire', reach: 62, powerMult: 1.5 }),
+      U: S('fallers', { dialect: 'fire', tex: 'fireFeather', count: 12, spread: 95, offset: { x: -80, y: -150 }, rotate: true, r: 24, scorch: true, warnEdge: 0xff9a3a, warnFill: 0x3a1204, powerMult: 1.3, windupMs: 520, gapMs: 60 }),
+    },
+    ultParams: { dialect: 'fire', ms: 1900, size: 2.2, healPct: 0.3 },
+  },
   // --- Rồng: vảy thoi, quạt, đuôi quét, rồng uốn S; Dragonite lao từ trời + Draco Meteor
   dratini: { kitType: 'dragon', slots: { J: S('fan', { dialect: 'dragon', n: 10, halfDeg: 22, range: 70 }), K: S('sweep', { dialect: 'dragon', reach: 40, spanDeg: 120, thick: 10 }), L: S('twister', { dialect: 'dragon', r: 28, height: 70, colors: [0x4a7aff, 0xffffff], tex: 'scaleD' }), U: S('serpent', { dialect: 'dragon', segs: 5, size: 8, range: 130 }) } },
   dragonair: { kitType: 'dragon', slots: { J: S('fan', { dialect: 'dragon', n: 16, halfDeg: 30, range: 85 }), K: S('sweep', { dialect: 'dragon', reach: 50, spanDeg: 150, thick: 14, spikes: 3 }), L: S('twister', { dialect: 'dragon', r: 34, height: 85, colors: [0x4a7aff, 0xa0c0ff], tex: 'scaleD' }), U: S('serpent', { dialect: 'dragon', segs: 8, size: 10, range: 170 }) } },

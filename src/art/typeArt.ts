@@ -67,6 +67,12 @@ export function generateTypeTextures(scene: Phaser.Scene) {
     px(ctx, 1, 3, 16, 1, 0x6a8ab0);
     for (let i = 3; i < 15; i += 3) px(ctx, i, 1, 1, 2, 0xa8c4e8);
   });
+  // Lửa (Moltres): lông vũ cháy đỏ-cam-vàng
+  makeCanvas(scene, 'fireFeather', 18, 7, (ctx) => {
+    poly(ctx, [[0, 3.5], [5, 0.5], [17, 2], [16, 5], [5, 6.5]], 0xff5a2a, 0x8a1a08);
+    px(ctx, 1, 3, 16, 1, 0xffd34a);
+    for (let i = 4; i < 15; i += 3) px(ctx, i, 1, 1, 2, 0xff9a3a);
+  });
   makeCanvas(scene, 'airarc', 22, 8, (ctx) => {
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5;

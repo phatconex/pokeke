@@ -57,7 +57,7 @@ export const CHAPTER: ChapterContent = {
     },
     moltres: {
       dex: 146, name: 'Moltres', types: ['fire', 'flying'], body: { w: 22, h: 14 }, fallbackColor: 0xf0a030, scale: 1.5,
-      base: { hp: 140, atk: 88, speed: 130 }, skills: sk('league_heatWave', 'wingAttack', ['league_fireSpin', 30], ['league_fireBlast', 50]),
+      base: { hp: 165, atk: 128, speed: 135 }, skills: sk('league_featherM', 'league_phoenixDashM', ['league_xWingM', 1], ['league_featherRainM', 1]),
       catchRate: 15,
       blurb: 'Chim lửa huyền thoại. Mỗi lần vỗ cánh là một làn sóng nhiệt thiêu rụi mọi thứ.',
     },
@@ -118,6 +118,15 @@ export const CHAPTER: ChapterContent = {
     league_fireBlast: P({ id: 'league_fireBlast', name: 'Đại Hỏa Tự', type: 'fire', power: 46, cooldownMs: 5400, sfx: 'flame', icon: 'flame', anim: 'charge', animMs: 360, speed: 250, lifeMs: 1000, radius: 9, texture: 'fireball', particle: 'flamepuff', knockback: 260,
       windupMs: 600, explode: 72, status: { kind: 'burn', chance: 0.7, ms: 3400 }, desc: 'Gồng 0,6 giây rồi phóng cầu lửa khổng lồ, nổ tung một vùng cực rộng. 70% gây Bỏng.' }),
 
+    // ---- huyền thoại Moltres (xem skills/kits.ts → TK.moltres, data/legendary.ts): lông lửa · lướt phượng hoàng · cánh chữ X · mưa lông lửa ----
+    league_featherM: P({ id: 'league_featherM', name: 'Lông Lửa', type: 'fire', power: 15, cooldownMs: 460, sfx: 'flame', icon: 'wing', speed: 300, lifeMs: 600, radius: 6, texture: 'fireFeather', particle: 'flamepuff', knockback: 60, archetype: 'arcshot',
+      status: { kind: 'burn', chance: 0.3, ms: 2200 }, desc: 'Ba lông vũ cháy bay vòng cung về phía địch, rải tàn lửa. Trúng gây Bỏng.' }),
+    league_phoenixDashM: C({ id: 'league_phoenixDashM', name: 'Lướt Phượng Hoàng', type: 'fire', power: 26, cooldownMs: 3400, sfx: 'flame', icon: 'flame', range: 175, halfAngleDeg: 40, particle: 'flamepuff', knockback: 160, archetype: 'phoenixdash',
+      status: { kind: 'burn', chance: 0.6, ms: 2600 }, desc: 'Hóa bóng lửa hình chim lao thẳng xuyên địch (bất tử khi lướt), để lại TƯỜNG LỬA cháy 3s dọc đường đi.' }),
+    league_xWingM: C({ id: 'league_xWingM', name: 'Cánh Chữ X', type: 'fire', power: 34, cooldownMs: 3600, sfx: 'flame', icon: 'wing', range: 70, halfAngleDeg: 90, particle: 'flamepuff', knockback: 200, archetype: 'xslash',
+      status: { kind: 'burn', chance: 0.6, ms: 2600 }, desc: 'Hai nhát cánh lửa bán nguyệt chém chéo thành chữ X trước mặt, để lại vết cháy trên nền.' }),
+    league_featherRainM: B({ id: 'league_featherRainM', name: 'Mưa Lông Lửa', type: 'fire', power: 11, cooldownMs: 5000, sfx: 'flame', icon: 'flame', anim: 'charge', animMs: 400, burstRadius: 60, atTarget: true, particle: 'flamepuff', knockback: 120, archetype: 'fallers',
+      status: { kind: 'burn', chance: 0.5, ms: 2800 }, desc: 'Vẩy đồng loạt 12 lông lửa rơi chéo xuống từng khu (có vạch báo), mỗi lông nổ tàn lửa.' }),
     // ---- Mewtwo
     // ---- huyền thoại Mewtwo (xem skills/kits.ts → SPECIES_KITS.mewtwo, data/legendary.ts) ----
     league_cutN: C({ id: 'league_cutN', name: 'Lưỡi Cắt Tâm Linh', type: 'psychic', power: 14, cooldownMs: 420, sfx: 'swap', icon: 'wing', range: 150, halfAngleDeg: 60, particle: 'psypuff', knockback: 60, archetype: 'boomerang',

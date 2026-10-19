@@ -113,3 +113,18 @@ export function chasmOpen(sc: Phaser.Scene, x: number, y: number, w: number, ms:
   sc.tweens.add({ targets: g, alpha: 1, scale: 1, x: 0, y: 0, duration: 260 });
   return () => sc.tweens.add({ targets: g, alpha: 0, duration: 260, delay: ms, onComplete: () => g.destroy() });
 }
+
+/** Áo lửa (chắn tự động của Moltres): 8 lưỡi lửa nhọn bao quanh thân, chập chờn */
+export function flameMantle(g: Phaser.GameObjects.Graphics, cx: number, cy: number, now: number, alpha = 0.8) {
+  const n = 8;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + now / 900;
+    const flick = 0.75 + 0.35 * Math.sin(now / 80 + i * 1.7);
+    const r0 = 11;
+    const r1 = 24 * flick;
+    const w = 0.26;
+    const col = i % 2 ? 0xffb02a : 0xff5a2a;
+    g.fillStyle(col, alpha).fillPoints([V(cx + Math.cos(a - w) * r0, cy + Math.sin(a - w) * r0 * 0.9), V(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1 * 0.9), V(cx + Math.cos(a + w) * r0, cy + Math.sin(a + w) * r0 * 0.9)], true);
+    g.lineStyle(1, 0xffe070, alpha).strokePoints([V(cx + Math.cos(a - w) * r0, cy + Math.sin(a - w) * r0 * 0.9), V(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1 * 0.9), V(cx + Math.cos(a + w) * r0, cy + Math.sin(a + w) * r0 * 0.9)], true);
+  }
+}

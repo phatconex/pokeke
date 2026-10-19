@@ -14,10 +14,19 @@ export interface LegendDef {
   levitate: number;
   /** màu hào quang / lá chắn */
   colors: number[];
+  /** hạt hào quang (texture puff) */
+  puff?: string;
+  /** kiểu chắn tự động: 'hex' (lục giác, đẩy lùi) · 'flame' (áo lửa: đốt kẻ ở gần) */
+  shield?: 'hex' | 'flame';
+  /** Tái sinh: 1 lần mỗi trận, khi bị hạ → hồi tỉ lệ máu này + đốt địch quanh */
+  rebirth?: number;
+  /** càng ít máu đòn càng mạnh: + tối đa tỉ lệ này khi máu sắp hết */
+  lowHpBonus?: number;
 }
 
 export const LEGENDARY: Record<string, LegendDef> = {
   mewtwo: { energyMax: 150, regenPerSec: 12, ultCooldownMs: 22000, ultChargeMult: 1.6, shieldEveryMs: 12000, levitate: 10, colors: [0x3a5aff, 0x7a2aff, 0xc030ff, 0xff40c8] },
+  moltres: { energyMax: 140, regenPerSec: 11, ultCooldownMs: 24000, ultChargeMult: 1.5, shieldEveryMs: 13000, levitate: 12, colors: [0xff3a1a, 0xff7a2a, 0xffb02a, 0xffe070], puff: 'flamepuff', shield: 'flame', rebirth: 0.4, lowHpBonus: 0.3 },
 };
 
 export const legendOf = (speciesId: string | undefined): LegendDef | undefined => (speciesId ? LEGENDARY[speciesId] : undefined);

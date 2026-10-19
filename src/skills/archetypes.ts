@@ -18,6 +18,7 @@ import { castTelekinesis, castTimeStop } from './psyArchetypes';
 import { castBarrier, castBoomerang, castMindBreak, castSingularity } from './legendArchetypes';
 import { castCounter, castCross, castKoMode, castSlam, castStrike } from './fightArchetypes';
 import * as TA from './typeArchetypes';
+import * as BA from './birdArchetypes';
 import { castAbsoluteZero, castBlizzard, castGale, castLance } from './iceArchetypes';
 
 /** Ra chiêu theo nguyên mẫu đã phân giải (spec.archetype khác null) */
@@ -59,6 +60,9 @@ export function castArchetype(h: SkillHost, f: Fighter, m: MoveDef, spec: SkillS
     case 'swarm': return TA.castSwarm(h, f, m, spec.params, dir);
     case 'triattack': return TA.castTriAttack(h, f, m, spec.params);
     case 'beam': return TA.castBeam(h, f, m, spec.params, dir);
+    case 'arcshot': return BA.castArcShot(h, f, m, spec.params, dir);
+    case 'phoenixdash': return BA.castPhoenixDash(h, f, m, spec.params, dir);
+    case 'xslash': return BA.castXSlash(h, f, m, spec.params, dir);
     default: return undefined;
   }
 }
@@ -77,6 +81,7 @@ export function castUltArchetype(h: SkillHost, f: Fighter, spec: UltSpec, u: Ult
   else if (spec.archetype === 'flock') TA.castFlock(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'wavefront') TA.castWavefront(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'chasm') TA.castChasm(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'phoenix') BA.castPhoenix(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'hyperbeam') TA.castHyperBeamUlt(h, f, spec.params, u, mv, amount);
 }
 

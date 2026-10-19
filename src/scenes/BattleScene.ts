@@ -26,6 +26,7 @@ import type { HazardDef, HazardFx, HazardHit, Solid } from '../data/hazards';
 import { legendOf } from '../data/legendary';
 import { impactRays, powBurst } from '../fx/FightFx';
 import { drawHexCluster, hexShatter } from '../fx/PsyFx';
+import { flameMantle, scatter as scatterFx } from '../fx/TypeFx';
 import { iceBlock, radialShards, shardBurst } from '../fx/IceFx';
 import { finalizeSpecies, queueSheets } from '../systems/spriteLoader';
 import { dexOf, markCaught, markSeen } from '../game/dex';
@@ -62,6 +63,7 @@ const ULT_NAME_BY_SPECIES: Record<string, { vi: string; en: string }> = {
   kadabra: { vi: 'Ngưng Đọng Thời Gian', en: 'Time Stop' },
   alakazam: { vi: 'Ngưng Đọng Thời Gian', en: 'Time Stop' },
   mewtwo: { vi: 'Phá Vỡ Tâm Trí', en: 'Mind Break' },
+  moltres: { vi: 'Tái Sinh Phượng Hoàng', en: 'Phoenix Rebirth' },
   dewgong: { vi: 'Kỷ Băng Hà', en: 'Ice Age' },
   machoke: { vi: 'Loạt Đấm', en: 'Flurry' },
   machamp: { vi: 'Đấm Hạ Gục', en: 'K.O. Rush' },
@@ -314,6 +316,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private armorUntil = 0;
   private armorGainAt = 0;
   private toxicTickAt = 0;
+  private rebirthUsed = false;
   /** Bài hướng dẫn: bộ đếm hành động cho TutorialScene đọc */
   tutorial = false;
   tutReplay = false;
@@ -472,6 +475,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.armorStacks = 0;
     this.armorUntil = 0;
     this.toxicTickAt = 0;
+    this.rebirthUsed = false;
     this.swarmUntil = 0;
     this.swarmReadyAt = 0;
     this.swarmBugs = [];
@@ -2066,11 +2070,14 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (this.clock >= this.legendLiftPause) p.anim.lift = lg.levitate + Math.sin(this.clock / 380) * 1.5;
     if (this.clock >= this.legendNextPuffAt) {
       this.legendNextPuffAt = this.clock + 110;
-      this.fx.puff('psypuff', p.x + (Math.random() - 0.5) * 16, p.feetY - 8 - Math.random() * 26, 1);
+      this.fx.puff(lg.puff ?? 'psypuff', p.x + (Math.random() - 0.5) * 16, p.feetY - 8 - Math.random() * 26, 1);
     }
     if (!this.legendGfx) this.legendGfx = this.add.graphics().setDepth(99994);
     this.legendGfx.clear();
-    if (this.legendShieldOn) drawHexCluster(this.legendGfx, p.x, p.chestY, 8, lg.colors, 0.55 + 0.25 * Math.sin(this.clock / 110));
+    if (this.legendShieldOn) {
+      if (lg.shield === 'flame') flameMantle(this.legendGfx, p.x, p.chestY, this.clock, 0.55 + 0.25 * Math.sin(this.clock / 110));
+      else drawHexCluster(this.legendGfx, p.x, p.chestY, 8, lg.colors, 0.55 + 0.25 * Math.sin(this.clock / 110));
+    }
   }
 
   /** Vụ nổ khi trúng nặng: đốm trắng sáng + tia tỏa mọi hướng (chí mạng = lớn, rất hiệu quả = vừa) */
@@ -2233,6 +2240,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (moveCrit) raw *= 1.8;
     else if (statCrit) raw *= CRIT_MULT;
     raw *= this.comboMult * (SPECIES_DMG_MULT[this.player.species.id] ?? 1);
+    const lgb = legendOf(this.player.species.id)?.lowHpBonus;
+    if (lgb) raw *= 1 + lgb * (1 - this.player.hp / Math.max(1, this.player.maxHp));
     if (!m.shatterChild && m.id !== 'toxicTick') raw *= this.typeMechanicsOnHit(e, m, amount, quiet);
     if ((m.castSlot === 'L' || m.castSlot === 'U') && this.clock < this.counterBuff.until) raw *= this.counterBuff.mult;
     // Giác đấu – Va chạm: bị đánh văng mạnh thì trong 0,45s đâm địch khác sẽ gây sát thương cho cả hai
@@ -2471,11 +2480,15 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (lg && f === this.player && this.legendShieldOn) {
       this.legendShieldOn = false;
       this.legendShieldAt = this.clock + lg.shieldEveryMs;
-      this.fx.floatingLabel(f.x, f.chestY - 24, t('battle.barrier'), '#ff9ad0');
-      hexShatter(this, f.x, f.chestY, 18, lg.colors);
+      const flame = lg.shield === 'flame';
+      this.fx.floatingLabel(f.x, f.chestY - 24, flame ? t('battle.flameMantle') : t('battle.barrier'), flame ? '#ffb02a' : '#ff9ad0');
+      if (flame) {
+        scatterFx(this, 'fireFeather', f.x, f.chestY, 10, 44, undefined, 1.3);
+        this.fx.fireHit(f.x, f.chestY, true);
+      } else hexShatter(this, f.x, f.chestY, 18, lg.colors);
       this.fx.shake(0.008, 140);
-      playSfx('swap');
-      const push: MoveDef = { ...MOVES.withdraw, id: 'legendBarrier', type: 'psychic', power: 0, knockback: 280, status: undefined, castSlot: undefined, shatterChild: true };
+      playSfx(flame ? 'flame' : 'swap');
+      const push: MoveDef = { ...MOVES.withdraw, id: 'legendBarrier', type: flame ? 'fire' : 'psychic', power: 0, knockback: 280, status: undefined, castSlot: undefined, shatterChild: true };
       for (const e of this.enemies) {
         if (e.dead || !e.targetable) continue;
         const dx = e.x - f.x;
@@ -2483,6 +2496,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         const d = Math.hypot(dx, dy / 0.8);
         if (d > 70 + e.radius) continue;
         this.damageEnemy(e, push, f.power * 8, dx / (d || 1), dy / (d || 1), true, true);
+        if (flame) e.applyStatus('burn', 3000, this.clock, f.power * 1.2);
       }
       return;
     }
@@ -2496,6 +2510,32 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       this.counter = null;
       this.fx.floatingLabel(f.x, f.chestY - 22, t('battle.counter'), '#ffd34a');
       fn();
+    }
+    // Huyền thoại – Tái Sinh: 1 lần mỗi trận, đòn sắp hạ gục → bùng cháy, hồi máu, đốt địch quanh
+    if (lg?.rebirth && f === this.player && !this.rebirthUsed && !f.isInvulnerable(this.clock)) {
+      const est = Math.max(1, Math.round(amount * mult * f.takenMult * (this.clock < f.guardUntil ? f.guardMult : 1)));
+      if (est >= f.hp) {
+        this.rebirthUsed = true;
+        f.member.hp = Math.max(1, Math.round(f.maxHp * lg.rebirth));
+        f.invulnUntil = this.clock + 1600;
+        this.fx.floatingLabel(f.x, f.chestY - 34, t('battle.rebirth'), '#ffb02a');
+        this.cameras.main.flash(260, 255, 160, 50, false);
+        this.fx.shake(0.016, 320);
+        playSfx('roar');
+        scatterFx(this, 'fireFeather', f.x, f.chestY, 22, 80, undefined, 1.5);
+        this.fx.fireHit(f.x, f.chestY, true);
+        const blast: MoveDef = { ...MOVES.withdraw, id: 'rebirth', type: 'fire', power: 0, knockback: 360, status: undefined, castSlot: undefined, shatterChild: true };
+        for (const e of this.enemies) {
+          if (e.dead || !e.targetable) continue;
+          const dx = e.x - f.x;
+          const dy = e.y - f.y;
+          const d = Math.hypot(dx, dy / 0.8);
+          if (d > 110 + e.radius) continue;
+          this.damageEnemy(e, blast, f.power * 14, dx / (d || 1), dy / (d || 1), true, true);
+          e.applyStatus('burn', 4000, this.clock, f.power * 1.5);
+        }
+        return;
+      }
     }
     const dmg = f.takeDamage(amount * mult, this.clock);
     if (!dmg) return;
