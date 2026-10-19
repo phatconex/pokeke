@@ -65,7 +65,7 @@ const STUB = { id: 'enemySkill', name: '', type: 'normal', power: 0, cooldownMs:
 
 /** gọi mỗi khung từ Enemy/Boss.update khi đã biết mục tiêu */
 export function tickEnemySkill(e: Enemy, ctx: BattleCtx, target: Fighter, boss = false) {
-  if (e.dead || e.dummy || e.beingCaught) return;
+  if (e.dead || e.dummy || e.beingCaught || e.skillsOff) return;
   const now = ctx.clock;
   if (e.nextSkillAt === 0) e.nextSkillAt = now + (e.trainer || boss ? 900 + Math.random() * 1500 : 2500 + Math.random() * 5000);
   if (now < e.nextSkillAt || e.isStunned(now)) return;

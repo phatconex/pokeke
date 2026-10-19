@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
 import { scatter } from '../fx/TypeFx';
 import { leafBurst } from '../fx/GrassFx';
-import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, PLAYER, POTION, SKILL_UNLOCK, SPAWN, STAGE_REWARD, STAGE_TUNING, SURVIVAL, SWITCH, TRAINER, arenaSize } from '../config/balance';
+import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, PLAYER, POTION, SKILL_UNLOCK, SPAWN, STAGE_REWARD, STAGE_RAMP, STAGE_TUNING, SURVIVAL, stageRamp, SWITCH, TRAINER, arenaSize } from '../config/balance';
 import { makeFrame } from '../art/chapters';
 import { arenaLayout, generateArena } from '../art/arenaArt';
 import { METRONOME_POOL, MOVES, MoveDef, slotScaledMove, STATUS_COLOR, upgradeMove } from '../data/moves';
 import { hasUltimate, POKEMON, SKILL_SLOTS, SkillSlot } from '../data/pokemon';
-import { STAGE_BY_ID, StageDef } from '../data/stages';
+import { STAGES, STAGE_BY_ID, StageDef } from '../data/stages';
 import { CRIT_MULT } from '../data/stats';
 import { BADGES, GYMS, GymDef } from '../data/trainers';
 import { effectiveness, PokemonType, TYPE_COLOR } from '../data/types';
@@ -2740,6 +2740,15 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       markSeen(getGame(), p.species);
       e.catchable = !trainer && !!this.stage?.catchable?.includes(p.species);
       applyStageTuning(e, trainer ? STAGE_TUNING.gymHpMult : STAGE_TUNING.hpMult, STAGE_TUNING.dmgMult, STAGE_TUNING.rangedCooldownMult);
+      // độ khó tăng dần theo thứ tự ải (ải đầu nhẹ hơn)
+      if (this.stage) {
+        const idx = STAGES.findIndex((st) => st.id === this.stage!.id);
+        const r = stageRamp(idx, trainer);
+        e.maxHp = e.hp = Math.max(1, Math.round(e.maxHp * r.hp));
+        e.dmgMult *= r.dmg;
+        e.rangedCdMult /= Math.max(0.5, r.dmg);
+        if (!trainer && idx < STAGE_RAMP.wildSkillsFromIndex) e.skillsOff = true;
+      }
       // Pokémon của thủ lĩnh: đánh đau hơn, ra đòn dồn dập hơn, chạy nhanh hơn (TRAINER)
       if (trainer) {
         const badges = getGame()?.badges.length ?? 0;

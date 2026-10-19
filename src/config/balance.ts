@@ -340,6 +340,25 @@ const CORE_ENEMY_STATS: Record<string, EnemyStats> = {
 export const ENEMY_STATS: Record<string, EnemyStats> = Object.assign({}, CORE_ENEMY_STATS, ...CHAPTERS.map((c) => c.enemyStats));
 
 /** Độ khó của các ải (nhân lên chỉ số đối thủ trong chế độ bản đồ ải) */
+/** Độ khó tăng dần theo thứ tự ải: ải đầu nhẹ (địch ít máu, đánh yếu, ra đòn thưa), tới `fullAtIndex` thì như bình thường. */
+export const STAGE_RAMP = {
+  /** hệ số sát thương địch ở ải đầu tiên */
+  startDmg: 0.5,
+  startHp: 0.7,
+  /** vị trí ải (trong STAGES) đạt độ khó đủ */
+  fullAtIndex: 9,
+  /** hội quán không xuống dưới mức này */
+  gymFloor: 0.8,
+  /** Pokémon hoang dã chỉ ra chiêu đặc trưng từ ải có vị trí ≥ số này */
+  wildSkillsFromIndex: 4,
+};
+export function stageRamp(index: number, gym: boolean): { dmg: number; hp: number } {
+  const k = Math.max(0, Math.min(1, (index - 1) / (STAGE_RAMP.fullAtIndex - 1)));
+  const dmg = STAGE_RAMP.startDmg + (1 - STAGE_RAMP.startDmg) * k;
+  const hp = STAGE_RAMP.startHp + (1 - STAGE_RAMP.startHp) * k;
+  return gym ? { dmg: Math.max(dmg, STAGE_RAMP.gymFloor), hp: Math.max(hp, STAGE_RAMP.gymFloor) } : { dmg, hp };
+}
+
 export const STAGE_TUNING = {
   /** (trước: 3.8 / 2.5) – ải thường khó hơn ~20% */
   hpMult: 4.4,

@@ -128,3 +128,6 @@ Cơ chế riêng (BattleScene.typeMechanicsOnHit): Rồng – Cơn giận (100 �
 ### Hiệu ứng trúng nặng + chiêu đặc trưng của địch (ải, hội quán, boss)
 - Chí mạng / rất hiệu quả: `BattleScene.impactFlash` (đốm trắng + tia tỏa), số chí mạng to có viền trắng (`damageNumber(..., crit)`), nhãn "Critical hit!" cạnh số.
 - Địch: `src/entities/EnemySkills.ts` – mỗi Pokémon địch (ải, hội quán, boss) có 2 chiêu luân phiên theo HỆ chính (Pidgey = Bay): đạn xòe cùng hệ (volley), ô nổ báo trước theo hệ (zone), sóng xung kích quanh thân (nova). Cooldown: boss hội quán 2,6s · boss thường 3,6s · hội quán 3,0s (báo trước ngắn 30%) · đầu đàn 6,5s · hoang dã 9,5s (nhân rangedCdMult của độ khó). Đòn nào cũng có báo trước; hình nổ dùng chính dialect của hệ đó. Chỉnh bảng `T` trong file để đổi số lượng/tốc độ/màu từng hệ.
+
+### Độ khó tăng dần theo ải (`STAGE_RAMP`, `stageRamp` trong config/balance.ts)
+Trước đây ải dùng hệ số phẳng (máu ×4,4, sát thương ×2,9) từ ải đầu. Giờ nhân thêm độ dốc theo vị trí ải trong STAGES: ải 1 = sát thương ×0,5, máu ×0,7, địch ra đòn thưa gấp đôi; tăng đều tới vị trí 9 thì đủ. Hội quán không xuống dưới ×0,8. Pokémon hoang dã chỉ có chiêu đặc trưng từ ải vị trí 4 trở đi (`wildSkillsFromIndex`).

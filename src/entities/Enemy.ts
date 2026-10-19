@@ -31,6 +31,8 @@ export class Enemy {
   /** chiêu đặc trưng theo hệ (EnemySkills): lần tới + chỉ số luân phiên */
   nextSkillAt = 0;
   skillIdx = 0;
+  /** tắt chiêu đặc trưng (ải đầu) */
+  skillsOff = false;
   /** hệ số nghỉ giữa các đòn vồ / đào đất (Pokémon thủ lĩnh < 1: dồn dập hơn) */
   attackGapMult = 1;
   /** hệ số tốc độ chạy (Pokémon thủ lĩnh nhanh hơn) */
