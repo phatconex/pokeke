@@ -6,13 +6,13 @@ import Phaser from 'phaser';
 export const MAP_W = 640;
 export const MAP_H = 360;
 
-type RGB = [number, number, number];
+export type RGB = [number, number, number];
 
-function hexToRgb(c: number): RGB {
+export function hexToRgb(c: number): RGB {
   return [(c >> 16) & 255, (c >> 8) & 255, c & 255];
 }
 
-function rng(seed: number) {
+export function rng(seed: number) {
   let s = seed >>> 0;
   return () => {
     s = (s * 1664525 + 1013904223) >>> 0;
@@ -21,7 +21,7 @@ function rng(seed: number) {
 }
 
 /** value noise 2D có nội suy mượt */
-function makeNoise(seed: number) {
+export function makeNoise(seed: number) {
   const r = rng(seed);
   const size = 256;
   const perm = new Float32Array(size * size);
@@ -52,14 +52,14 @@ function makeNoise(seed: number) {
   };
 }
 
-function distToSeg(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
+export function distToSeg(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
   const dx = bx - ax;
   const dy = by - ay;
   const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy || 1)));
   return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
 }
 
-const PAL = {
+export const PAL = {
   meadow: [0x7cc45a, 0x6cb84e, 0x8ad066, 0x5fae47].map(hexToRgb),
   meadowDark: [0x4f9a3e, 0x458c38].map(hexToRgb),
   forestFloor: [0x3f7f34, 0x37752f, 0x467f3a].map(hexToRgb),

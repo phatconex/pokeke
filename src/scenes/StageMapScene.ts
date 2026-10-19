@@ -1,6 +1,7 @@
 // Bản đồ ải của vùng: chọn ải, xem thông tin, vào Trung tâm Pokémon, đội hình.
 import Phaser from 'phaser';
-import { generateRegionMap } from '../art/regionMapArt';
+import { generateKantoMap, KMAP_H, KMAP_W } from '../art/kantoMapArt';
+import { KANTO_POS, KANTO_ROADS } from '../data/kantoLayout';
 import { levelCapFor, STAGE_REWARD } from '../config/balance';
 import { isUnlocked, NodeKind, STAGES, StageDef } from '../data/stages';
 import { BADGES, GYMS } from '../data/trainers';
@@ -16,6 +17,12 @@ import { fmtNum, t } from '../i18n';
 import { chapterTitle, gymText, stageLabel, stageName } from '../i18n/content';
 
 const S = 2;
+/** vị trí ải trên bản đồ Kanto v2 (pixel thế giới) */
+const posOf = (n: StageDef) => {
+  const p = KANTO_POS[n.id] ?? { x: n.x * 1.5, y: n.y * 1.5 };
+  return { x: p.x * S, y: p.y * S };
+};
+const TOWN_KINDS: NodeKind[] = ['start', 'gym', 'league', 'champion'];
 
 export class StageMapScene extends Phaser.Scene {
   private game_!: GameState;
@@ -28,6 +35,10 @@ export class StageMapScene extends Phaser.Scene {
   private topRight: Phaser.GameObjects.Text[] = [];
   private dialog!: DialogBox;
   private moving = false;
+  /** lớp thế giới (bản đồ + ải + nhân vật) – dịch chuyển để "cuộn camera", giao diện đứng yên */
+  private world!: Phaser.GameObjects.Container;
+  private mini: Phaser.GameObjects.GameObject[] = [];
+  private miniView!: Phaser.GameObjects.Rectangle;
   private fromData: { from?: string; intro?: boolean } = {};
 
   constructor() {
@@ -51,8 +62,12 @@ export class StageMapScene extends Phaser.Scene {
     const { width } = this.scale;
     this.input.setDefaultCursor('default');
 
-    if (!this.textures.exists('map-kanto')) generateRegionMap(this, 'map-kanto', { path: STAGES });
-    this.add.image(0, 0, 'map-kanto').setOrigin(0).setScale(S);
+    if (!this.textures.exists('map-kanto2')) {
+      const byId = Object.fromEntries(STAGES.map((st) => [st.id, st]));
+      generateKantoMap(this, 'map-kanto2', { roads: KANTO_ROADS.map((r) => r.filter((id) => byId[id]).map((id) => { const p = posOf(byId[id]); return { x: p.x / S, y: p.y / S }; })) });
+    }
+    this.world = this.add.container(0, 0);
+    this.world.add(this.add.image(0, 0, 'map-kanto2').setOrigin(0).setScale(S));
     this.cameras.main.fadeIn(300, 0, 0, 0);
 
     this.drawPathAndNodes();
@@ -61,11 +76,14 @@ export class StageMapScene extends Phaser.Scene {
     const want = STAGES.findIndex((st) => st.id === this.game_.cursor);
     this.cursor = want >= 0 && this.unlocked(want) ? want : this.furthestUnlocked();
     const n = STAGES[this.cursor];
-    this.ring = this.add.circle(n.x * S, n.y * S, 24).setStrokeStyle(3, 0xffffff, 0.9);
-    this.tweens.add({ targets: this.ring, scale: 1.25, alpha: 0, duration: 900, repeat: -1 });
+    const np = posOf(n);
+    this.ring = this.add.circle(np.x, np.y, 22).setStrokeStyle(3, 0xffd34a, 0.95);
+    this.tweens.add({ targets: this.ring, scale: 1.3, alpha: 0, duration: 900, repeat: -1 });
     this.hero = this.add.sprite(0, -40, `trainer-${this.game_.avatar ?? 'satoshi'}`, 0).setScale(2);
-    this.heroBox = this.add.container(n.x * S, n.y * S, [this.hero]).setDepth(10);
+    this.heroBox = this.add.container(np.x, np.y, [this.hero]);
     this.tweens.add({ targets: this.hero, y: -44, duration: 450, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    this.world.add([this.ring, this.heroBox]);
+    this.scrollTo(np.x, np.y, false);
 
     // ---- thanh trên ----
     pixelPanel(this, 10, 8, 440, 64);
@@ -112,6 +130,7 @@ export class StageMapScene extends Phaser.Scene {
 
     this.info = this.add.container(0, 0);
     this.refreshInfo();
+    this.buildMini();
     this.dialog = new DialogBox(this);
 
     // ---- điều khiển ----
@@ -121,6 +140,11 @@ export class StageMapScene extends Phaser.Scene {
     kb.on('keydown-A', nav(-1));
     kb.on('keydown-RIGHT', nav(1));
     kb.on('keydown-D', nav(1));
+    kb.on('keydown-UP', () => this.jumpTown(-1));
+    kb.on('keydown-W', () => this.jumpTown(-1));
+    kb.on('keydown-DOWN', () => this.jumpTown(1));
+    kb.on('keydown-S', () => this.jumpTown(1));
+    kb.on('keydown-M', () => this.toggleMini());
     kb.on('keydown-ENTER', () => this.confirm());
     kb.on('keydown-SPACE', () => this.confirm());
     kb.on('keydown-T', () => !this.blocked() && this.openTeam());
@@ -161,57 +185,123 @@ export class StageMapScene extends Phaser.Scene {
 
   private drawPathAndNodes() {
     const g = this.add.graphics();
-    for (let i = 0; i < STAGES.length - 1; i++) {
-      const a = STAGES[i];
-      const b = STAGES[i + 1];
-      const done = stageCleared(this.game_, a.id) && stageCleared(this.game_, b.id);
-      const open = this.unlocked(i + 1);
-      const len = Math.hypot(b.x - a.x, b.y - a.y) * S;
-      const steps = Math.floor(len / 8);
-      for (let k = 0; k < steps; k++) {
-        if (!done && k % 2 === 1) continue;
-        const t0 = k / steps;
-        const t1 = Math.min(1, (k + (done ? 1 : 0.6)) / steps);
-        const x0 = (a.x + (b.x - a.x) * t0) * S;
-        const y0 = (a.y + (b.y - a.y) * t0) * S;
-        const x1 = (a.x + (b.x - a.x) * t1) * S;
-        const y1 = (a.y + (b.y - a.y) * t1) * S;
-        g.lineStyle(7, 0x1a2a18, 0.55).lineBetween(x0, y0, x1, y1);
-        g.lineStyle(3, done ? 0xffd34a : open ? 0xf0f0e0 : 0x9aa598, done ? 1 : open ? 0.9 : 0.6).lineBetween(x0, y0, x1, y1);
+    this.world.add(g);
+    const byId = Object.fromEntries(STAGES.map((st, i) => [st.id, { st, i }]));
+    // tuyến đường: chấm trắng (đã mở) / vàng (đã thắng 2 đầu) / xám (chưa mở)
+    for (const road of KANTO_ROADS) {
+      for (let k = 0; k < road.length - 1; k++) {
+        const A = byId[road[k]];
+        const B = byId[road[k + 1]];
+        if (!A || !B) continue;
+        const a = posOf(A.st);
+        const b = posOf(B.st);
+        const done = (A.st.kind === 'start' || stageCleared(this.game_, A.st.id)) && stageCleared(this.game_, B.st.id);
+        const open = this.unlocked(A.i) && this.unlocked(B.i);
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        for (let d = 14; d < len - 14; d += 13) {
+          const x = a.x + ((b.x - a.x) * d) / len;
+          const y = a.y + ((b.y - a.y) * d) / len;
+          g.fillStyle(0x1a2a18, 0.5).fillRect(x - 3, y - 2, 6, 6);
+          g.fillStyle(done ? 0xffd34a : open ? 0xffffff : 0x9aa598, open ? 1 : 0.7).fillRect(x - 2, y - 3, 4, 4);
+        }
       }
     }
     const iconName: Record<NodeKind, string> = { start: 'house', stage: '', elite: 'skull', gym: 'gym', event: 'star', rival: 'people', league: 'crown', champion: 'trophy' };
-    let num = 0;
     STAGES.forEach((n, i) => {
-      const x = n.x * S;
-      const y = n.y * S;
+      const { x, y } = posOf(n);
       const cleared = n.kind !== 'start' && stageCleared(this.game_, n.id);
       const open = this.unlocked(i);
-      const big = n.kind === 'gym' || n.kind === 'league' || n.kind === 'champion' || n.kind === 'start';
-      const r = big ? 17 : n.kind === 'elite' || n.kind === 'event' ? 13 : 11;
-      const fill = !open ? 0x2a3428 : n.kind === 'gym' ? 0x8a3a10 : n.kind === 'rival' ? 0x2a4a9a : n.kind === 'league' || n.kind === 'champion' ? 0x3a3a7a : n.kind === 'elite' ? 0x6a1a1a : n.kind === 'event' ? 0x7a5a10 : 0x1f4a26;
-      g.fillStyle(0x0b120d, 0.6).fillCircle(x + 2, y + 3, r + 3);
+      const town = TOWN_KINDS.includes(n.kind);
+      const r = town ? 18 : n.kind === 'stage' ? 9 : 13;
+      const fill = !open ? 0x2a3428 : n.kind === 'gym' ? 0x8a3a10 : n.kind === 'start' ? 0xa03030 : n.kind === 'rival' ? 0x2a4a9a : n.kind === 'league' || n.kind === 'champion' ? 0x3a3a7a : n.kind === 'elite' ? 0x6a1a1a : n.kind === 'event' ? 0x7a5a10 : 0x1f4a26;
+      g.fillStyle(0x0b120d, 0.55).fillEllipse(x + 2, y + 4, (r + 3) * 2, (r + 2) * 1.8);
       g.fillStyle(fill, open ? 1 : 0.85).fillCircle(x, y, r);
-      g.lineStyle(3, cleared ? 0xffd34a : open ? 0xffffff : 0x8a9a88, 1).strokeCircle(x, y, r);
-      if (n.kind === 'stage') num++;
+      g.lineStyle(town ? 3 : 2, cleared ? 0x9fe08a : open ? 0xf4f1e6 : 0x8a9a88, 1).strokeCircle(x, y, r);
+      const objs: Phaser.GameObjects.GameObject[] = [];
       const badge = n.gymId ? BADGES[GYMS[n.gymId]?.badgeId ?? ''] : undefined;
-      if (cleared && badge) this.add.image(x, y, badge.texture).setScale(2);
-      else if (cleared) icon(this, x, y + 1, 'check', 2);
-      else if (!open && n.playable) icon(this, x, y, 'lock', 1.5);
-      else if (n.kind === 'stage') text(this, x, y, String(num), 12, open ? '#ffffff' : '#c0c8bc').setOrigin(0.5);
-      else icon(this, x, y, iconName[n.kind], 2).setAlpha(open ? 1 : 0.7);
-      // sao đã đạt
+      if (cleared && badge) objs.push(this.add.image(x, y, badge.texture).setScale(2));
+      else if (!open && n.playable && n.kind !== 'stage') objs.push(icon(this, x, y, 'lock', 1.5));
+      else if (n.kind !== 'stage') objs.push(icon(this, x, y, iconName[n.kind], town ? 2 : 1.5).setAlpha(open ? 1 : 0.7));
+      if (cleared && !badge) {
+        g.fillStyle(0x9fe08a, 1).fillCircle(x + r * 0.72, y - r * 0.72, 5);
+        g.lineStyle(1.5, 0x10301a, 1).strokeCircle(x + r * 0.72, y - r * 0.72, 5);
+      }
+      // sao đã đạt (chỉ thị trấn / điểm lớn – ải đường đi xem ở dải dưới)
       const stars = this.game_.stages[n.id]?.stars ?? 0;
-      if (stars) for (let k = 0; k < 3; k++) icon(this, x - 12 + k * 12, y - r - 8, k < stars ? 'star' : 'starEmpty', 0.75);
-      if (n.label) text(this, x, y + r + 12, stageLabel(n) ?? '', 12, open ? '#ffffff' : '#d8e0d4').setOrigin(0.5);
+      if (stars && n.kind !== 'stage') for (let k = 0; k < 3; k++) objs.push(icon(this, x - 12 + k * 12, y - r - 8, k < stars ? 'star' : 'starEmpty', 0.75));
+      if (n.label && n.kind !== 'stage') {
+        const lbl = text(this, x, y + r + 13, stageLabel(n) ?? '', town ? 12 : 10, open ? '#ffffff' : '#d8e0d4').setOrigin(0.5);
+        const bg = this.add.rectangle(x, y + r + 13, lbl.width + 12, lbl.height + 4, 0x0b0f1e, 0.78).setStrokeStyle(town ? 2 : 1, town ? 0xffd34a : 0xf4f1e6, 0.9);
+        objs.push(bg, lbl);
+      }
       // click để chọn
-      const hit = this.add.circle(x, y, r + 6, 0xffffff, 0.001).setInteractive({ useHandCursor: open });
+      const hit = this.add.circle(x, y, r + 8, 0xffffff, 0.001).setInteractive({ useHandCursor: open });
       hit.on('pointerdown', () => {
         if (this.blocked() || !open) return;
         if (i === this.cursor) this.confirm();
         else this.moveTo(i);
       });
+      objs.push(hit);
+      this.world.add(objs);
     });
+  }
+
+  /** dịch lớp thế giới để điểm (x, y) nằm giữa vùng nhìn (trên dải thông tin) */
+  private scrollTo(x: number, y: number, animate = true) {
+    const { width, height } = this.scale;
+    const W = KMAP_W * S;
+    const H = KMAP_H * S;
+    const tx = Phaser.Math.Clamp(width / 2 - x, width - W, 0);
+    const ty = Phaser.Math.Clamp((height - 120) / 2 + 30 - y, height - 120 - H, 0);
+    if (animate) this.tweens.add({ targets: this.world, x: tx, y: ty, duration: 320, ease: 'Sine.inOut', onUpdate: () => this.syncMini() });
+    else {
+      this.world.setPosition(tx, ty);
+      this.syncMini();
+    }
+  }
+
+  /** bản đồ nhỏ góc phải (M bật/tắt) */
+  private buildMini() {
+    const { width } = this.scale;
+    const w = 192;
+    const h = Math.round((w * KMAP_H) / KMAP_W);
+    const x = width - w - 14;
+    const y = 82;
+    const box = pixelPanel(this, x - 6, y - 6, w + 12, h + 12);
+    const img = this.add.image(x, y, 'map-kanto2').setOrigin(0).setDisplaySize(w, h);
+    this.miniView = this.add.rectangle(x, y, 10, 10).setOrigin(0).setStrokeStyle(2, 0xffd34a, 1);
+    const dot = this.add.circle(0, 0, 3, 0xff4040).setStrokeStyle(1, 0xffffff);
+    this.mini = [...(Array.isArray(box) ? box : [box]), img, this.miniView, dot];
+    this.syncMini();
+  }
+
+  private syncMini() {
+    if (!this.miniView || !this.world) return;
+    const { width, height } = this.scale;
+    const w = 192;
+    const k = w / (KMAP_W * S);
+    const x0 = width - w - 14;
+    const y0 = 82;
+    this.miniView.setPosition(x0 + -this.world.x * k, y0 + -this.world.y * k).setSize(width * k, (height - 120) * k);
+    const dot = this.mini[this.mini.length - 1] as Phaser.GameObjects.Arc;
+    if (this.heroBox) dot.setPosition(x0 + this.heroBox.x * k, y0 + this.heroBox.y * k);
+  }
+
+  private toggleMini() {
+    const v = !(this.mini[0] as unknown as Phaser.GameObjects.Components.Visible).visible;
+    for (const o of this.mini) (o as unknown as Phaser.GameObjects.Components.Visible).setVisible(v);
+  }
+
+  /** ↑ ↓: nhảy tới thị trấn / hội quán trước-sau đã mở */
+  private jumpTown(dir: number) {
+    if (this.blocked()) return;
+    let i = this.cursor + dir;
+    while (i >= 0 && i < STAGES.length && !(TOWN_KINDS.includes(STAGES[i].kind) && this.unlocked(i))) i += dir;
+    if (i < 0 || i >= STAGES.length) {
+      playSfx('warn');
+      return;
+    }
+    this.moveTo(i);
   }
 
   // ======================================================================= chọn ải
@@ -235,13 +325,16 @@ export class StageMapScene extends Phaser.Scene {
     this.cursor = i;
     this.game_.cursor = STAGES[i].id;
     const n = STAGES[i];
+    const np = posOf(n);
     this.moving = true;
     playSfx('talk');
-    this.tweens.add({ targets: this.ring, x: n.x * S, y: n.y * S, duration: 220 });
-    this.hero.setFrame(n.x * S > this.heroBox.x ? 6 : 3);
+    this.tweens.add({ targets: this.ring, x: np.x, y: np.y, duration: 220 });
+    this.hero.setFrame(np.x > this.heroBox.x ? 6 : 3);
     this.tweens.killTweensOf(this.heroBox);
+    this.scrollTo(np.x, np.y);
+    const dist = Math.hypot(np.x - this.heroBox.x, np.y - this.heroBox.y);
     this.tweens.add({
-      targets: this.heroBox, x: n.x * S, y: n.y * S, duration: 260, ease: 'Sine.inOut',
+      targets: this.heroBox, x: np.x, y: np.y, duration: Phaser.Math.Clamp(dist * 1.6, 260, 700), ease: 'Sine.inOut',
       onComplete: () => {
         this.hero.setFrame(0);
         this.moving = false;
@@ -268,9 +361,11 @@ export class StageMapScene extends Phaser.Scene {
   private refreshInfo() {
     this.info.removeAll(true);
     const st = STAGES[this.cursor];
-    const px = 340;
-    const py = 478;
-    const items: Phaser.GameObjects.GameObject[] = [pixelPanel(this, px, py, 640, 128)];
+    const { width } = this.scale;
+    const px = 14;
+    const py = 594;
+    const PW = width - 28;
+    const items: Phaser.GameObjects.GameObject[] = [pixelPanel(this, px, py, PW, 120)];
     const rec = this.game_.stages[st.id];
     if (st.kind === 'start') {
       items.push(text(this, px + 26, py + 18, t('map.pallet.title'), 24, COLORS.gold));
@@ -284,7 +379,7 @@ export class StageMapScene extends Phaser.Scene {
         const t = text(this, px + 56, y, label, 12, color).setOrigin(0, 0.5);
         items.push(t);
         const x0 = px + 56 + t.width + 18;
-        const fit = Math.max(1, Math.floor((px + 372 - x0) / 30));
+        const fit = Math.max(1, Math.floor((px + 760 - x0) / 30));
         species.slice(0, fit).forEach((id, i) => items.push(pokemonIcon(this, id, x0 + i * 30, y, 22, false)));
         if (species.length > fit) items.push(text(this, x0 + fit * 30 - 8, y, `+${species.length - fit}`, 10, color).setOrigin(0, 0.5));
       };
@@ -306,17 +401,19 @@ export class StageMapScene extends Phaser.Scene {
         row(py + 66, 'sword', t((st.waves?.length ?? 0) === 1 ? 'map.wave1' : 'map.waves', { lv, n: st.waves?.length ?? 0 }), '#ffffff', [...new Set((st.waves ?? []).flat().map((s) => s.species))]);
         if (st.catchable?.length) row(py + 100, 'pokeball', t('map.catchable'), '#c8d0f0', st.catchable);
       }
-      for (let i = 0; i < 3; i++) items.push(icon(this, px + 390 + i * 24, py + 66, i < (rec?.stars ?? 0) ? 'star' : 'starEmpty', 1.5));
-      items.push(icon(this, px + 390, py + 100, 'coin', 2), text(this, px + 410, py + 100, `${fmtNum(Math.round((st.money ?? 0) * STAGE_REWARD.moneyMult * (rec?.clears ? STAGE_REWARD.replayMult : 1)))}${rec?.clears ? t('map.replayPay') : t('map.firstBonus')}`, 12, COLORS.gold).setOrigin(0, 0.5));
+      const sx = px + 800;
+      for (let i = 0; i < 3; i++) items.push(icon(this, sx + i * 24, py + 66, i < (rec?.stars ?? 0) ? 'star' : 'starEmpty', 1.5));
+      items.push(icon(this, sx, py + 100, 'coin', 2), text(this, sx + 20, py + 100, `${fmtNum(Math.round((st.money ?? 0) * STAGE_REWARD.moneyMult * (rec?.clears ? STAGE_REWARD.replayMult : 1)))}${rec?.clears ? t('map.replayPay') : t('map.firstBonus')}`, 12, COLORS.gold).setOrigin(0, 0.5));
       const btn = this.add.graphics();
-      btn.fillStyle(0x000000, 0.35).fillRect(px + 486, py + 30, 140, 56);
-      btn.fillStyle(0xd85a18, 1).fillRect(px + 482, py + 26, 140, 56);
-      btn.fillStyle(0xff8a3a, 1).fillRect(px + 482, py + 26, 140, 6);
-      btn.lineStyle(3, 0xffe9a0, 1).strokeRect(px + 482, py + 26, 140, 56);
-      const hit = this.add.rectangle(px + 552, py + 54, 140, 56, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
+      const bx = px + PW - 200;
+      btn.fillStyle(0x000000, 0.35).fillRect(bx + 4, py + 30, 180, 56);
+      btn.fillStyle(0xd85a18, 1).fillRect(bx, py + 26, 180, 56);
+      btn.fillStyle(0xff8a3a, 1).fillRect(bx, py + 26, 180, 6);
+      btn.lineStyle(3, 0xffe9a0, 1).strokeRect(bx, py + 26, 180, 56);
+      const hit = this.add.rectangle(bx + 90, py + 54, 180, 56, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
       hit.on('pointerdown', () => !this.blocked() && this.confirm());
-      items.push(btn, hit, text(this, px + 552, py + 54, t('map.enter'), 24, '#ffffff').setOrigin(0.5));
-      if (rec?.clears) items.push(text(this, px + 552, py + 96, t('map.clears', { n: rec.clears }), 10, '#c8d0f0').setOrigin(0.5, 0));
+      items.push(btn, hit, text(this, bx + 90, py + 54, t('map.enter'), 24, '#ffffff').setOrigin(0.5));
+      if (rec?.clears) items.push(text(this, bx + 90, py + 96, t('map.clears', { n: rec.clears }), 10, '#c8d0f0').setOrigin(0.5, 0));
     }
     this.info.add(items);
   }
