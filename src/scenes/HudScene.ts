@@ -51,6 +51,7 @@ export class HudScene extends Phaser.Scene {
     cost: Phaser.GameObjects.Text; costIcon: Phaser.GameObjects.Image;
   }[] = [];
   private energyText!: Phaser.GameObjects.Text;
+  private mechText!: Phaser.GameObjects.Text;
   private toast!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Text;
   private settingsLine!: Phaser.GameObjects.Text;
@@ -142,6 +143,7 @@ export class HudScene extends Phaser.Scene {
     pixelPanel(this, 8, 74, 262, 24);
     icon(this, 24, 86, 'bolt', 1).setDepth(3);
     this.energyText = text(this, 258, 86, '', 10, '#bfefff').setOrigin(1, 0.5).setDepth(3);
+    this.mechText = text(this, 258, 95, '', 8, '#ffffff').setOrigin(1, 0.5).setDepth(3);
     put('tl');
 
     // ---- trên giữa: tên ải ----
@@ -374,6 +376,13 @@ export class HudScene extends Phaser.Scene {
     this.bar(g, 36, 82, 160, 8, en.value / en.max, flash > 0 && Math.floor(this.time.now / 90) % 2 ? 0xff6050 : 0x60d8ff);
     g.fillStyle(0x0b0f1e, 0.8);
     for (let k = 10; k < en.max; k += 10) g.fillRect(Math.round(36 + (160 * k) / en.max), 82, 1, 8);
+    const mc = s.mech;
+    this.mechText.setText(mc ? mc.label : '').setColor(mc?.active ? '#ffe9a0' : '#c8d0e8');
+    if (mc) {
+      this.bar(g, 36, 91, 160, 5, Phaser.Math.Clamp(mc.value, 0, 1), mc.active && Math.floor(this.time.now / 120) % 2 ? 0xffffff : mc.color);
+      g.fillStyle(0x0b0f1e, 0.8);
+      for (let k = 1; k < mc.ticks; k++) g.fillRect(Math.round(36 + (160 * k) / mc.ticks), 91, 1, 5);
+    }
     this.energyText.setText(`${Math.floor(en.value)}/${en.max}`).setColor(flash > 0 ? '#ff9a8a' : '#bfefff');
 
     g = this.rg.tr;

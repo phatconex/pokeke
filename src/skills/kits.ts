@@ -959,6 +959,12 @@ const TK: Record<string, SpeciesKit> = {
   eevee: { kitType: 'normal', slots: { J: S('dashStrike', { dialect: 'normal', dashMs: 100, trailCount: 0, streaks: false, impactSfx: null }), K: S('bolt', { dialect: 'normal', scale: 0.9, texPick: ['star5'], trail: 'thin', trailPuffChance: 0.2, split: 3, splitSpreadDeg: 20, splitPowerMult: 0.5 }), L: S('dashStrike', { dialect: 'normal', dashMs: 110, trailCount: 1, streaks: true, impactSfx: null }), U: S('triattack', { dialect: 'normal', r: 26, flyMs: 420 }) } },
   snorlax: { kitType: 'normal', ult: 'hyperbeam', slots: { J: S('dashStrike', { dialect: 'normal', dashMs: 160, trailCount: 0, streaks: false, impactSfx: null }), U: S('beam', { dialect: 'normal', windupMs: 800, len: 300, width: 34, beamMs: 800 }) }, ultParams: { dialect: 'normal', windupMs: 1000, len: 380, width: 46, beamMs: 1000 } },
 };
+/** Cân bằng sát thương người chơi theo loài cho 7 hệ mới (đo bằng 1 vòng J-K-L-U trong Skill Lab, mục tiêu ~3000 ở Lv40 như Lửa/Cỏ/Siêu linh) */
+export const SPECIES_DMG_MULT: Record<string, number> = {
+  dratini: 2, dragonair: 2.2, dragonite: 2.8, geodude: 1.5, graveler: 1.5, golem: 1.6, sandshrew: 1.6, sandslash: 1.8, diglett: 1.8, dugtrio: 1.9,
+  pidgey: 1.8, pidgeotto: 1.9, pidgeot: 2.1, ekans: 1.7, arbok: 1.8, grimer: 1.7, muk: 1.9, caterpie: 1.5, butterfree: 1.7, weedle: 1.6, beedrill: 1.9,
+  rattata: 1.5, raticate: 1.6, meowth: 1.6, persian: 3, eevee: 1.8,
+};
 for (const k of Object.keys(TK)) SPECIES_KITS[k] = { ...SPECIES_KITS[k], ...TK[k] };
 
 // ---------------------------------------------------------------------------------- phân giải

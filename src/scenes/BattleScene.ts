@@ -14,7 +14,7 @@ import { pickWeighted, waveAt, WAVES } from '../data/waves';
 import { buildRivalGym, rivalSpeciesPool } from '../data/rival';
 import { ULT_GAIN, ULT_PACING, ultimateFor } from '../data/ultimates';
 import { castArchetype, castUltArchetype } from '../skills/archetypes';
-import { resolveUlt } from '../skills/kits';
+import { resolveUlt, SPECIES_DMG_MULT } from '../skills/kits';
 import type { SkillHost } from '../skills/host';
 import type { SkillSpec } from '../skills/types';
 import { lang, t, tr } from '../i18n';
@@ -146,6 +146,8 @@ export interface HudState {
   }[];
   /** năng lượng chung của Pokémon đang ra sân */
   energy: { value: number; max: number };
+  /** đồng hồ cơ chế riêng của hệ (Cơn giận / Da đá / Bầy đàn); null = hệ không có */
+  mech: { kind: 'fury' | 'armor' | 'swarm'; value: number; label: string; color: number; ticks: number; active: boolean } | null;
   switchLeft: number;
   kills: number;
   enemiesLeft: number;
@@ -312,6 +314,10 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private armorUntil = 0;
   private armorGainAt = 0;
   private toxicTickAt = 0;
+  private swarmUntil = 0;
+  private swarmReadyAt = 0;
+  private swarmLastT = 0;
+  private swarmBugs: { img: Phaser.GameObjects.Image; x: number; y: number; bite: number; ph: number }[] = [];
   private legendLiftPause = 0;
   private legendNextPuffAt = 0;
   private legendGfx: Phaser.GameObjects.Graphics | null = null;
@@ -461,6 +467,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.armorStacks = 0;
     this.armorUntil = 0;
     this.toxicTickAt = 0;
+    this.swarmUntil = 0;
+    this.swarmReadyAt = 0;
+    this.swarmBugs = [];
     this.spinTickAt = 0;
     this.bonusMoney = 0;
     this.newSpeciesMoney = 0;
@@ -826,6 +835,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.checkContactDamage();
     this.updateLegend();
     this.updateTypeMechanics();
+    this.updateSwarm();
     this.updateCollisions();
     this.updateProjectiles(dt);
     this.updateOrbs(dt);
@@ -2070,6 +2080,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         if (this.armorStacks === 5) this.fortress();
       }
     }
+    if (m.type === 'bug' && !quiet && now >= this.swarmReadyAt && this.swarmBugs.length === 0) this.spawnSwarm();
     if (m.type === 'poison') {
       if (!quiet && e.toxic < 5) {
         e.toxic++;
@@ -2192,7 +2203,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     const crit = moveCrit || statCrit;
     if (moveCrit) raw *= 1.8;
     else if (statCrit) raw *= CRIT_MULT;
-    raw *= this.comboMult;
+    raw *= this.comboMult * (SPECIES_DMG_MULT[this.player.species.id] ?? 1);
     if (!m.shatterChild && m.id !== 'toxicTick') raw *= this.typeMechanicsOnHit(e, m, amount, quiet);
     if ((m.castSlot === 'L' || m.castSlot === 'U') && this.clock < this.counterBuff.until) raw *= this.counterBuff.mult;
     // Giác đấu – Va chạm: bị đánh văng mạnh thì trong 0,45s đâm địch khác sẽ gây sát thương cho cả hai
@@ -3184,7 +3195,76 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         ...(this.ultOpen(p) ? {} : (() => { const l = slotLockShort(p.member, 'I'); return { lockTop: l.top, lockLabel: l.label }; })()),
       },
       energy: { value: p.energy, max: p.energyMax },
+      mech: this.mechHud(p),
     };
+  }
+
+  private mechHud(p: Fighter): HudState['mech'] {
+    const ty = p.species.types;
+    const now = this.clock;
+    if (ty.includes('dragon')) {
+      const on = now < this.furyUntil;
+      return { kind: 'fury', value: on ? (this.furyUntil - now) / 4000 : this.furyHits / 100, label: on ? t('battle.fury') : t('mech.fury'), color: on ? 0xff7a30 : 0x6a7aff, ticks: 0, active: on };
+    }
+    if (ty.includes('rock')) {
+      const on = this.armorStacks > 0 && now < this.armorUntil;
+      return { kind: 'armor', value: on ? this.armorStacks / 5 : 0, label: `${t('battle.stoneSkin')} ${on ? this.armorStacks : 0}/5`, color: 0xc8b890, ticks: 5, active: this.armorStacks >= 5 };
+    }
+    if (ty.includes('bug')) {
+      const on = now < this.swarmUntil;
+      const cd = Math.max(0, this.swarmReadyAt - now);
+      return { kind: 'swarm', value: on ? (this.swarmUntil - now) / 6000 : 1 - cd / 10000, label: on ? t('mech.swarmOn') : t('mech.swarm'), color: 0x9ac040, ticks: 0, active: on };
+    }
+    return null;
+  }
+
+  /** Bọ – Bầy đàn: đòn Bọ trúng gọi 3–5 con bọ đồng minh bám theo, tự cắn địch gần nhất trong 6s (hồi 10s) */
+  private spawnSwarm() {
+    const p = this.player;
+    const n = 3 + (p.level >= 25 ? 1 : 0) + (p.level >= 40 ? 1 : 0);
+    this.swarmUntil = this.clock + 6000;
+    this.swarmReadyAt = this.clock + 10000;
+    this.fx.floatingLabel(p.x, p.chestY - 30, t('mech.swarmOn'), '#c8e040');
+    for (const b of this.swarmBugs) b.img.destroy();
+    this.swarmBugs = Array.from({ length: n }, (_, i) => ({ img: this.add.image(p.x, p.chestY, 'bugdot').setScale(1.6).setDepth(99990), x: p.x, y: p.chestY, bite: 0, ph: i * 1.7 }));
+  }
+
+  private updateSwarm() {
+    const dt = Math.min(50, this.clock - this.swarmLastT);
+    this.swarmLastT = this.clock;
+    if (!this.swarmBugs.length) return;
+    const p = this.player;
+    if (this.clock >= this.swarmUntil || p.dead) {
+      for (const b of this.swarmBugs) b.img.destroy();
+      this.swarmBugs = [];
+      return;
+    }
+    const tick: MoveDef = { ...MOVES.withdraw, id: 'swarmBite', type: 'bug', power: 0, knockback: 0, status: undefined, castSlot: undefined, shatterChild: true };
+    for (const b of this.swarmBugs) {
+      let tgt: Enemy | null = null;
+      let best = 190;
+      for (const e of this.enemies) {
+        if (e.dead || !e.targetable) continue;
+        const d = Math.hypot(e.x - b.x, e.centerY - b.y);
+        if (d < best) {
+          best = d;
+          tgt = e;
+        }
+      }
+      const tx = tgt ? tgt.x + Math.cos(this.clock / 120 + b.ph) * 6 : p.x + Math.cos(this.clock / 400 + b.ph) * 26;
+      const ty = tgt ? tgt.centerY + Math.sin(this.clock / 110 + b.ph) * 5 : p.chestY + Math.sin(this.clock / 400 + b.ph) * 18;
+      const dx = tx - b.x;
+      const dy = ty - b.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const sp = ((tgt ? 190 : 140) * dt) / 1000;
+      b.x += (dx / d) * Math.min(sp, d);
+      b.y += (dy / d) * Math.min(sp, d);
+      b.img.setPosition(b.x, b.y).setDepth(b.y + 3000);
+      if (tgt && d < 10 && this.clock >= b.bite) {
+        b.bite = this.clock + 550;
+        this.damageEnemy(tgt, tick, p.power * 2.2, 0, 0, false, true);
+      }
+    }
   }
 
   // ======================================================================= mở khóa chiêu / Thử thách chiêu

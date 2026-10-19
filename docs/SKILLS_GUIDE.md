@@ -118,3 +118,9 @@ Khuôn ở `src/skills/typeArchetypes.ts`, hiệu ứng chung `src/fx/TypeFx.ts`
 Loài đã gắn: dratini/dragonair/dragonite, geodude/graveler/golem, sandshrew/sandslash/diglett/dugtrio, pidgey/pidgeotto/pidgeot, ekans/arbok, grimer/muk, caterpie/butterfree, weedle/beedrill, rattata/raticate/meowth/persian/eevee/snorlax.
 Ult nhớ có `windupMs` trong `ULT_DEFAULTS`, thiếu thì ult không bao giờ bắn.
 Cơ chế riêng (BattleScene.typeMechanicsOnHit): Rồng – Cơn giận (100 điểm → 4s sát thương ×1,6); Đá – Da đá (≤5 tầng, −8% sát thương nhận mỗi tầng, 6s, đủ 5 tầng → xung chấn Pháo đài); Độc – cộng dồn ≤5 tầng, sát thương mỗi giây theo tầng, đủ 5 → Ăn mòn (+20% sát thương nhận); Thường – không bao giờ bị kháng (≥×1). Bay: bất tử khi ở trên không (dive). CHƯA: Bọ bầy đàn làm đồng minh, Đất lún chặn cả di chuyển, Thích nghi nâng cao.
+
+### Bọ "Bầy đàn" + HUD cơ chế + cân bằng (7 hệ mới)
+- Bọ – Bầy đàn (`BattleScene.spawnSwarm/updateSwarm`): đòn Bọ trúng gọi 3–5 con bọ đồng minh (Lv25 +1, Lv40 +1) bám theo, tự cắn địch gần nhất 6s, hồi 10s.
+- Đất – Cát Lún: vào vùng cát thì chìm dần, chậm tới 75%, chìm đủ 1,2s thì bị kẹt (boss chỉ bị chậm).
+- HUD (`HudScene`): thanh mảnh dưới thanh năng lượng cho Rồng (Cơn giận, nhấp nháy khi đang bùng), Đá (5 vạch Da đá), Bọ (thời gian/hồi Bầy đàn).
+- Cân bằng: `SPECIES_DMG_MULT` trong kits.ts nhân sát thương người chơi theo loài. Đo 1 vòng J-K-L-U Lv40 trên 5 hình nộm: trước 960–1900 (Dragonite 1124), sau 2550–3650 (Fire/Grass/Psychic ~3800–4600, Machamp ~5900). Đo lại bằng t7dps trong scratchpad khi đổi kit.
