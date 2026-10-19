@@ -28,6 +28,15 @@ const MOVES: Record<string, MoveDef> = {
   ch7_powderSnow: P({ id: 'ch7_powderSnow', name: 'Bột Tuyết', type: 'ice', power: 7, cooldownMs: 400, sfx: 'water', icon: 'sparkle', speed: 300, lifeMs: 620, texture: 'icepuff', spin: 8, particle: 'icepuff', knockback: 30,
     count: 3, spreadDeg: 14, slow: 0.6, status: { kind: 'freeze', chance: 0.08, ms: 1200 },
     desc: 'Thổi 3 nắm tuyết hình quạt: địch trúng bị chậm lại, 8% Đóng băng.' }),
+  // ---- huyền thoại Articuno (skills/kits.ts → TK.articuno, data/legendary.ts): dải cực quang · lướt băng · tinh thể lăng kính · tường băng giá ----
+  ch7_auroraA: P({ id: 'ch7_auroraA', name: 'Dải Cực Quang', type: 'ice', power: 14, cooldownMs: 520, sfx: 'waterHi', icon: 'sparkle', speed: 320, lifeMs: 600, radius: 6, texture: 'iceshard', particle: 'icepuff', knockback: 40, archetype: 'aurora',
+    chill: 1, desc: 'Ba dải sóng cực quang (xanh ngọc → tím) lượn đường sin, để lại vệt sương giá. Trúng = Lạnh +1.' }),
+  ch7_glideA: C({ id: 'ch7_glideA', name: 'Lướt Băng', type: 'ice', power: 22, cooldownMs: 3400, sfx: 'waterHi', icon: 'wing', range: 200, halfAngleDeg: 30, particle: 'icepuff', knockback: 100, archetype: 'iceglide',
+    chill: 1, desc: 'Bay vút một đường (bất tử khi lướt), để lại ĐƯỜNG BĂNG TRƠN 3 giây làm chậm địch.' }),
+  ch7_prismA: B({ id: 'ch7_prismA', name: 'Tinh Thể Lăng Kính', type: 'ice', power: 36, cooldownMs: 3800, sfx: 'waterLo', icon: 'sparkle', anim: 'charge', animMs: 380, burstRadius: 90, atTarget: true, particle: 'icepuff', knockback: 160, archetype: 'prism',
+    chill: 1, desc: 'Một tinh thể băng mọc dưới địch rồi khúc xạ thành 8 tia sáng thẳng hình sao.' }),
+  ch7_wallA: B({ id: 'ch7_wallA', name: 'Tường Băng Giá', type: 'ice', power: 38, cooldownMs: 4800, sfx: 'waterLo', icon: 'sparkle', anim: 'charge', animMs: 380, burstRadius: 70, particle: 'icepuff', knockback: 200, archetype: 'icewall',
+    chill: 1, desc: 'Dựng bức tường pha lê tiến thẳng tới, đẩy và làm Lạnh mọi địch; tường vỡ thành mảnh gây sát thương.' }),
   ch7_iceShard: P({ id: 'ch7_iceShard', name: 'Mảnh Băng', type: 'ice', power: 12, cooldownMs: 320, sfx: 'zap', icon: 'sparkle', speed: 480, lifeMs: 520, texture: 'iceshard', particle: 'icepuff', knockback: 50,
     crit: 0.2, desc: 'Mũi băng bắn cực nhanh, gần như không kịp né. 20% Chí mạng.' }),
   ch7_auroraBeam: P({ id: 'ch7_auroraBeam', name: 'Tia Cực Quang', type: 'ice', power: 16, cooldownMs: 1500, sfx: 'zap', icon: 'wave', speed: 360, lifeMs: 900, radius: 6, texture: 'iceshard', particle: 'icepuff', knockback: 80,
@@ -252,7 +261,7 @@ export const CHAPTER: ChapterContent = {
     },
     articuno: {
       dex: 144, name: 'Articuno', types: ['ice', 'flying'], body: { w: 22, h: 14 }, fallbackColor: 0x80c8f0, scale: 1.5,
-      base: { hp: 150, atk: 88, speed: 130 }, skills: sk('ch7_iceShard', 'ch7_glacialWind', ['ch7_mist', 1], ['ch7_absoluteZero', 1]), catchRate: 15,
+      base: { hp: 190, atk: 118, speed: 112 }, skills: sk('ch7_auroraA', 'ch7_glideA', ['ch7_prismA', 1], ['ch7_wallA', 1]), catchRate: 15,
       blurb: 'Chim huyền thoại của băng giá. Mỗi lần vỗ cánh, không khí đóng thành tuyết.',
     },
     poliwag: {

@@ -28,6 +28,14 @@ export const ARCHETYPE_DEFAULTS: { [A in ArchetypeId]: (m: MoveDef) => Archetype
   arcshot: () => ({ dialect: 'generic' }),
   phoenixdash: () => ({ dialect: 'generic' }),
   xslash: () => ({ dialect: 'generic' }),
+  forkbolt: () => ({ dialect: 'generic' }),
+  blink: () => ({ dialect: 'generic' }),
+  stormcloud: () => ({ dialect: 'generic' }),
+  powergrid: () => ({ dialect: 'generic' }),
+  aurora: () => ({ dialect: 'generic' }),
+  iceglide: () => ({ dialect: 'generic' }),
+  prism: () => ({ dialect: 'generic' }),
+  icewall: () => ({ dialect: 'generic' }),
   sweep: () => ({ dialect: 'generic' }),
   serpent: () => ({ dialect: 'generic' }),
   dive: () => ({ dialect: 'generic' }),
@@ -153,7 +161,7 @@ const MINDBREAK_DEFAULTS: MindBreakParams = { dialect: 'psychic', windupMs: 800,
 
 const ULT_DEFAULTS: { [U in UltArchetypeId]: UltParamMap[U] } = {
   inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS, timestop: TIMESTOP_DEFAULTS, absolutezero: ABSZERO_DEFAULTS, komode: KOMODE_DEFAULTS, mindbreak: MINDBREAK_DEFAULTS,
-  draco: { dialect: 'dragon', windupMs: 700 }, flock: { dialect: 'flying', windupMs: 700 }, wavefront: { dialect: 'poison', windupMs: 700 }, chasm: { dialect: 'ground', windupMs: 700 }, hyperbeam: { dialect: 'normal', windupMs: 300 }, phoenix: { dialect: 'fire', windupMs: 600 },
+  draco: { dialect: 'dragon', windupMs: 700 }, flock: { dialect: 'flying', windupMs: 700 }, wavefront: { dialect: 'poison', windupMs: 700 }, chasm: { dialect: 'ground', windupMs: 700 }, hyperbeam: { dialect: 'normal', windupMs: 300 }, phoenix: { dialect: 'fire', windupMs: 600 }, judgement: { dialect: 'electric', windupMs: 500 }, aurorafall: { dialect: 'ice', windupMs: 600 },
 };
 
 // ---------------------------------------------------------------------------------- bộ chiêu theo hệ
@@ -927,6 +935,28 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const S = (archetype: string, params: Record<string, unknown> = {}): any => ({ archetype, params, tiers: [] });
 const TK: Record<string, SpeciesKit> = {
+  // --- HUYỀN THOẠI Zapdos: chớp phân nhánh · chớp dịch chuyển · mây bão · lưới điện · Phán Quyết Sấm Sét (nội tại Tích điện + Vỏ sét ở legendary.ts/BattleScene)
+  zapdos: {
+    kitType: 'electric', ult: 'judgement',
+    slots: {
+      J: S('forkbolt', { dialect: 'electric', jumps: 3, range: 200, jumpRange: 130, forks: 2 }),
+      K: S('blink', { dialect: 'electric', len: 190, ms: 150, clapR: 46, powerMult: 1.2 }),
+      L: S('stormcloud', { dialect: 'electric', r: 74, ms: 3000, gapMs: 250, powerMult: 1 }),
+      U: S('powergrid', { dialect: 'electric', w: 160, hgt: 116, ms: 2800, powerMult: 1 }),
+    },
+    ultParams: { dialect: 'electric', maxBolts: 10, hitPower: 0.6, slamPower: 1.2 },
+  },
+  // --- HUYỀN THOẠI Articuno: dải cực quang · lướt băng · tinh thể lăng kính · tường băng giá · Cực Quang Vĩnh Cửu (nội tại Sương giá + Vỏ băng)
+  articuno: {
+    kitType: 'ice', ult: 'aurorafall',
+    slots: {
+      J: S('aurora', { dialect: 'ice', n: 3, range: 175, flyMs: 600, amp: 15, waves: 1.5 }),
+      K: S('iceglide', { dialect: 'ice', len: 190, ms: 280, powerMult: 1.2 }),
+      L: S('prism', { dialect: 'ice', len: 105, windupMs: 420, powerMult: 1.3 }),
+      U: S('icewall', { dialect: 'ice', width: 7, gap: 18, speed: 90, ms: 1900, powerMult: 1.3 }),
+    },
+    ultParams: { dialect: 'ice', ms: 2400, slamPower: 1.3 },
+  },
   // --- HUYỀN THOẠI Moltres: lông lửa cong · lướt phượng hoàng + tường lửa · cánh chữ X · mưa lông lửa · Tái Sinh Phượng Hoàng (đặc quyền ở data/legendary.ts + BattleScene)
   moltres: {
     kitType: 'fire', ult: 'phoenix',

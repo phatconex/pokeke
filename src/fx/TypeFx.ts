@@ -128,3 +128,31 @@ export function flameMantle(g: Phaser.GameObjects.Graphics, cx: number, cy: numb
     g.lineStyle(1, 0xffe070, alpha).strokePoints([V(cx + Math.cos(a - w) * r0, cy + Math.sin(a - w) * r0 * 0.9), V(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1 * 0.9), V(cx + Math.cos(a + w) * r0, cy + Math.sin(a + w) * r0 * 0.9)], true);
   }
 }
+
+/** Vỏ sét (chắn tự động của Zapdos): 6 cung sét zic-zắc nhấp nháy quanh thân */
+export function thunderMantle(g: Phaser.GameObjects.Graphics, cx: number, cy: number, now: number, alpha = 0.8) {
+  for (let i = 0; i < 6; i++) {
+    const a0 = (i / 6) * Math.PI * 2 + now / 700;
+    g.lineStyle(2, i % 2 ? 0xffffff : 0xffe04a, alpha);
+    g.beginPath();
+    for (let k = 0; k <= 5; k++) {
+      const a = a0 + (k / 5) * 0.9;
+      const r = 20 + (Math.random() - 0.5) * 9;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r * 0.9;
+      k ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.strokePath();
+  }
+}
+
+/** Vỏ băng (chắn tự động của Articuno): 8 mũi tinh thể nhọn hướng ra ngoài, lấp lánh (không phải vòng tròn) */
+export function frostMantle(g: Phaser.GameObjects.Graphics, cx: number, cy: number, now: number, alpha = 0.8) {
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + now / 1500;
+    const r1 = 22 + 5 * Math.sin(now / 200 + i);
+    const w = 0.2;
+    g.fillStyle(i % 2 ? 0xdff8ff : 0x7af0ff, alpha).fillPoints([V(cx + Math.cos(a - w) * 10, cy + Math.sin(a - w) * 9), V(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1 * 0.9), V(cx + Math.cos(a + w) * 10, cy + Math.sin(a + w) * 9)], true);
+    g.lineStyle(1, 0xffffff, alpha).strokePoints([V(cx + Math.cos(a - w) * 10, cy + Math.sin(a - w) * 9), V(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1 * 0.9), V(cx + Math.cos(a + w) * 10, cy + Math.sin(a + w) * 9)], true);
+  }
+}

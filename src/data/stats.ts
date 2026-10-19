@@ -46,6 +46,8 @@ const TRAITS: Record<string, { crit?: number; haste?: number; regen?: number }> 
   // huyền thoại: giảm hồi chiêu 20% + chí mạng cao
   mewtwo: { crit: 0.1, haste: 0.2 },
   moltres: { crit: 0.1, haste: 0.12 },
+  zapdos: { crit: 0.12, haste: 0.2 },
+  articuno: { crit: 0.06, haste: 0.1 },
   abra: { haste: 0.08 }, kadabra: { haste: 0.08 }, alakazam: { haste: 0.1 },
   jolteon: { haste: 0.08 }, electrode: { haste: 0.06 }, gengar: { haste: 0.06 }, starmie: { haste: 0.06 },
   pikachu: { haste: 0.04 }, raichu: { haste: 0.05 },

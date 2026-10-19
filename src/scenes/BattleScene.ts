@@ -26,7 +26,7 @@ import type { HazardDef, HazardFx, HazardHit, Solid } from '../data/hazards';
 import { legendOf } from '../data/legendary';
 import { impactRays, powBurst } from '../fx/FightFx';
 import { drawHexCluster, hexShatter } from '../fx/PsyFx';
-import { flameMantle, scatter as scatterFx } from '../fx/TypeFx';
+import { flameMantle, frostMantle, scatter as scatterFx, thunderMantle } from '../fx/TypeFx';
 import { iceBlock, radialShards, shardBurst } from '../fx/IceFx';
 import { finalizeSpecies, queueSheets } from '../systems/spriteLoader';
 import { dexOf, markCaught, markSeen } from '../game/dex';
@@ -64,6 +64,8 @@ const ULT_NAME_BY_SPECIES: Record<string, { vi: string; en: string }> = {
   alakazam: { vi: 'Ngưng Đọng Thời Gian', en: 'Time Stop' },
   mewtwo: { vi: 'Phá Vỡ Tâm Trí', en: 'Mind Break' },
   moltres: { vi: 'Tái Sinh Phượng Hoàng', en: 'Phoenix Rebirth' },
+  zapdos: { vi: 'Phán Quyết Sấm Sét', en: 'Thunder Judgement' },
+  articuno: { vi: 'Cực Quang Vĩnh Cửu', en: 'Eternal Aurora' },
   dewgong: { vi: 'Kỷ Băng Hà', en: 'Ice Age' },
   machoke: { vi: 'Loạt Đấm', en: 'Flurry' },
   machamp: { vi: 'Đấm Hạ Gục', en: 'K.O. Rush' },
@@ -149,7 +151,7 @@ export interface HudState {
   /** năng lượng chung của Pokémon đang ra sân */
   energy: { value: number; max: number };
   /** đồng hồ cơ chế riêng của hệ (Cơn giận / Da đá / Bầy đàn); null = hệ không có */
-  mech: { kind: 'fury' | 'armor' | 'swarm'; value: number; label: string; color: number; ticks: number; active: boolean } | null;
+  mech: { kind: 'fury' | 'armor' | 'swarm' | 'static'; value: number; label: string; color: number; ticks: number; active: boolean } | null;
   switchLeft: number;
   kills: number;
   enemiesLeft: number;
@@ -317,6 +319,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private armorGainAt = 0;
   private toxicTickAt = 0;
   private rebirthUsed = false;
+  private staticCharge = 0;
+  private staticReady = false;
   /** Bài hướng dẫn: bộ đếm hành động cho TutorialScene đọc */
   tutorial = false;
   tutReplay = false;
@@ -476,6 +480,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.armorUntil = 0;
     this.toxicTickAt = 0;
     this.rebirthUsed = false;
+    this.staticCharge = 0;
+    this.staticReady = false;
     this.swarmUntil = 0;
     this.swarmReadyAt = 0;
     this.swarmBugs = [];
@@ -784,6 +790,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       y: (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0),
     };
     if (this.tutorial && (move.x || move.y)) this.tut.moved += (p.speed * dt) / 1000;
+    if ((move.x || move.y) && legendOf(p.species.id)?.staticCharge) this.gainStatic((p.speed * dt) / 1000 * 0.3);
     const mode = getSettings().aimMode;
     this.syncCursor(mode);
     const pointer = this.input.activePointer;
@@ -803,6 +810,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if ((k.SPACE.isDown || this.buffered.dash > clock) && p.ready('dash', clock)) {
       this.buffered.dash = 0;
       p.startDash(clock);
+      if (legendOf(p.species.id)?.staticCharge) this.gainStatic(14);
       this.tut.dashes++;
       this.fx.dustPuff(p.x, p.feetY, 6);
       playSfx('dash');
@@ -826,6 +834,15 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         if (slot === 'L' || slot === 'U') this.skillFlair(p, sk.move);
         this.castMove(p, slot, sk.move, this.aimDirection(p, sk.move.speed ?? 340), sk.spec);
         this.castRecoil(p, slot, sk.base);
+        if (this.staticReady && slot !== 'J') {
+          // Tích điện: chiêu này miễn phí + hồi chiêu giảm nửa
+          this.staticReady = false;
+          this.staticCharge = 0;
+          p.energy = Math.min(p.energyMax, p.energy + sk.spec.cost);
+          p.readyAt[slot] = clock + Math.max(0, p.readyAt[slot] - clock) * 0.5;
+          this.fx.floatingLabel(p.x, p.chestY - 30, t('mech.staticOn'), '#ffe04a');
+          scatterFx(this, 'spark', p.x, p.chestY, 8, 28, 0xffe04a, 1.2);
+        }
       }
     }
     for (const f of this.fighters) if (!f.dead) f.regenEnergy(dt, clock);
@@ -2076,7 +2093,10 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (!this.legendGfx) this.legendGfx = this.add.graphics().setDepth(99994);
     this.legendGfx.clear();
     if (this.legendShieldOn) {
-      if (lg.shield === 'flame') flameMantle(this.legendGfx, p.x, p.chestY, this.clock, 0.55 + 0.25 * Math.sin(this.clock / 110));
+      const sa = 0.55 + 0.25 * Math.sin(this.clock / 110);
+      if (lg.shield === 'flame') flameMantle(this.legendGfx, p.x, p.chestY, this.clock, sa);
+      else if (lg.shield === 'thunder') thunderMantle(this.legendGfx, p.x, p.chestY, this.clock, sa);
+      else if (lg.shield === 'frost') frostMantle(this.legendGfx, p.x, p.chestY, this.clock, sa);
       else drawHexCluster(this.legendGfx, p.x, p.chestY, 8, lg.colors, 0.55 + 0.25 * Math.sin(this.clock / 110));
     }
   }
@@ -2244,6 +2264,14 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     const lgb = legendOf(this.player.species.id)?.lowHpBonus;
     if (lgb) raw *= 1 + lgb * (1 - this.player.hp / Math.max(1, this.player.maxHp));
     if (!m.shatterChild && m.id !== 'toxicTick') raw *= this.typeMechanicsOnHit(e, m, amount, quiet);
+    const spread = legendOf(this.player.species.id)?.frostSpread;
+    if (spread && m.type === 'ice' && !m.shatterChild && !quiet && Math.random() < spread) {
+      const o = this.enemies.find((x) => x !== e && !x.dead && x.targetable && Math.hypot(x.x - e.x, x.y - e.y) < 80);
+      if (o) {
+        this.applyChill(o, 1);
+        scatterFx(this, 'snowdot', o.x, o.centerY, 4, 18, undefined, 1);
+      }
+    }
     if ((m.castSlot === 'L' || m.castSlot === 'U') && this.clock < this.counterBuff.until) raw *= this.counterBuff.mult;
     // Giác đấu – Va chạm: bị đánh văng mạnh thì trong 0,45s đâm địch khác sẽ gây sát thương cho cả hai
     if (m.type === 'fighting' && !m.shatterChild && (m.knockback ?? 0) >= 150) {
@@ -2482,14 +2510,21 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       this.legendShieldOn = false;
       this.legendShieldAt = this.clock + lg.shieldEveryMs;
       const flame = lg.shield === 'flame';
-      this.fx.floatingLabel(f.x, f.chestY - 24, flame ? t('battle.flameMantle') : t('battle.barrier'), flame ? '#ffb02a' : '#ff9ad0');
-      if (flame) {
+      const thunder = lg.shield === 'thunder';
+      const frost = lg.shield === 'frost';
+      this.fx.floatingLabel(f.x, f.chestY - 24, flame ? t('battle.flameMantle') : thunder ? t('battle.thunderShell') : frost ? t('battle.frostShell') : t('battle.barrier'), flame ? '#ffb02a' : thunder ? '#ffe04a' : frost ? '#9ae8ff' : '#ff9ad0');
+      if (thunder) {
+        scatterFx(this, 'spark', f.x, f.chestY, 14, 46, 0xffe04a, 1.4);
+        this.fx.shake(0.01, 140);
+      } else if (frost) {
+        scatterFx(this, 'snowdot', f.x, f.chestY, 14, 46, undefined, 1.4);
+      } else if (flame) {
         scatterFx(this, 'fireFeather', f.x, f.chestY, 10, 44, undefined, 1.3);
         this.fx.fireHit(f.x, f.chestY, true);
       } else hexShatter(this, f.x, f.chestY, 18, lg.colors);
       this.fx.shake(0.008, 140);
-      playSfx(flame ? 'flame' : 'swap');
-      const push: MoveDef = { ...MOVES.withdraw, id: 'legendBarrier', type: flame ? 'fire' : 'psychic', power: 0, knockback: 280, status: undefined, castSlot: undefined, shatterChild: true };
+      playSfx(flame ? 'flame' : thunder ? 'zap' : frost ? 'waterHi' : 'swap');
+      const push: MoveDef = { ...MOVES.withdraw, id: 'legendBarrier', type: flame ? 'fire' : thunder ? 'electric' : frost ? 'ice' : 'psychic', power: 0, knockback: 280, status: undefined, castSlot: undefined, shatterChild: true };
       for (const e of this.enemies) {
         if (e.dead || !e.targetable) continue;
         const dx = e.x - f.x;
@@ -2498,6 +2533,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         if (d > 70 + e.radius) continue;
         this.damageEnemy(e, push, f.power * 8, dx / (d || 1), dy / (d || 1), true, true);
         if (flame) e.applyStatus('burn', 3000, this.clock, f.power * 1.2);
+        if (thunder) e.applyStatus('paralyze', 1500, this.clock);
+        if (frost) e.applyStatus('freeze', 1600, this.clock);
       }
       return;
     }
@@ -3335,6 +3372,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private mechHud(p: Fighter): HudState['mech'] {
     const ty = p.species.types;
     const now = this.clock;
+    if (legendOf(p.species.id)?.staticCharge) {
+      return { kind: 'static', value: this.staticReady ? 1 : this.staticCharge / 100, label: this.staticReady ? t('mech.staticOn') : t('mech.static'), color: 0xffe04a, ticks: 0, active: this.staticReady };
+    }
     if (ty.includes('dragon')) {
       const on = now < this.furyUntil;
       return { kind: 'fury', value: on ? (this.furyUntil - now) / 4000 : this.furyHits / 100, label: on ? t('battle.fury') : t('mech.fury'), color: on ? 0xff7a30 : 0x6a7aff, ticks: 0, active: on };
@@ -3349,6 +3389,18 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       return { kind: 'swarm', value: on ? (this.swarmUntil - now) / 6000 : 1 - cd / 10000, label: on ? t('mech.swarmOn') : t('mech.swarm'), color: 0x9ac040, ticks: 0, active: on };
     }
     return null;
+  }
+
+  /** Tích điện (Zapdos): đi/lướt tích thanh Tĩnh điện; đầy → chiêu K/L/U kế tiếp miễn phí và hồi chiêu giảm nửa */
+  private gainStatic(v: number) {
+    if (this.staticReady) return;
+    this.staticCharge = Math.min(100, this.staticCharge + v);
+    if (this.staticCharge >= 100) {
+      this.staticReady = true;
+      this.fx.floatingLabel(this.player.x, this.player.chestY - 30, t('battle.staticFull'), '#ffe04a');
+      scatterFx(this, 'spark', this.player.x, this.player.chestY, 10, 30, 0xffe04a, 1.2);
+      playSfx('zap');
+    }
   }
 
   /** Bọ – Bầy đàn: đòn Bọ trúng gọi 3–5 con bọ đồng minh bám theo, tự cắn địch gần nhất trong 6s (hồi 10s) */

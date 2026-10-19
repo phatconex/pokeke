@@ -27,8 +27,8 @@ export const CHAPTER: ChapterContent = {
     },
     zapdos: {
       dex: 145, name: 'Zapdos', types: ['electric', 'flying'], body: { w: 22, h: 14 }, fallbackColor: 0xf8d030, scale: 1.5,
-      base: { hp: 140, atk: 90, speed: 142 },
-      skills: sk('ch8_chargeBeam', 'drillPeck', ['ch8_discharge', 1], ['ch8_zapCannon', 1]),
+      base: { hp: 130, atk: 135, speed: 165 },
+      skills: sk('ch8_forkZ', 'ch8_blinkZ', ['ch8_stormZ', 1], ['ch8_gridZ', 1]),
       catchRate: 15,
       blurb: 'Chim sấm huyền thoại, làm tổ trong nhà máy điện bỏ hoang. Mỗi cú vỗ cánh tóe ra tia lửa điện.',
     },
@@ -36,6 +36,15 @@ export const CHAPTER: ChapterContent = {
 
   // ================================================================ chiêu mới
   moves: {
+    // ---- huyền thoại Zapdos (skills/kits.ts → TK.zapdos, data/legendary.ts): chớp phân nhánh · chớp dịch chuyển · mây bão · lưới điện ----
+    ch8_forkZ: P({ id: 'ch8_forkZ', name: 'Chớp Phân Nhánh', type: 'electric', power: 14, cooldownMs: 380, sfx: 'zap', icon: 'bolt', speed: 400, lifeMs: 500, radius: 5, texture: 'zap', particle: 'spark', knockback: 40, archetype: 'forkbolt',
+      status: { kind: 'paralyze', chance: 0.15, ms: 1200 }, desc: 'Sét zic-zắc tức thời nhảy qua 3 địch gần nhất, mỗi mắt xích rẽ nhánh nhỏ. 15% Tê liệt.' }),
+    ch8_blinkZ: C({ id: 'ch8_blinkZ', name: 'Chớp Dịch Chuyển', type: 'electric', power: 24, cooldownMs: 2800, sfx: 'zap', icon: 'bolt', range: 190, halfAngleDeg: 30, particle: 'spark', knockback: 120, archetype: 'blink',
+      status: { kind: 'paralyze', chance: 0.4, ms: 1500 }, desc: 'Dịch chuyển xuyên địch (bất tử, 3 ảo ảnh), để lại vệt sét; kết thúc bằng một tiếng sấm nổ. 40% Tê liệt.' }),
+    ch8_stormZ: B({ id: 'ch8_stormZ', name: 'Mây Bão', type: 'electric', power: 30, cooldownMs: 4200, sfx: 'thunder', icon: 'bolt', anim: 'charge', animMs: 380, burstRadius: 70, atTarget: true, particle: 'spark', knockback: 80, archetype: 'stormcloud',
+      status: { kind: 'paralyze', chance: 0.25, ms: 1500 }, desc: 'Mây đen hình thành trên đầu địch, giáng sét liên tục 3 giây xuống quanh khu vực (có vạch báo).' }),
+    ch8_gridZ: B({ id: 'ch8_gridZ', name: 'Lưới Điện', type: 'electric', power: 28, cooldownMs: 4800, sfx: 'thunder', icon: 'bolt', anim: 'charge', animMs: 380, burstRadius: 80, atTarget: true, particle: 'spark', knockback: 0, archetype: 'powergrid',
+      status: { kind: 'paralyze', chance: 1, ms: 1500 }, desc: 'Cắm 4 cọc sét nối nhau bằng dây điện thành lưới đa giác: địch trong lưới bị Tê liệt và giật liên tục.' }),
     ch8_stomp: B({
       id: 'ch8_stomp', name: 'Giậm Chân', type: 'ground', power: 18, cooldownMs: 1500, sfx: 'hit', icon: 'rock', anim: 'attack', animMs: 300,
       burstRadius: 64, particle: 'dustpuff', knockback: 130,

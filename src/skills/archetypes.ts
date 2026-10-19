@@ -63,6 +63,14 @@ export function castArchetype(h: SkillHost, f: Fighter, m: MoveDef, spec: SkillS
     case 'arcshot': return BA.castArcShot(h, f, m, spec.params, dir);
     case 'phoenixdash': return BA.castPhoenixDash(h, f, m, spec.params, dir);
     case 'xslash': return BA.castXSlash(h, f, m, spec.params, dir);
+    case 'forkbolt': return BA.castForkBolt(h, f, m, spec.params, dir);
+    case 'blink': return BA.castBlink(h, f, m, spec.params, dir);
+    case 'stormcloud': return BA.castStormCloud(h, f, m, spec.params);
+    case 'powergrid': return BA.castPowerGrid(h, f, m, spec.params);
+    case 'aurora': return BA.castAurora(h, f, m, spec.params, dir);
+    case 'iceglide': return BA.castIceGlide(h, f, m, spec.params, dir);
+    case 'prism': return BA.castPrism(h, f, m, spec.params);
+    case 'icewall': return BA.castIceWall(h, f, m, spec.params, dir);
     default: return undefined;
   }
 }
@@ -81,6 +89,8 @@ export function castUltArchetype(h: SkillHost, f: Fighter, spec: UltSpec, u: Ult
   else if (spec.archetype === 'flock') TA.castFlock(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'wavefront') TA.castWavefront(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'chasm') TA.castChasm(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'judgement') BA.castJudgement(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'aurorafall') BA.castAuroraFall(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'phoenix') BA.castPhoenix(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'hyperbeam') TA.castHyperBeamUlt(h, f, spec.params, u, mv, amount);
 }
