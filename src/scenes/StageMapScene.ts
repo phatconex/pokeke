@@ -187,24 +187,91 @@ export class StageMapScene extends Phaser.Scene {
     const g = this.add.graphics();
     this.world.add(g);
     const byId = Object.fromEntries(STAGES.map((st, i) => [st.id, { st, i }]));
-    // tuyến đường: chấm trắng (đã mở) / vàng (đã thắng 2 đầu) / xám (chưa mở)
+    // ---- LỘ TRÌNH: nối các ải theo đúng thứ tự chơi, đi dọc mạng đường (BFS) ----
+    // đã đi: vàng đậm · đoạn kế tiếp (ải mới mở): trắng đậm + mũi tên chạy · chưa tới: chấm xám mờ
+    const adj = new Map<string, Set<string>>();
     for (const road of KANTO_ROADS) {
       for (let k = 0; k < road.length - 1; k++) {
-        const A = byId[road[k]];
-        const B = byId[road[k + 1]];
-        if (!A || !B) continue;
-        const a = posOf(A.st);
-        const b = posOf(B.st);
-        const done = (A.st.kind === 'start' || stageCleared(this.game_, A.st.id)) && stageCleared(this.game_, B.st.id);
-        const open = this.unlocked(A.i) && this.unlocked(B.i);
-        const len = Math.hypot(b.x - a.x, b.y - a.y);
-        for (let d = 14; d < len - 14; d += 13) {
-          const x = a.x + ((b.x - a.x) * d) / len;
-          const y = a.y + ((b.y - a.y) * d) / len;
-          g.fillStyle(0x1a2a18, 0.5).fillRect(x - 3, y - 2, 6, 6);
-          g.fillStyle(done ? 0xffd34a : open ? 0xffffff : 0x9aa598, open ? 1 : 0.7).fillRect(x - 2, y - 3, 4, 4);
+        if (!byId[road[k]] || !byId[road[k + 1]]) continue;
+        if (!adj.has(road[k])) adj.set(road[k], new Set());
+        if (!adj.has(road[k + 1])) adj.set(road[k + 1], new Set());
+        adj.get(road[k])!.add(road[k + 1]);
+        adj.get(road[k + 1])!.add(road[k]);
+      }
+    }
+    const route = (from: string, to: string): string[] => {
+      const prev = new Map<string, string>([[from, '']]);
+      const q = [from];
+      while (q.length) {
+        const c = q.shift()!;
+        if (c === to) break;
+        for (const nb of adj.get(c) ?? []) if (!prev.has(nb)) { prev.set(nb, c); q.push(nb); }
+      }
+      if (!prev.has(to)) return [from, to];
+      const out = [to];
+      while (out[0] !== from) out.unshift(prev.get(out[0])!);
+      return out;
+    };
+    const segState = new Map<string, number>(); // 0 chưa tới · 1 kế tiếp · 2 đã đi
+    const nextSegs: [number, number, number, number][] = [];
+    for (let i = 0; i < STAGES.length - 1; i++) {
+      const A = STAGES[i];
+      const B = STAGES[i + 1];
+      const aDone = A.kind === 'start' || stageCleared(this.game_, A.id);
+      const bDone = stageCleared(this.game_, B.id);
+      const st = aDone && bDone ? 2 : this.unlocked(i + 1) ? 1 : 0;
+      const path = route(A.id, B.id);
+      for (let k = 0; k < path.length - 1; k++) {
+        const key = [path[k], path[k + 1]].sort().join('|');
+        segState.set(key, Math.max(segState.get(key) ?? -1, st));
+        if (st === 1) {
+          const a = posOf(byId[path[k]].st);
+          const b = posOf(byId[path[k + 1]].st);
+          nextSegs.push([a.x, a.y, b.x, b.y]);
         }
       }
+    }
+    for (const [key, st] of segState) {
+      const [ia, ib] = key.split('|');
+      const a = posOf(byId[ia].st);
+      const b = posOf(byId[ib].st);
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (st === 2) {
+        g.lineStyle(9, 0x3a2a08, 0.55).lineBetween(a.x, a.y + 2, b.x, b.y + 2);
+        g.lineStyle(5, 0xffd34a, 1).lineBetween(a.x, a.y, b.x, b.y);
+      } else if (st === 1) {
+        g.lineStyle(9, 0x10182a, 0.5).lineBetween(a.x, a.y + 2, b.x, b.y + 2);
+        g.lineStyle(5, 0xffffff, 1).lineBetween(a.x, a.y, b.x, b.y);
+      } else {
+        for (let d = 14; d < len - 14; d += 16) {
+          const x = a.x + ((b.x - a.x) * d) / len;
+          const y = a.y + ((b.y - a.y) * d) / len;
+          g.fillStyle(0x1a2a18, 0.35).fillRect(x - 2, y - 1, 5, 5);
+          g.fillStyle(0xd8e0d4, 0.55).fillRect(x - 2, y - 2, 3, 3);
+        }
+      }
+    }
+    // mũi tên chạy dọc đoạn kế tiếp (chỉ hướng đi)
+    if (nextSegs.length) {
+      const arrows = this.add.graphics();
+      this.world.add(arrows);
+      this.tweens.addCounter({
+        from: 0, to: 1, duration: 1200, repeat: -1,
+        onUpdate: (tw) => {
+          arrows.clear();
+          const ph = tw.getValue() ?? 0;
+          for (const [ax, ay, bx, by] of nextSegs) {
+            const len = Math.hypot(bx - ax, by - ay);
+            const ux = (bx - ax) / len;
+            const uy = (by - ay) / len;
+            for (let d = ((ph * 28) % 28) + 16; d < len - 16; d += 28) {
+              const x = ax + ux * d;
+              const y = ay + uy * d;
+              arrows.fillStyle(0xe06a20, 1).fillTriangle(x + ux * 6, y + uy * 6, x - ux * 4 - uy * 5, y - uy * 4 + ux * 5, x - ux * 4 + uy * 5, y - uy * 4 - ux * 5);
+            }
+          }
+        },
+      });
     }
     const iconName: Record<NodeKind, string> = { start: 'house', stage: '', elite: 'skull', gym: 'gym', event: 'star', rival: 'people', league: 'crown', champion: 'trophy' };
     STAGES.forEach((n, i) => {
