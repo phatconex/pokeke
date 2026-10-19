@@ -41,6 +41,10 @@ export class Enemy {
   /** Lạnh (hệ Băng): điểm cộng dồn, hết hạn sau chillUntil; đủ 3 → Đóng băng */
   chill = 0;
   chillUntil = 0;
+  /** Độc cộng dồn (0–5): đủ 5 → Ăn mòn (nhận thêm sát thương) */
+  toxic = 0;
+  toxicUntil = 0;
+  toxicDot = 0;
   /** Giác đấu – Va chạm: sau khi bị đánh văng, trong bangUntil nếu đâm địch khác thì cả hai chịu sát thương */
   bangUntil = 0;
   bangAmount = 0;

@@ -117,4 +117,4 @@ Khuôn ở `src/skills/typeArchetypes.ts`, hiệu ứng chung `src/fx/TypeFx.ts`
 
 Loài đã gắn: dratini/dragonair/dragonite, geodude/graveler/golem, sandshrew/sandslash/diglett/dugtrio, pidgey/pidgeotto/pidgeot, ekans/arbok, grimer/muk, caterpie/butterfree, weedle/beedrill, rattata/raticate/meowth/persian/eevee/snorlax.
 Ult nhớ có `windupMs` trong `ULT_DEFAULTS`, thiếu thì ult không bao giờ bắn.
-CHƯA làm: cơ chế cộng dồn riêng (Cơn giận, Da đá, độc cộng dồn/ăn mòn, Thích nghi không bị kháng, bất tử trên không toàn cục).
+Cơ chế riêng (BattleScene.typeMechanicsOnHit): Rồng – Cơn giận (100 điểm → 4s sát thương ×1,6); Đá – Da đá (≤5 tầng, −8% sát thương nhận mỗi tầng, 6s, đủ 5 tầng → xung chấn Pháo đài); Độc – cộng dồn ≤5 tầng, sát thương mỗi giây theo tầng, đủ 5 → Ăn mòn (+20% sát thương nhận); Thường – không bao giờ bị kháng (≥×1). Bay: bất tử khi ở trên không (dive). CHƯA: Bọ bầy đàn làm đồng minh, Đất lún chặn cả di chuyển, Thích nghi nâng cao.

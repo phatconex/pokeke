@@ -305,6 +305,13 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   /** huyền thoại: lá chắn lục giác tự động + hào quang lơ lửng */
   private legendShieldAt = 0;
   private legendShieldOn = false;
+  /** Cơ chế riêng từng hệ: Rồng – Cơn giận · Đá – Da đá · Độc – cộng dồn/ăn mòn */
+  private furyHits = 0;
+  private furyUntil = 0;
+  private armorStacks = 0;
+  private armorUntil = 0;
+  private armorGainAt = 0;
+  private toxicTickAt = 0;
   private legendLiftPause = 0;
   private legendNextPuffAt = 0;
   private legendGfx: Phaser.GameObjects.Graphics | null = null;
@@ -449,6 +456,11 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.scheduled = [];
     this.clearFrameTasks();
     this.zones = [];
+    this.furyHits = 0;
+    this.furyUntil = 0;
+    this.armorStacks = 0;
+    this.armorUntil = 0;
+    this.toxicTickAt = 0;
     this.spinTickAt = 0;
     this.bonusMoney = 0;
     this.newSpeciesMoney = 0;
@@ -813,6 +825,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     for (const e of [...this.enemies]) if (e.dead) this.killEnemy(e);
     this.checkContactDamage();
     this.updateLegend();
+    this.updateTypeMechanics();
     this.updateCollisions();
     this.updateProjectiles(dt);
     this.updateOrbs(dt);
@@ -2031,6 +2044,82 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (this.legendShieldOn) drawHexCluster(this.legendGfx, p.x, p.chestY, 8, lg.colors, 0.55 + 0.25 * Math.sin(this.clock / 110));
   }
 
+  /** nhân sát thương theo cơ chế hệ (Cơn giận, Ăn mòn) + cộng dồn (Da đá, Độc) */
+  private typeMechanicsOnHit(e: Enemy, m: MoveDef, amount: number, quiet: boolean): number {
+    let k = 1;
+    const now = this.clock;
+    if (m.type === 'dragon') {
+      if (now < this.furyUntil) k *= 1.6;
+      else {
+        this.furyHits += quiet ? 2 : 6;
+        if (this.furyHits >= 100) {
+          this.furyHits = 0;
+          this.furyUntil = now + 4000;
+          this.fx.floatingLabel(this.player.x, this.player.chestY - 30, t('battle.fury'), '#ff7a30');
+          this.cameras.main.flash(120, 255, 120, 40, false);
+          playSfx('roar');
+        }
+      }
+    }
+    if (m.type === 'rock' && !quiet && now >= this.armorGainAt) {
+      this.armorGainAt = now + 250;
+      this.armorUntil = now + 6000;
+      if (this.armorStacks < 5) {
+        this.armorStacks++;
+        this.fx.floatingLabel(this.player.x, this.player.chestY - 26, `${t('battle.stoneSkin')} ×${this.armorStacks}`, '#c8b890');
+        if (this.armorStacks === 5) this.fortress();
+      }
+    }
+    if (m.type === 'poison') {
+      if (!quiet && e.toxic < 5) {
+        e.toxic++;
+        if (e.toxic === 5) this.fx.floatingLabel(e.x, e.topY - 16, t('battle.corrode'), '#c8e040');
+      }
+      if (!quiet) {
+        e.toxicUntil = now + 5000;
+        e.toxicDot = Math.max(e.toxicDot, amount * 0.1);
+      }
+    }
+    if (e.toxic >= 5 && now < e.toxicUntil) k *= 1.2;
+    return k;
+  }
+
+  /** Đá – Pháo đài: đủ 5 tầng Da đá → xung chấn đẩy lùi mọi địch gần */
+  private fortress() {
+    const p = this.player;
+    this.fx.floatingLabel(p.x, p.chestY - 38, t('battle.fortress'), '#ffd34a');
+    this.fx.shake(0.012, 260);
+    this.fx.dustPuff(p.x, p.feetY, 8);
+    playSfx('boom');
+    const push: MoveDef = { ...MOVES.withdraw, id: 'fortress', type: 'rock', power: 0, knockback: 360, status: undefined, castSlot: undefined, shatterChild: true };
+    for (const e of this.enemies) {
+      if (e.dead || !e.targetable) continue;
+      const dx = e.x - p.x;
+      const dy = e.y - p.y;
+      const d = Math.hypot(dx, dy / 0.8);
+      if (d > 80 + e.radius) continue;
+      this.damageEnemy(e, push, p.power * 10, dx / (d || 1), dy / (d || 1), true, true);
+    }
+  }
+
+  /** hết hạn Da đá / Độc; độc cộng dồn gây sát thương mỗi giây theo số tầng */
+  private updateTypeMechanics() {
+    const now = this.clock;
+    if (this.armorStacks && now >= this.armorUntil) this.armorStacks = 0;
+    if (now < this.toxicTickAt) return;
+    this.toxicTickAt = now + 1000;
+    const tick: MoveDef = { ...MOVES.withdraw, id: 'toxicTick', type: 'poison', power: 0, knockback: 0, status: undefined, castSlot: undefined, shatterChild: true };
+    for (const e of this.enemies) {
+      if (e.dead || !e.toxic) continue;
+      if (now >= e.toxicUntil) {
+        e.toxic = 0;
+        e.toxicDot = 0;
+        continue;
+      }
+      this.damageEnemy(e, tick, e.toxicDot * e.toxic * 0.5, 0, 0, false, true);
+    }
+  }
+
   /** Giác đấu – Va chạm: địch đang bị đánh văng đâm vào địch khác → cả hai chịu sát thương */
   private updateCollisions() {
     for (const e of this.enemies) {
@@ -2092,7 +2181,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
 
   private damageEnemy(e: Enemy, m: MoveDef, amount: number, dirX: number, dirY: number, big = false, quiet = false) {
     if (!e.targetable) return;
-    const mult = m.fixedPerLevel ? 1 : effectiveness(m.type, e.species.types);
+    let mult = m.fixedPerLevel ? 1 : effectiveness(m.type, e.species.types);
+    // Thường – không bao giờ bị kháng (tối thiểu ×1)
+    if (m.type === 'normal' && !m.fixedPerLevel) mult = Math.max(1, mult);
     // Sóng Âm: sát thương cố định theo cấp, không tính khắc hệ
     let raw = m.fixedPerLevel ? this.player.level * m.fixedPerLevel : amount * mult * (0.9 + Math.random() * 0.2);
     // chí mạng riêng của chiêu (×1.8), nếu trượt thì thử chí mạng của Pokémon (×1.5, Huấn luyện Chí mạng)
@@ -2102,6 +2193,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (moveCrit) raw *= 1.8;
     else if (statCrit) raw *= CRIT_MULT;
     raw *= this.comboMult;
+    if (!m.shatterChild && m.id !== 'toxicTick') raw *= this.typeMechanicsOnHit(e, m, amount, quiet);
     if ((m.castSlot === 'L' || m.castSlot === 'U') && this.clock < this.counterBuff.until) raw *= this.counterBuff.mult;
     // Giác đấu – Va chạm: bị đánh văng mạnh thì trong 0,45s đâm địch khác sẽ gây sát thương cho cả hai
     if (m.type === 'fighting' && !m.shatterChild && (m.knockback ?? 0) >= 150) {
@@ -2346,6 +2438,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       return;
     }
     const mult = effectiveness(type, f.species.types);
+    if (f === this.player && this.armorStacks && this.clock < this.armorUntil) amount *= 1 - 0.08 * this.armorStacks;
     // Phản Đòn: đang giữ thế đỡ → nhận ít sát thương hơn và phản lại
     if (this.counter && !this.counter.done && this.clock < this.counter.until && f === this.player) {
       amount *= this.counter.reduce;
