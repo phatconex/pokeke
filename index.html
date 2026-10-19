@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>Pokeke – Rừng Lửa (demo)</title>
+    <style>
+      /* Font pixel Galmuri (OFL 1.1, đã cắt bớt còn Latin + tiếng Việt) */
+      @font-face { font-family: 'PixelUI'; src: url('assets/fonts/Galmuri11.woff2') format('woff2'); font-display: block; }
+      @font-face { font-family: 'PixelUISmall'; src: url('assets/fonts/Galmuri9.woff2') format('woff2'); font-display: block; }
+      /* Pixelify Sans (OFL 1.1) – font giao diện tiếng Anh (lưới 11px); tiếng Việt dùng Galmuri vì Pixelify thiếu dấu */
+      @font-face { font-family: 'Pixelify'; src: url('assets/fonts/PixelifySans-Pokeke.ttf') format('truetype'); font-weight: 400 700; font-display: block; }
+      /* Press Start 2P (OFL 1.1) – chỉ dùng cho logo, chữ Latin không dấu */
+      @font-face { font-family: 'PixelLogo'; src: url('assets/fonts/PressStart2P-Regular.ttf') format('truetype'); font-display: block; }
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0d1a10; overflow: hidden; }
+      #game { width: 100%; height: 100%; }
+      canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
