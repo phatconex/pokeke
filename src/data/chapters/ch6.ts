@@ -258,6 +258,7 @@ export const CHAPTER: ChapterContent = {
       afterLines: [
         'Natsume: Lâu lắm rồi ta mới thấy vui khi thua. Có lẽ ta nên học cách cười nhiều hơn.',
       ],
+      reward: { item: 'leafStone', name: 'Đá Lá' },
     },
   },
 

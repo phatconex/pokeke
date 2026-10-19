@@ -147,7 +147,7 @@ const CORE_DEFS: Record<string, Def> = {
   },
   goldeen: {
     dex: 118, name: 'Goldeen', types: ['water'], body: { w: 16, h: 10 }, fallbackColor: 0xf08060,
-    base: { hp: 98, atk: 58, speed: 112 }, skills: sk('waterGun', 'hornAttack', ['hornDrill', 14]), catchRate: 225,
+    base: { hp: 98, atk: 58, speed: 112 }, skills: sk('waterGun', 'hornAttack', ['hornDrill', 14]), evolution: { into: 'seaking', level: 33 }, catchRate: 225,
   },
   staryu: {
     dex: 120, name: 'Staryu', types: ['water'], body: { w: 15, h: 10 }, fallbackColor: 0xc8a050,

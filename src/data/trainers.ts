@@ -70,6 +70,7 @@ const CORE_GYMS: Record<string, GymDef> = {
       'Takeshi: Gom đủ 8 huy hiệu, cậu sẽ được vào Liên đoàn Indigo.',
     ],
     afterLines: ['Takeshi: Cậu đã có Huy hiệu Đá rồi. Hãy tiếp tục hành trình đến các hội quán khác!'],
+    reward: { item: 'moonStone', name: 'Đá Trăng' },
   },
   cerulean: {
     id: 'cerulean',
@@ -118,6 +119,7 @@ const CORE_GYMS: Record<string, GymDef> = {
       'Matis: Huy hiệu Sấm là của cậu. Xứng đáng lắm, nhóc!',
     ],
     afterLines: ['Matis: Lần sau ta sẽ sạc đầy pin hơn!'],
+    reward: { item: 'thunderStone', name: 'Đá Sấm' },
   },
 };
 

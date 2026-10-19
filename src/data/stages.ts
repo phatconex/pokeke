@@ -2,6 +2,7 @@
 // Thêm chương mới = thêm ải vào STAGES và đổi `playable` của các nút tương ứng.
 import type { ArenaBiome } from '../art/arenaArt';
 import { CHAPTERS } from './chapters';
+import { EXTRA_SPAWNS } from './chapters/extra';
 import type { ItemId } from '../game/items';
 import { A, many, s } from './kit';
 
@@ -212,6 +213,15 @@ export const STAGES: StageDef[] = [
 ];
 
 export const STAGE_BY_ID: Record<string, StageDef> = Object.fromEntries(STAGES.map((st) => [st.id, st]));
+
+// loài bổ sung (chapters/extra.ts) thả vào các ải có sẵn
+for (const x of EXTRA_SPAWNS) {
+  const st = STAGE_BY_ID[x.stage];
+  if (!st?.waves?.length) continue;
+  const w = x.wave < 0 ? st.waves.length + x.wave : Math.min(x.wave, st.waves.length - 1);
+  st.waves[w] = [...st.waves[w], ...x.spawns];
+  st.catchable = [...new Set([...(st.catchable ?? []), ...x.catchable])];
+}
 
 /** Bài hướng dẫn (không nằm trong STAGES → không hiện trên bản đồ, không tính độ dốc độ khó): sân tập, địch do TutorialScene đẻ ra */
 export const TUTORIAL_STAGE_ID = 'tutorial';

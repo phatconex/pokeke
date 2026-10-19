@@ -58,7 +58,9 @@ export class Enemy {
   get knockSpeed() {
     return this.kb.length();
   }
-  private stunUsed = false;
+  stunUsed = false;
+  /** số lần ném bóng hỏng (huyền thoại được thử lại vài lần) */
+  catchTries = 0;
   private stars: Phaser.GameObjects.Image[] = [];
   /** đang nằm trong bóng (chờ kết quả bắt) */
   beingCaught = false;
@@ -173,14 +175,19 @@ export class Enemy {
     }
     if (!this.isBoss && flinch) this.anim.playOnce('hurt', 180, false);
     // máu thấp → choáng, có thể ném bóng (mỗi con chỉ choáng một lần)
-    if (this.catchable && !this.stunUsed && this.hp / this.maxHp <= CATCH.stunHpRatio) {
-      this.stunUsed = true;
-      this.stunnedUntil = clock + CATCH.stunMs;
-      this.state = 'move';
-      this.kb.set(0, 0);
-      for (let i = 0; i < 3; i++) this.stars.push(this.scene.add.image(this.x, this.topY, 'dizzy').setDepth(100005));
-      this.status = {};
-    }
+    if (this.catchable && !this.stunUsed && this.hp / this.maxHp <= CATCH.stunHpRatio) this.stunForCatch(clock);
+  }
+
+  /** choáng để ném bóng (sao quay trên đầu) */
+  stunForCatch(clock: number) {
+    if (this.dead) return;
+    this.stunUsed = true;
+    this.stunnedUntil = clock + CATCH.stunMs;
+    this.state = 'move';
+    this.kb.set(0, 0);
+    this.clearStars();
+    for (let i = 0; i < 3; i++) this.stars.push(this.scene.add.image(this.x, this.topY, 'dizzy').setDepth(100005));
+    this.status = {};
   }
 
   /** Gây trạng thái. Boss không bị Tê liệt / Rối loạn mà chỉ bị chậm. Trả về true nếu là trạng thái mới. */

@@ -272,6 +272,18 @@ export const EN_GYMS: Record<string, { title?: string; city?: string; intro?: st
 };
 
 export const EN_BLURBS: Record<string, string> = {
+  jigglypuff: 'Sings a crystal-clear lullaby; anyone who hears it all falls fast asleep. Puffs up like a balloon when angry.',
+  wigglytuff: 'Fur soft as a cloud. Can inflate to twice its size.',
+  farfetchd: 'Always carries a long leek as a sword. Without it, it loses all its fighting spirit.',
+  lickitung: 'Its tongue is twice as long as its body; one lick leaves foes numb.',
+  seaking: 'Swims up waterfalls with its sharp horn; in autumn the ponds turn red with its eggs.',
+  electabuzz: 'Hangs around power plants, eating electricity from cables. Gets excited in storms.',
+  porygon: 'The first artificial Pokémon, made of program code; it can enter cyberspace.',
+  omanyte: 'An ancient Pokémon revived from a fossil. Swims by twisting its ten tentacles.',
+  omastar: 'Its shell grew too heavy and it went extinct; sharp fangs crack open clamshells.',
+  kabuto: 'A living fossil from 300 million years ago; hides in sand, eyes glinting in the dark.',
+  kabutops: 'Twin scythes sharp as razors; hunts underwater as fast as lightning.',
+  mew: 'A mythical Pokémon said to carry the genes of every Pokémon. Very few have ever seen it.',
   pikachu: "Fast chain lightning. Thunder Stone → Raichu. Weak vs Rock: catch an Oddish in the forest for Pewter.",
   bulbasaur: 'Tough and tanky. Beats Rock/Ground—great against Pewter Gym.',
   charmander: 'High damage, beats Bug and Grass in the forest. Struggles vs Rock.',

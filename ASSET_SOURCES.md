@@ -99,3 +99,5 @@ Nhạc nền (`src/systems/music.ts`): 9 bài chiptune **tự sáng tác** cho d
 
 - **Kenney Tiny Town** (https://kenney.nl/assets/tiny-town, CC0): phù hợp về giấy phép, nhưng chưa tải về. Tile tự vẽ đủ cho demo và giữ được bảng màu thống nhất (xanh rừng, đất nâu, điểm nhấn cam lửa). Nếu muốn đổi sang Kenney sau này, chỉ cần thay texture `tiles` và cập nhật bảng trên.
 - **poke-survivor.io:** chỉ tham khảo phong cách nhìn từ trên xuống. Không lấy source, âm thanh hay asset nào từ game này.
+
+- **Bổ sung 2026-10-19:** 12 loài (Jigglypuff #39, Wigglytuff #40, Farfetch'd #83, Lickitung #108, Seaking #119, Electabuzz #125, Porygon #137, Omanyte #138, Omastar #139, Kabuto #140, Kabutops #141, Mew #151) tải từ cùng kho PMDCollab SpriteCollab (nhánh `master`), kèm `credits.txt` gốc. Loài thiếu Faint-Anim (hoặc Shoot-Anim) dùng tạm Hurt-Anim (hoặc Charge-Anim) như `AnimData.xml` không có.

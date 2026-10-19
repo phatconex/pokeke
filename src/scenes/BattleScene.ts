@@ -2416,7 +2416,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     game.items[ballKey]--;
     this.tut.throws++;
     const ball = CATCH.balls[ballKey];
-    const chance = CATCH.chance(POKEMON[e.species.id].catchRate * (e.alpha ? STAGE_TUNING.alpha.catchMult : 1), e.hp / e.maxHp, ball.bonus);
+    const legendCatch = !!legendOf(e.species.id);
+    const base = CATCH.chance(POKEMON[e.species.id].catchRate * (e.alpha ? STAGE_TUNING.alpha.catchMult : 1), e.hp / e.maxHp, ball.bonus);
+    const chance = legendCatch ? Math.max(base, CATCH.legendFloor[ballKey] ?? 0) : base;
     const success = Math.random() < chance;
     // 3 lần lắc nếu thành công; thất bại thì thoát ra sau 0–2 lần lắc
     const wobbles = success ? 3 : Math.floor(Math.random() * 3);
@@ -2486,6 +2488,17 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       e.stunnedUntil = 0;
       e.sprite.setAlpha(1);
       this.fx.sparkBurst(e.x, e.centerY, 8);
+      // huyền thoại: được thử lại (vùng ra → choáng lại sau một lúc)
+      if (legendOf(e.species.id)) {
+        e.catchTries++;
+        const left = CATCH.legendTries - e.catchTries;
+        if (left > 0) {
+          this.events.emit('toast', t('battle.legendRetry', { n: left }));
+          this.schedule(this.clock + CATCH.legendRestunMs, () => {
+            if (!this.over && !e.dead && !e.beingCaught) e.stunForCatch(this.clock);
+          });
+        }
+      }
     }
   }
 
@@ -3242,6 +3255,10 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
           info.notes.push(t('battle.note.item', { item: itemName(this.gym.reward.item) }));
         }
         playSfx('badge');
+      } else if (this.gym && this.gym.badgeId && this.gym.reward) {
+        // đánh lại hội quán đã thắng: vẫn thưởng 1 viên đá tiến hóa của hội quán
+        game.items[this.gym.reward.item] += 1;
+        info.notes.push(t('battle.note.item', { item: itemName(this.gym.reward.item) }));
       }
     } else {
       playSfx(result === 'lose' ? 'lose' : 'select');
