@@ -17,6 +17,7 @@ import { castCloud, castTether, castWhip } from './grassArchetypes';
 import { castTelekinesis, castTimeStop } from './psyArchetypes';
 import { castBarrier, castBoomerang, castMindBreak, castSingularity } from './legendArchetypes';
 import { castCounter, castCross, castKoMode, castSlam, castStrike } from './fightArchetypes';
+import * as TA from './typeArchetypes';
 import { castAbsoluteZero, castBlizzard, castGale, castLance } from './iceArchetypes';
 
 /** Ra chiêu theo nguyên mẫu đã phân giải (spec.archetype khác null) */
@@ -43,6 +44,21 @@ export function castArchetype(h: SkillHost, f: Fighter, m: MoveDef, spec: SkillS
     case 'boomerang': return castBoomerang(h, f, m, spec.params, dir);
     case 'barrier': return castBarrier(h, f, m, spec.params);
     case 'singularity': return castSingularity(h, f, m, spec.params);
+    case 'fan': return TA.castFan(h, f, m, spec.params, dir);
+    case 'sweep': return TA.castSweep(h, f, m, spec.params, dir);
+    case 'serpent': return TA.castSerpent(h, f, m, spec.params, dir);
+    case 'dive': return TA.castDive(h, f, m, spec.params);
+    case 'lob': return TA.castLob(h, f, m, spec.params);
+    case 'roll': return TA.castRoll(h, f, m, spec.params, dir);
+    case 'fallers': return TA.castFallers(h, f, m, spec.params);
+    case 'ridge': return TA.castRidge(h, f, m, spec.params, dir);
+    case 'quicksand': return TA.castQuicksand(h, f, m, spec.params);
+    case 'ambush': return TA.castAmbush(h, f, m, spec.params);
+    case 'twister': return TA.castTwister(h, f, m, spec.params, dir);
+    case 'web': return TA.castWeb(h, f, m, spec.params);
+    case 'swarm': return TA.castSwarm(h, f, m, spec.params, dir);
+    case 'triattack': return TA.castTriAttack(h, f, m, spec.params);
+    case 'beam': return TA.castBeam(h, f, m, spec.params, dir);
     default: return undefined;
   }
 }
@@ -57,6 +73,11 @@ export function castUltArchetype(h: SkillHost, f: Fighter, spec: UltSpec, u: Ult
   else if (spec.archetype === 'absolutezero') castAbsoluteZero(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'komode') castKoMode(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'mindbreak') castMindBreak(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'draco') TA.castDraco(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'flock') TA.castFlock(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'wavefront') TA.castWavefront(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'chasm') TA.castChasm(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'hyperbeam') TA.castHyperBeamUlt(h, f, spec.params, u, mv, amount);
 }
 
 /** Vạch chấm từ (x1, y1) tới (x2, y2) – vạch ngắm */

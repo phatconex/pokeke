@@ -102,10 +102,10 @@ export function frostCrack(sc: Phaser.Scene, x: number, y: number, len: number, 
 }
 
 /** bóng cảnh báo hình thoi góc cạnh trên nền (chỗ sắp có giá băng rơi) */
-export function groundWarn(sc: Phaser.Scene, x: number, y: number, ms: number) {
+export function groundWarn(sc: Phaser.Scene, x: number, y: number, ms: number, edge: number = ICE[1], fill = 0x1a3a5a) {
   const g = sc.add.graphics().setDepth(-2780).setAlpha(0);
-  g.fillStyle(0x1a3a5a, 0.4).fillPoints([V(x - 16, y + 2), V(x, y - 6), V(x + 16, y + 2), V(x, y + 10)], true);
-  g.lineStyle(1.5, ICE[1], 0.9).strokePoints([V(x - 16, y + 2), V(x, y - 6), V(x + 16, y + 2), V(x, y + 10)], true);
+  g.fillStyle(fill, 0.4).fillPoints([V(x - 16, y + 2), V(x, y - 6), V(x + 16, y + 2), V(x, y + 10)], true);
+  g.lineStyle(1.5, edge, 0.9).strokePoints([V(x - 16, y + 2), V(x, y - 6), V(x + 16, y + 2), V(x, y + 10)], true);
   sc.tweens.add({ targets: g, alpha: 1, duration: ms * 0.6 });
   sc.tweens.add({ targets: g, alpha: 0, duration: 200, delay: ms, onComplete: () => g.destroy() });
 }

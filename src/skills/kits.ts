@@ -24,6 +24,21 @@ const shade = (c: number, k: number) => {
 
 /** Tham số gốc của từng nguyên mẫu – suy ra màu từ hệ của chiêu, hiệu ứng 'generic' */
 export const ARCHETYPE_DEFAULTS: { [A in ArchetypeId]: (m: MoveDef) => ArchetypeParamMap[A] } = {
+  fan: () => ({ dialect: 'generic' }),
+  sweep: () => ({ dialect: 'generic' }),
+  serpent: () => ({ dialect: 'generic' }),
+  dive: () => ({ dialect: 'generic' }),
+  lob: () => ({ dialect: 'generic' }),
+  roll: () => ({ dialect: 'generic' }),
+  fallers: () => ({ dialect: 'generic' }),
+  ridge: () => ({ dialect: 'generic' }),
+  quicksand: () => ({ dialect: 'generic' }),
+  ambush: () => ({ dialect: 'generic' }),
+  twister: () => ({ dialect: 'generic' }),
+  web: () => ({ dialect: 'generic' }),
+  swarm: () => ({ dialect: 'generic' }),
+  triattack: () => ({ dialect: 'generic' }),
+  beam: () => ({ dialect: 'generic' }),
   bolt: () => ({ dialect: 'generic', scale: 1, trail: 'thin', trailPuffChance: 0.15, split: 1, splitSpreadDeg: 9, splitPowerMult: 0.62 }),
   dashStrike: () => ({ dialect: 'generic', dashMs: 150, iframeExtraMs: 160, trailCount: 1, streaks: true, impactShake: [0.004, 110], impactSfx: null }),
   stream: (m) => {
@@ -135,6 +150,7 @@ const MINDBREAK_DEFAULTS: MindBreakParams = { dialect: 'psychic', windupMs: 800,
 
 const ULT_DEFAULTS: { [U in UltArchetypeId]: UltParamMap[U] } = {
   inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS, timestop: TIMESTOP_DEFAULTS, absolutezero: ABSZERO_DEFAULTS, komode: KOMODE_DEFAULTS, mindbreak: MINDBREAK_DEFAULTS,
+  draco: { dialect: 'dragon', windupMs: 700 }, flock: { dialect: 'flying', windupMs: 700 }, wavefront: { dialect: 'poison', windupMs: 700 }, chasm: { dialect: 'ground', windupMs: 700 }, hyperbeam: { dialect: 'normal', windupMs: 300 },
 };
 
 // ---------------------------------------------------------------------------------- bộ chiêu theo hệ
@@ -902,6 +918,48 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
     },
   },
 };
+
+// ===== 7 hệ còn lại: Rồng · Đá · Đất · Bay · Độc · Bọ · Thường (khuôn ở typeArchetypes.ts, mockup docs/mockups/types-*.png) =====
+// Gắn khuôn theo ô của từng loài (không đụng move gốc); số sát thương/hồi chiêu vẫn lấy từ move.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const S = (archetype: string, params: Record<string, unknown> = {}): any => ({ archetype, params, tiers: [] });
+const TK: Record<string, SpeciesKit> = {
+  // --- Rồng: vảy thoi, quạt, đuôi quét, rồng uốn S; Dragonite lao từ trời + Draco Meteor
+  dratini: { kitType: 'dragon', slots: { J: S('fan', { dialect: 'dragon', n: 10, halfDeg: 22, range: 70 }), K: S('sweep', { dialect: 'dragon', reach: 40, spanDeg: 120, thick: 10 }), L: S('twister', { dialect: 'dragon', r: 28, height: 70, colors: [0x4a7aff, 0xffffff], tex: 'scaleD' }), U: S('serpent', { dialect: 'dragon', segs: 5, size: 8, range: 130 }) } },
+  dragonair: { kitType: 'dragon', slots: { J: S('fan', { dialect: 'dragon', n: 16, halfDeg: 30, range: 85 }), K: S('sweep', { dialect: 'dragon', reach: 50, spanDeg: 150, thick: 14, spikes: 3 }), L: S('twister', { dialect: 'dragon', r: 34, height: 85, colors: [0x4a7aff, 0xa0c0ff], tex: 'scaleD' }), U: S('serpent', { dialect: 'dragon', segs: 8, size: 10, range: 170 }) } },
+  dragonite: { kitType: 'dragon', ult: 'draco', slots: { J: S('fan', { dialect: 'dragon', n: 26, halfDeg: 36, range: 100 }), K: S('dive', { dialect: 'dragon', style: 'dragon', trailColor: 0xffb030, tex: 'scaleD', hitR: 50, powerMult: 1.3 }), L: S('twister', { dialect: 'dragon', r: 40, height: 100, colors: [0xff9a30, 0xffe070], tex: 'scaleD', ms: 1700 }), U: S('serpent', { dialect: 'dragon', segs: 10, size: 12, range: 200, colors: [0xff8a30, 0xc04010], headColor: 0xffd34a }) }, ultParams: { dialect: 'dragon', meteors: 10, totalMs: 3000 } },
+  // --- Đá: tảng đá lì lợm, lăn, trượt phiến
+  geodude: { kitType: 'rock', slots: { J: S('lob', { dialect: 'rock', tex: 'boulderA', scale: 0.8, r: 24, arcH: 34 }), K: S('roll', { dialect: 'rock', size: 1.6, ms: 420, speed: 220, hitR: 18 }) } },
+  graveler: { kitType: 'rock', slots: { J: S('lob', { dialect: 'rock', tex: 'boulderA', scale: 1.1, r: 28, hitStop: 40 }), K: S('roll', { dialect: 'rock', size: 2.0, ms: 520, speed: 230, hitR: 22 }), L: S('fallers', { dialect: 'rock', tex: 'slabR', count: 6, spread: 70, offset: { x: -90, y: -130 }, rotate: true, r: 24, scorch: true }), U: S('fallers', { dialect: 'rock', tex: 'slabR', count: 9, spread: 90, mode: 'line', offset: { x: -110, y: -150 }, rotate: true, r: 26 }) } },
+  golem: { kitType: 'rock', ult: 'wavefront', slots: { J: S('lob', { dialect: 'rock', tex: 'boulderA', scale: 1.5, r: 34, hitStop: 70, shake: 0.01 }), K: S('roll', { dialect: 'rock', size: 2.8, ms: 620, speed: 250, hitR: 28 }), L: S('fallers', { dialect: 'rock', tex: 'slabR', count: 10, spread: 100, offset: { x: -110, y: -160 }, rotate: true, r: 28, scorch: true }), U: S('roll', { dialect: 'rock', size: 3.4, ms: 760, speed: 270, hitR: 34, powerMult: 1.2 }) }, ultParams: { dialect: 'rock', shape: 'rock', ms: 1600 } },
+  // --- Đất: bùn vàng cát, đào hố, gờ đất, cát lún
+  sandshrew: { kitType: 'ground', slots: { J: S('lob', { dialect: 'ground', tex: 'mudball', scale: 0.9, r: 22 }), K: S('roll', { dialect: 'ground', tex: 'mudball', size: 2.4, ms: 420, hitR: 18 }), L: S('ambush', { dialect: 'ground', undergroundMs: 520, hitR: 38 }) } },
+  sandslash: { kitType: 'ground', slots: { J: S('lob', { dialect: 'ground', tex: 'mudball', scale: 1.1, r: 26 }), K: S('roll', { dialect: 'ground', tex: 'mudball', size: 2.8, ms: 500, hitR: 22 }), L: S('ambush', { dialect: 'ground', undergroundMs: 600, hitR: 46 }), U: S('sweep', { dialect: 'ground', reach: 50, spanDeg: 160, fill: 0xb08850, edge: 0x4a3010, spikes: 4 }) } },
+  diglett: { kitType: 'ground', slots: { J: S('lob', { dialect: 'ground', tex: 'mudball', scale: 0.8, r: 20, linger: { ms: 1600, tickMs: 500, powerMult: 0.25 } }), K: S('ambush', { dialect: 'ground', undergroundMs: 450, hitR: 34 }), L: S('ridge', { dialect: 'ground', range: 130, width: 16 }) } },
+  dugtrio: { kitType: 'ground', ult: 'chasm', slots: { J: S('lob', { dialect: 'ground', tex: 'mudball', scale: 1.1, r: 26, linger: { ms: 2000, tickMs: 500, powerMult: 0.3 } }), K: S('ambush', { dialect: 'ground', undergroundMs: 650, hitR: 48 }), L: S('ridge', { dialect: 'ground', range: 190, width: 24 }), U: S('quicksand', { dialect: 'ground', r: 70, ms: 3000 }) }, ultParams: { dialect: 'ground', holdMs: 1100 } },
+  // --- Bay: lông vũ, bóng chim, V xung kích, bay vút rồi lao
+  pidgey: { kitType: 'flying', slots: { J: S('bolt', { dialect: 'flying', scale: 0.9, texPick: ['featherA'], trail: 'thin', trailPuffChance: 0.2, split: 1 }), K: S('dashStrike', { dialect: 'flying', dashMs: 110, trailCount: 0, streaks: false, impactSfx: null }), L: S('sweep', { dialect: 'flying', reach: 40, spanDeg: 130, fill: 0xf4ead0, edge: 0x8a6a3a }) } },
+  pidgeotto: { kitType: 'flying', slots: { J: S('bolt', { dialect: 'flying', scale: 1.1, texPick: ['featherA'], split: 2, splitSpreadDeg: 14, splitPowerMult: 0.7 }), K: S('dive', { dialect: 'flying', airMs: 600, hitR: 40, trailColor: 0xffffff }), L: S('sweep', { dialect: 'flying', reach: 50, spanDeg: 150, fill: 0xf4ead0, edge: 0x8a6a3a, spikes: 3 }) } },
+  pidgeot: { kitType: 'flying', ult: 'flock', slots: { J: S('bolt', { dialect: 'flying', scale: 1.3, texPick: ['featherA'], split: 3, splitSpreadDeg: 18, splitPowerMult: 0.65 }), K: S('dive', { dialect: 'flying', airMs: 700, hitR: 48, trailColor: 0xffd34a, powerMult: 1.3 }), L: S('sweep', { dialect: 'flying', reach: 60, spanDeg: 170, fill: 0xf8f0d8, edge: 0xd04a2a, spikes: 5 }), U: S('twister', { dialect: 'flying', r: 40, height: 110, colors: [0xffffff, 0xcfe6ff], tex: 'featherA', ms: 1800 }) }, ultParams: { dialect: 'flying', birds: 26, totalMs: 3000 } },
+  // --- Độc: xanh lá + vàng, kim, vũng, bùn
+  ekans: { kitType: 'poison', slots: { J: S('bolt', { dialect: 'poison', scale: 0.9, texPick: ['needle'], trail: 'thin', trailPuffChance: 0.1, split: 1 }), K: S('dashStrike', { dialect: 'poison', dashMs: 130, trailCount: 0, streaks: false, impactSfx: null }) } },
+  arbok: { kitType: 'poison', slots: { J: S('bolt', { dialect: 'poison', scale: 1.2, texPick: ['needle'], split: 3, splitSpreadDeg: 14, splitPowerMult: 0.6 }), K: S('dashStrike', { dialect: 'poison', dashMs: 120, trailCount: 1, streaks: false, impactSfx: null }), L: S('dashStrike', { dialect: 'poison', dashMs: 140, trailCount: 1, streaks: true, impactSfx: null }) } },
+  grimer: { kitType: 'poison', slots: { J: S('lob', { dialect: 'poison', tex: 'goo', scale: 1, r: 24, linger: { ms: 2000, tickMs: 500, powerMult: 0.25, color: 0x7ad04a } }), L: S('lob', { dialect: 'poison', tex: 'goo', scale: 1.4, r: 36, linger: { ms: 2800, tickMs: 500, powerMult: 0.3, color: 0x7ad04a } }) } },
+  muk: { kitType: 'poison', ult: 'wavefront', slots: { J: S('lob', { dialect: 'poison', tex: 'goo', scale: 1.3, r: 30, linger: { ms: 2600, tickMs: 500, powerMult: 0.3, color: 0x7ad04a } }), L: S('lob', { dialect: 'poison', tex: 'goo', scale: 1.8, r: 44, linger: { ms: 3200, tickMs: 450, powerMult: 0.35, color: 0x7ad04a } }), U: S('fallers', { dialect: 'poison', tex: 'goo', count: 12, spread: 100, offset: { x: 0, y: -150 }, r: 24, scorch: true }) }, ultParams: { dialect: 'poison', shape: 'sludge', status: 'poison', ms: 1600 } },
+  // --- Bọ: tơ nhện, kim đôi, bầy côn trùng
+  caterpie: { kitType: 'bug', slots: { J: S('web', { dialect: 'bug', r: 36, ms: 1600, bugs: 2, n: 6, rings: 3 }) } },
+  butterfree: { kitType: 'bug', ult: 'wavefront', slots: { K: S('web', { dialect: 'bug', r: 52, ms: 2200, bugs: 4, pull: true }), U: S('swarm', { dialect: 'bug', n: 22, ms: 4500 }) }, ultParams: { dialect: 'bug', shape: 'swarm', ms: 1800 } },
+  weedle: { kitType: 'bug', slots: { J: S('bolt', { dialect: 'bug', scale: 0.9, texPick: ['needle'], trail: 'thin', trailPuffChance: 0.05, split: 1 }), K: S('web', { dialect: 'bug', r: 34, ms: 1500, bugs: 2, n: 6, rings: 3 }) } },
+  beedrill: { kitType: 'bug', ult: 'wavefront', slots: { J: S('bolt', { dialect: 'bug', scale: 1.1, texPick: ['needle'], split: 2, splitSpreadDeg: 8, splitPowerMult: 0.8 }), K: S('bolt', { dialect: 'bug', scale: 1.1, texPick: ['needle'], split: 2, splitSpreadDeg: 6, splitPowerMult: 0.9, speedMult: 1.3 }), L: S('dashStrike', { dialect: 'bug', dashMs: 100, trailCount: 1, streaks: true, impactSfx: null }), U: S('fallers', { dialect: 'bug', tex: 'needle', count: 14, spread: 90, offset: { x: 0, y: -170 }, fallMs: 160, r: 18 }) }, ultParams: { dialect: 'bug', shape: 'swarm', ms: 1800 } },
+  // --- Thường: tròn, mềm, sao trắng — không vòng tròn ma thuật; Thích nghi (Tri-Attack)
+  rattata: { kitType: 'normal', slots: { J: S('dashStrike', { dialect: 'normal', dashMs: 100, trailCount: 0, streaks: false, impactSfx: null }), K: S('dashStrike', { dialect: 'normal', dashMs: 120, trailCount: 1, streaks: true, impactSfx: null }) } },
+  raticate: { kitType: 'normal', slots: { J: S('dashStrike', { dialect: 'normal', dashMs: 90, trailCount: 0, streaks: false, impactSfx: null }), K: S('dashStrike', { dialect: 'normal', dashMs: 110, trailCount: 1, streaks: true, impactSfx: null }), L: S('dashStrike', { dialect: 'normal', dashMs: 130, trailCount: 1, streaks: true, impactSfx: null }), U: S('dashStrike', { dialect: 'normal', dashMs: 140, trailCount: 2, streaks: true, impactSfx: null }) } },
+  meowth: { kitType: 'normal', slots: { K: S('dashStrike', { dialect: 'normal', dashMs: 110, trailCount: 0, streaks: false, impactSfx: null }), L: S('dashStrike', { dialect: 'normal', dashMs: 120, trailCount: 1, streaks: true, impactSfx: null }) } },
+  persian: { kitType: 'normal', slots: { K: S('dashStrike', { dialect: 'normal', dashMs: 100, trailCount: 1, streaks: true, impactSfx: null }), L: S('dashStrike', { dialect: 'normal', dashMs: 110, trailCount: 2, streaks: true, impactSfx: null }), U: S('triattack', { dialect: 'normal', r: 30, flyMs: 400 }) } },
+  eevee: { kitType: 'normal', slots: { J: S('dashStrike', { dialect: 'normal', dashMs: 100, trailCount: 0, streaks: false, impactSfx: null }), K: S('bolt', { dialect: 'normal', scale: 0.9, texPick: ['star5'], trail: 'thin', trailPuffChance: 0.2, split: 3, splitSpreadDeg: 20, splitPowerMult: 0.5 }), L: S('dashStrike', { dialect: 'normal', dashMs: 110, trailCount: 1, streaks: true, impactSfx: null }), U: S('triattack', { dialect: 'normal', r: 26, flyMs: 420 }) } },
+  snorlax: { kitType: 'normal', ult: 'hyperbeam', slots: { J: S('dashStrike', { dialect: 'normal', dashMs: 160, trailCount: 0, streaks: false, impactSfx: null }), U: S('beam', { dialect: 'normal', windupMs: 800, len: 300, width: 34, beamMs: 800 }) }, ultParams: { dialect: 'normal', windupMs: 1000, len: 380, width: 46, beamMs: 1000 } },
+};
+for (const k of Object.keys(TK)) SPECIES_KITS[k] = { ...SPECIES_KITS[k], ...TK[k] };
 
 // ---------------------------------------------------------------------------------- phân giải
 

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { scatter } from '../fx/TypeFx';
 import { leafBurst } from '../fx/GrassFx';
 import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, PLAYER, POTION, SKILL_UNLOCK, SPAWN, STAGE_REWARD, STAGE_TUNING, SURVIVAL, SWITCH, TRAINER, arenaSize } from '../config/balance';
 import { makeFrame } from '../art/chapters';
@@ -204,6 +205,8 @@ type Keys = Record<KeyName, Phaser.Input.Keyboard.Key>;
 
 const INPUT_BUFFER_MS = 140;
 const SLOT_KEYS: Record<SkillSlot, KeyName> = { J: 'J', K: 'K', L: 'L', U: 'U' };
+
+const FLAIR_TEX: Partial<Record<string, string>> = { dragon: 'scaleD', rock: 'boulderB', ground: 'mudball', flying: 'featherA', poison: 'goo', bug: 'bugdot', normal: 'star5' };
 
 export class BattleScene extends Phaser.Scene implements BattleCtx {
   clock = 0;
@@ -1204,6 +1207,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     // Giác đấu / Băng: không dùng vòng tròn (giữ bản sắc hình dáng riêng của hệ)
     else if (m.type === 'fighting') impactRays(this, f.x, f.chestY, 10, 14, 34, 0xfff06a, 260);
     else if (m.type === 'ice') radialShards(this, f.x, f.feetY - 6, 8, 26);
+    else if (FLAIR_TEX[m.type]) scatter(this, FLAIR_TEX[m.type]!, f.x, f.feetY - 4, 8, 28);
     else {
       const ring = this.add.circle(f.x, f.feetY, 10, TYPE_COLOR[m.type], 0.25).setStrokeStyle(3, TYPE_COLOR[m.type], 1).setDepth(-2700);
       this.tweens.add({ targets: ring, scale: 5, alpha: 0, duration: 420, onComplete: () => ring.destroy() });

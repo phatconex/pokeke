@@ -7,6 +7,7 @@ import { assetStatus, BOOT_ANIMS, finalizeSpecies, queueSheets } from '../system
 import { generateFxTextures, generateWorldTextures } from '../art/textures';
 import { generateGrassTextures } from '../art/grassArt';
 import { generateIceTextures } from '../art/iceArt';
+import { generateTypeTextures } from '../art/typeArt';
 import { generateMoveTextures, generateTownTextures, generateTrainerTextures } from '../art/townArt';
 import { generateIcons } from '../art/icons';
 
@@ -35,6 +36,7 @@ export class BootScene extends Phaser.Scene {
     generateMoveTextures(this);
     generateGrassTextures(this);
     generateIceTextures(this);
+    generateTypeTextures(this);
     generateTownTextures(this);
     generateTrainerTextures(this);
     generateIcons(this);

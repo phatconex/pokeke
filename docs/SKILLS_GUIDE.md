@@ -100,3 +100,21 @@ Hệ chưa có mẫu: Normal, Bug, Poison, Flying, Rock, Ground, Dragon (đang d
 Thêm một huyền thoại = 1 mục trong `LEGENDARY` + bộ chiêu riêng trong `SPECIES_KITS` + base stat cao (HP/ATK) + `TRAITS` (haste/crit) + `catchRate: 3`.
 Đặc quyền tự động áp dụng: thanh năng lượng lớn + hồi nhanh (`Fighter.refreshStats`), tuyệt chiêu luôn mở + nạp nhanh + hồi ngắn (`isLearned`, `gainUlt`, `castUltimate`), hào quang lơ lửng + lá chắn lục giác tự động (`BattleScene.updateLegend`, `damageFighter`).
 Mẫu đã làm: **Mewtwo** (lưỡi liềm quay lại · lá chắn lục giác · giếng trọng lực · tia xoắn gen · Mind Break). Khuôn: `boomerang`, `barrier`, `singularity`, `stream.helix`, ult `mindbreak` (`legendArchetypes.ts`).
+
+## 11. Bảy hệ còn lại (Rồng · Đá · Đất · Bay · Độc · Bọ · Thường)
+
+Khuôn ở `src/skills/typeArchetypes.ts`, hiệu ứng chung `src/fx/TypeFx.ts`, texture `src/art/typeArt.ts`, bộ chiêu từng loài trong `kits.ts` (khối `TK`, gắn khuôn theo ô, không đụng move gốc).
+
+| Hệ | Khuôn thường | Ult | Nhận diện |
+|---|---|---|---|
+| Rồng | fan (quạt vảy), sweep (đuôi), twister, serpent, dive | draco (Draco Meteor) | vảy thoi xanh/vàng, thiên thạch |
+| Đá | lob, roll, fallers (phiến chéo) | wavefront rock | mảnh đá đục + gân quặng, nặng |
+| Đất | lob (bùn), ambush (đào hố), ridge (gờ đất), quicksand | chasm (vực nứt) | vàng cát, hố, chìm |
+| Bay | bolt lông vũ, sweep cánh, dive (lên trời, bóng + dấu X rồi lao), twister | flock (đàn chim + V) | lông vũ, bóng chim, sóng V |
+| Độc | bolt kim, lob (vũng độc), fallers axit | wavefront sludge | xanh lá + vàng, bong bóng |
+| Bọ | web (tơ, kéo mục tiêu), swarm (bầy tự cắn), bolt kim đôi | wavefront swarm | tơ nhện, bầy côn trùng |
+| Thường | dashStrike trơn, triattack (chọn Lửa/Băng/Điện theo hệ khắc), beam | hyperbeam | sao trắng, tia trắng; không vòng tròn |
+
+Loài đã gắn: dratini/dragonair/dragonite, geodude/graveler/golem, sandshrew/sandslash/diglett/dugtrio, pidgey/pidgeotto/pidgeot, ekans/arbok, grimer/muk, caterpie/butterfree, weedle/beedrill, rattata/raticate/meowth/persian/eevee/snorlax.
+Ult nhớ có `windupMs` trong `ULT_DEFAULTS`, thiếu thì ult không bao giờ bắn.
+CHƯA làm: cơ chế cộng dồn riêng (Cơn giận, Da đá, độc cộng dồn/ăn mòn, Thích nghi không bị kháng, bất tử trên không toàn cục).

@@ -6,6 +6,7 @@ import type { SkillHost } from './host';
 import type { FxDialectId } from './types';
 import { impactRays, powBurst, speedLines } from '../fx/FightFx';
 import { groundCracks } from '../fx/GrassFx';
+import { bubbles, patch, scatter, vShock } from '../fx/TypeFx';
 import { frostSheet, iceSpike, radialShards, shardStar } from '../fx/IceFx';
 
 export interface FxDialect {
@@ -198,6 +199,33 @@ const fighting = (fx: Effects): FxDialect => ({
   streaks: (x1, y1, x2, y2) => speedLines(fx.scn, x1, y1, x2, y2, 5, 0xffffff),
 });
 
+
+const mk = (fx: Effects, tex: string, tint: number | undefined, fill: number, edge: number, h?: SkillHost, slow = 0, extra?: (x: number, y: number, r: number) => void): FxDialect => ({
+  trail: (x, y, n) => scatter(fx.scn, tex, x, y, n, 10, tint, 0.7),
+  hit: (x, y, big) => scatter(fx.scn, tex, x, y, big ? 9 : 5, big ? 34 : 22, tint),
+  spray: (x, y, a, n) => fx.jetOf(tex, x, y, a, 8, n),
+  smoke: (x, y, n) => fx.dustPuff(x, y, n),
+  puff: (x, y, n) => scatter(fx.scn, tex, x, y, n, 12, tint, 0.8),
+  explosion: (x, y, r) => {
+    scatter(fx.scn, tex, x, y, Math.max(6, Math.round(r / 2)), r * 1.8, tint);
+    fx.dustPuff(x, y, 3);
+    extra?.(x, y, r);
+  },
+  scorch: (x, y, r, ms) => {
+    patch(fx.scn, x, y, r, ms, fill, edge, 0.7);
+    if (slow) slowZone(h, x, y, r, ms, slow);
+  },
+  pillar: (x, y) => scatter(fx.scn, tex, x, y, 4, 14, tint),
+  streaks: (x1, y1, x2, y2) => fx.scratchMarks(x2, y2, Math.atan2(y2 - y1, x2 - x1), 3, 12, edge, fill),
+});
+const dragon = (fx: Effects): FxDialect => mk(fx, 'scaleD', undefined, 0x2a3aaa, 0xffd34a);
+const rock = (fx: Effects): FxDialect => mk(fx, 'boulderB', undefined, 0x6a5a48, 0x2a2018, undefined, 0, (x, y, r) => groundCracks(fx.scn, x, y, r, 4, 900, 0));
+const ground = (fx: Effects, h?: SkillHost): FxDialect => mk(fx, 'mudball', undefined, 0xb08850, 0x4a3010, h, 0.6);
+const flying = (fx: Effects): FxDialect => mk(fx, 'featherA', undefined, 0xffffff, 0x9ac0e8, undefined, 0, (x, y, r) => vShock(fx.scn, x, y + 4, r * 1.4, 0xffffff));
+const poison = (fx: Effects, h?: SkillHost): FxDialect => mk(fx, 'goo', undefined, 0x5aa02a, 0xd8e040, h, 0.75, (x, y, r) => bubbles(fx.scn, x, y, r, 6));
+const bug = (fx: Effects): FxDialect => mk(fx, 'bugdot', undefined, 0xe8e8d8, 0x7a8a3a);
+const normal = (fx: Effects): FxDialect => mk(fx, 'star5', undefined, 0xffffff, 0xc8c8c8);
+
 /** Hệ chưa có bộ hiệu ứng riêng: dùng hạt của chiêu (move.particle) + tia sáng chung */
 const generic = (fx: Effects, m: MoveDef): FxDialect => {
   const tex = m.particle ?? 'spark';
@@ -231,6 +259,13 @@ export function dialectFor(id: FxDialectId, fx: Effects, m: MoveDef, h?: SkillHo
     case 'psychic': return psy(fx, h);
     case 'ice': return ice(fx, h);
     case 'fighting': return fighting(fx);
+    case 'dragon': return dragon(fx);
+    case 'rock': return rock(fx);
+    case 'ground': return ground(fx, h);
+    case 'flying': return flying(fx);
+    case 'poison': return poison(fx, h);
+    case 'bug': return bug(fx);
+    case 'normal': return normal(fx);
     default: return generic(fx, m);
   }
 }
