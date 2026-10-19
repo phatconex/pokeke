@@ -215,7 +215,14 @@ const SLOT_KEYS: Record<SkillSlot, KeyName> = { J: 'J', K: 'K', L: 'L', U: 'U' }
 const FLAIR_TEX: Partial<Record<string, string>> = { dragon: 'scaleD', rock: 'boulderB', ground: 'mudball', flying: 'featherA', poison: 'goo', bug: 'bugdot', normal: 'star5' };
 
 /** sát thương chiêu huyền thoại địch: mỗi điểm sức mạnh chiêu = tỉ lệ máu tối đa người chơi này (đã nhân chênh cấp) */
-const LEGEND_FOE_DMG = 0.0045;
+const LEGEND_FOE_DMG = 0.006;
+/** huyền thoại địch ra chiêu nhanh hơn bản người chơi: rút ngắn gồng / báo trước / thời gian bay */
+function fastSpec<T extends { params: object }>(spec: T): T {
+  const p = { ...(spec.params as Record<string, unknown>) };
+  for (const k of ['windupMs', 'telegraphMs', 'flyMs', 'growMs']) if (typeof p[k] === 'number') p[k] = Math.round((p[k] as number) * 0.55);
+  for (const k of ['ms']) if (typeof p[k] === 'number' && (p[k] as number) > 1200) p[k] = Math.round((p[k] as number) * 0.8);
+  return { ...spec, params: p };
+}
 
 export class BattleScene extends Phaser.Scene implements BattleCtx {
   clock = 0;
@@ -3461,7 +3468,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   // ======================================================================= huyền thoại phe địch
   /** Thứ tự ô chiêu của huyền thoại địch: đòn J xen kẽ chiêu lớn; nghỉ (ms) sau mỗi ô */
   private static readonly LEGEND_FOE_ROT: { slot: SkillSlot; gap: number }[] = [
-    { slot: 'J', gap: 1100 }, { slot: 'K', gap: 1700 }, { slot: 'J', gap: 1100 }, { slot: 'L', gap: 2300 }, { slot: 'J', gap: 1100 }, { slot: 'U', gap: 2600 },
+    { slot: 'J', gap: 650 }, { slot: 'K', gap: 1000 }, { slot: 'J', gap: 650 }, { slot: 'L', gap: 1300 }, { slot: 'J', gap: 650 }, { slot: 'U', gap: 1500 },
   ];
 
   private updateLegendFoes() {
@@ -3472,7 +3479,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       if (e.dead || e.dummy || e.beingCaught || !legendOf(e.species.id)) continue;
       let st = this.legendFoes.get(e);
       if (!st) {
-        st = { next: this.clock + 1500, idx: 0, ults: [0.7, 0.35], ...this.makeLegendFoe(e) };
+        st = { next: this.clock + 800, idx: 0, ults: [0.75, 0.5, 0.25], ...this.makeLegendFoe(e) };
         this.legendFoes.set(e, st);
       }
       if (e.isStunned(this.clock) || this.clock < st.next) continue;
@@ -3482,19 +3489,20 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       if (st.ults.length && ratio <= st.ults[0]) {
         st.ults.shift();
         this.legendFoeUlt(e, st);
-        st.next = this.clock + 4200;
+        st.next = this.clock + 2600;
         continue;
       }
       const rot = BattleScene.LEGEND_FOE_ROT[st.idx++ % BattleScene.LEGEND_FOE_ROT.length];
       const sk = e.species.skills.find((x) => x.slot === rot.slot);
       const move = sk ? MOVES[sk.move] : undefined;
-      st.next = this.clock + rot.gap * (0.9 + Math.random() * 0.2);
+      // dưới 35% máu: nổi giận, ra chiêu dồn dập hơn
+      st.next = this.clock + rot.gap * (ratio < 0.35 ? 0.7 : 1) * (0.9 + Math.random() * 0.2);
       if (!move) continue;
       const spec = resolveSkill(e.species.id, e.level, rot.slot, move);
       if (!spec.archetype) continue;
       const dir = new Phaser.Math.Vector2(p.x - e.x, p.chestY - e.centerY).normalize();
       if (rot.slot !== 'J') this.fx.floatingLabel(e.x, e.topY - 12, moveName(move), '#' + TYPE_COLOR[move.type].toString(16).padStart(6, '0'));
-      castArchetype(st.host, st.caster, { ...move, castSlot: undefined, castId: undefined }, spec, dir);
+      castArchetype(st.host, st.caster, { ...move, castSlot: undefined, castId: undefined }, fastSpec(spec), dir);
     }
     for (const e of [...this.legendFoes.keys()]) if (e.dead || !this.enemies.includes(e)) this.legendFoes.delete(e);
   }
@@ -3511,14 +3519,14 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       sfx: 'thunder', knockback: 160, icon: 'crown', particle: 'spark', status: u.status,
     };
     this.events.emit('banner', `${e.species.name}: ${name}!`);
-    this.fx.addTelegraph({ kind: 'glow', target: e.zone, r: 30, start: this.clock, end: this.clock + 1000, color: TYPE_COLOR[type], owner: e });
-    e.anim.playOnce('charge', 1000);
+    this.fx.addTelegraph({ kind: 'glow', target: e.zone, r: 30, start: this.clock, end: this.clock + 650, color: TYPE_COLOR[type], owner: e });
+    e.anim.playOnce('charge', 650);
     e.stunnedUntil = 0;
     this.fx.shake(0.008, 600);
     playSfx('boss');
-    this.schedule(this.clock + 1000, () => {
+    this.schedule(this.clock + 650, () => {
       if (this.over || e.dead || e.beingCaught) return;
-      castUltArchetype(st.host, st.caster, style, u, mv, u.power * ULT_PACING.powerMult);
+      castUltArchetype(st.host, st.caster, fastSpec(style), u, mv, u.power * ULT_PACING.powerMult);
     });
   }
 
