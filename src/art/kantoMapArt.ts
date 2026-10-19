@@ -23,15 +23,15 @@ const inPoly = (x: number, y: number, pts: number[][]) => {
 };
 
 // đất liền (đường bờ có noise), đảo Cinnabar + đảo Seafoam
-const LAND = [[0, 0], [760, 0], [790, 90], [752, 210], [770, 320], [690, 425], [530, 455], [462, 505], [360, 515], [250, 512], [200, 548], [90, 548], [30, 505], [0, 480]];
-const ISLANDS = [[[146, 566], [262, 562], [270, 622], [140, 626]], [[288, 552], [330, 550], [332, 580], [290, 582]]];
+const LAND = [[0, 0], [960, 0], [960, 470], [900, 560], [820, 548], [720, 540], [640, 552], [560, 556], [420, 560], [300, 566], [200, 600], [130, 640], [0, 640]];
+const ISLANDS = [[[714, 566], [840, 560], [846, 632], [710, 636]], [[655, 552], [706, 548], [710, 584], [656, 586]]];
 const ELL = (cx: number, cy: number, rx: number, ry: number) => (x: number, y: number) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
-const FOREST_VIRIDIAN = ELL(118, 318, 62, 74);
-const FOREST_SAFARI = ELL(330, 452, 54, 30);
-const LAVENDER = ELL(652, 262, 72, 52);
-const MOON = ELL(260, 192, 92, 26);
-const LAKES: [number, number, number, number][] = [[470, 112, 34, 16], [415, 300, 22, 12], [560, 340, 26, 12], [236, 392, 20, 10], [620, 140, 18, 10]];
-const VOLCANO = { x: 168, y: 604, rx: 22, ry: 13 };
+const FOREST_VIRIDIAN = ELL(100, 380, 74, 110);
+const FOREST_SAFARI = ELL(330, 425, 64, 40);
+const LAVENDER = ELL(700, 360, 72, 46);
+const MOON = ELL(285, 175, 110, 26);
+const LAKES: [number, number, number, number][] = [[530, 255, 34, 15], [250, 300, 26, 12], [790, 425, 22, 10], [430, 445, 20, 10], [200, 520, 22, 10]];
+const VOLCANO = { x: 776, y: 616, rx: 22, ry: 13 };
 
 export function generateKantoMap(scene: Phaser.Scene, key: string, layout: KantoMapLayout, seed = 11) {
   const W = KMAP_W;
@@ -80,8 +80,8 @@ export function generateKantoMap(scene: Phaser.Scene, key: string, layout: Kanto
       const jx = x + (n1(x / 30, y / 30) - 0.5) * 40;
       const jy = y + (n1(x / 30 + 9, y / 30) - 0.5) * 40;
       const land = inPoly(jx, jy, LAND) || ISLANDS.some((p) => inPoly(jx, jy, p));
-      // độ cao: tây bắc cao nhất (núi tuyết Indigo), giảm dần về đông nam
-      const e = (1 - x / W) * 0.55 + (1 - y / H) * 0.75 - 0.32 + (n1(x / 60, y / 60) - 0.5) * 0.5;
+      // độ cao: đông bắc cao nhất (núi tuyết Đường Chiến Thắng / Indigo), giảm dần về tây nam
+      const e = (x / W) * 0.6 + (1 - y / H) * 0.8 - 0.4 + (n1(x / 60, y / 60) - 0.5) * 0.5;
       level[i] = Math.max(0, Math.min(6, Math.floor(e * 6.4)));
       let k = 0;
       const dens = n2(x / 40, y / 40, 3);
@@ -178,7 +178,7 @@ export function generateKantoMap(scene: Phaser.Scene, key: string, layout: Kanto
     }
   }
   // thác nước đổ từ núi tuyết xuống
-  for (const [wx, wy, len] of [[300, 96, 22], [468, 84, 24], [86, 240, 18]] as const) {
+  for (const [wx, wy, len] of [[650, 90, 20], [820, 200, 22], [380, 120, 16]] as const) {
     for (let k = 0; k < len; k++) for (let dx = -2; dx <= 2; dx++) set(wx + dx, wy + k, (k + dx) % 3 === 0 ? [0xff, 0xff, 0xff] : PAL.waterLight);
     for (let dx = -5; dx <= 5; dx++) set(wx + dx, wy + len, [0xff, 0xff, 0xff], 0.7);
   }
