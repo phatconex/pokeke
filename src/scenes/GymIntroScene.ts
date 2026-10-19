@@ -49,8 +49,15 @@ export class GymIntroScene extends Phaser.Scene {
   private bars: Phaser.GameObjects.Rectangle[] = [];
   private topTitle: Phaser.GameObjects.GameObject[] = [];
 
+  /** 'intro' = mở màn hội quán · 'faint' = Pokémon vừa gục: thu hồi xong, chọn con tiếp theo rồi ném bóng */
+  private mode: 'intro' | 'faint' = 'intro';
+
   constructor() {
     super('GymIntro');
+  }
+
+  init(data?: { mode?: 'intro' | 'faint' }) {
+    this.mode = data?.mode ?? 'intro';
   }
 
   create() {
@@ -116,6 +123,13 @@ export class GymIntroScene extends Phaser.Scene {
       this.input.removeAllListeners();
     });
 
+    if (this.mode === 'faint') {
+      this.leaderOut = true;
+      void this.runFaint().catch((e) => {
+        if (e !== SKIPPED) throw e;
+      });
+      return;
+    }
     if (this.battle.introSkipRequested) {
       this.skip();
       return;
@@ -162,6 +176,23 @@ export class GymIntroScene extends Phaser.Scene {
     this.throwing = null;
     this.sendFighter(idx);
     await this.wait(800);
+    this.hideDialog();
+    this.finish();
+  }
+
+  /** Pokémon vừa gục giữa trận hội quán: chọn con tiếp theo → ném bóng → đánh tiếp */
+  private async runFaint() {
+    const b = this.battle;
+    const foe = b.gymFoe;
+    await this.wait(250);
+    const idx = await this.choose(foe?.species.name ?? '', t('battle.intro.chooseNext'));
+    const f = b.fighters[idx];
+    this.caption(t('battle.intro.go', { trainer: this.trainerName, name: f.species.name }));
+    await this.wait(350);
+    await this.step(new Promise<void>((r) => (this.throwing = this.playerThrow(r))));
+    this.throwing = null;
+    this.sendFighter(idx);
+    await this.wait(600);
     this.hideDialog();
     this.finish();
   }
@@ -401,15 +432,15 @@ export class GymIntroScene extends Phaser.Scene {
 
   // ======================================================================= chọn Pokémon
 
-  private choose(foeName: string) {
+  private choose(foeName: string, titleText = t('battle.intro.choose')) {
     const fs = this.battle.fighters;
     if (fs[this.sel]?.dead) this.sel = Math.max(0, fs.findIndex((f) => !f.dead));
     const { width, height } = this.scale;
     const layer = this.add.container(0, 0).setDepth(30);
     layer.add(this.add.rectangle(0, 0, width, height, 0x0b0f1e, 0.55).setOrigin(0));
-    const title = outlinedText(this, width / 2, 140, t('battle.intro.choose'), 36, '#ffffff', '#1a1020', 3);
+    const title = outlinedText(this, width / 2, 140, titleText, 36, '#ffffff', '#1a1020', 3);
     layer.add(title.all);
-    if (foeName) layer.add(text(this, width / 2, 188, t('battle.intro.chooseSub', { leader: this.leaderName, name: foeName }), 12, '#ffd0a0').setOrigin(0.5));
+    if (foeName) layer.add(text(this, width / 2, 188, this.mode === 'faint' ? t('battle.intro.chooseNextSub', { leader: this.leaderName, name: foeName }) : t('battle.intro.chooseSub', { leader: this.leaderName, name: foeName }), 12, '#ffd0a0').setOrigin(0.5));
     layer.add(text(this, width / 2, 560, t('battle.intro.chooseHint', { n: fs.length }), 10, '#c8d0f0').setOrigin(0.5));
     layer.setAlpha(0);
     this.tweens.add({ targets: layer, alpha: 1, duration: 200 });

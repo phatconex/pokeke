@@ -952,10 +952,48 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     return f;
   }
 
+  /** địch hội quán đang đứng (cho màn chọn Pokémon tiếp theo) */
+  get gymFoe(): Enemy | null {
+    return this.enemies.find((e) => !e.dead) ?? null;
+  }
+
+  /** Hội quán: tia đỏ từ huấn luyện viên thu Pokémon gục về bóng, rồi mở màn hình chọn con tiếp theo */
+  private gymRecall(p: Fighter) {
+    const tr = this.trainerSprite!;
+    const from = { x: tr.x + 7 * TRAINER_SCALE, y: tr.y - 17 * TRAINER_SCALE };
+    const beam = this.add.graphics().setDepth(99990);
+    const spr = p.anim.sprite;
+    const sx0 = spr.scaleX;
+    const sy0 = spr.scaleY;
+    this.fx.floatingLabel(tr.x, tr.y - 40, t('battle.recall', { name: p.species.name }), '#ffd0a0');
+    playSfx('swap');
+    trainerThrowPose(this, tr, 1);
+    const o = { k: 0 };
+    this.tweens.add({
+      targets: o, k: 1, duration: 520,
+      onUpdate: () => {
+        beam.clear();
+        beam.lineStyle(6, 0xff3040, 0.5 * (1 - o.k * 0.4)).lineBetween(from.x, from.y, p.x, p.chestY);
+        beam.lineStyle(2, 0xffffff, 0.9).lineBetween(from.x, from.y, p.x, p.chestY);
+        spr.setTintFill(0xff4050).setScale(sx0 * (1 - 0.7 * o.k), sy0 * (1 - 0.7 * o.k)).setAlpha(1 - o.k);
+      },
+      onComplete: () => {
+        beam.destroy();
+        spr.clearTint().setScale(sx0, sy0);
+        if (this.over) return;
+        p.setOnField(false);
+        this.introActive = true;
+        this.input.keyboard!.enabled = false;
+        this.resetInput();
+        this.scene.launch('GymIntro', { mode: 'faint' });
+      },
+    });
+  }
+
   /** Kết thúc mở màn → bắt đầu đánh */
   endIntro() {
     if (!this.introActive) return;
-    if (!this.player.onField) this.introSendFighter(this.activeIdx);
+    if (!this.player.onField || this.player.dead) this.introSendFighter(this.activeIdx);
     if (!this.enemies.length) this.introSendOut();
     this.introActive = false;
     this.input.keyboard!.enabled = true;
@@ -2648,7 +2686,10 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (p.dead && this.pendingSwitchAt && this.clock >= this.pendingSwitchAt) {
       this.pendingSwitchAt = 0;
       const next = this.fighters.findIndex((f) => !f.dead);
-      if (next >= 0) this.switchTo(next, true);
+      if (next < 0) return;
+      // hội quán: thu hồi về bóng (tia đỏ) → dừng trận, chọn con tiếp theo, ném bóng (GymIntroScene chế độ 'faint')
+      if (this.gym && this.trainerSprite) this.gymRecall(p);
+      else this.switchTo(next, true);
     }
   }
 
