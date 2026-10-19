@@ -22,7 +22,9 @@ import { addBigWin, addKo, addQuest, isLearned, learnReady, markTrialCleared, re
 import type { QuestEvent } from '../data/unlocks';
 import { readyToast, reqLine, slotLockShort } from '../ui/unlockText';
 import type { HazardDef, HazardFx, HazardHit, Solid } from '../data/hazards';
+import { legendOf } from '../data/legendary';
 import { impactRays, powBurst } from '../fx/FightFx';
+import { drawHexCluster, hexShatter } from '../fx/PsyFx';
 import { iceBlock, radialShards, shardBurst } from '../fx/IceFx';
 import { finalizeSpecies, queueSheets } from '../systems/spriteLoader';
 import { dexOf, markCaught, markSeen } from '../game/dex';
@@ -58,6 +60,7 @@ const ULT_NAME_BY_SPECIES: Record<string, { vi: string; en: string }> = {
   venusaur: { vi: 'Rừng Cây Phủ Sân', en: 'Overgrowth' },
   kadabra: { vi: 'Ngưng Đọng Thời Gian', en: 'Time Stop' },
   alakazam: { vi: 'Ngưng Đọng Thời Gian', en: 'Time Stop' },
+  mewtwo: { vi: 'Phá Vỡ Tâm Trí', en: 'Mind Break' },
   dewgong: { vi: 'Kỷ Băng Hà', en: 'Ice Age' },
   machoke: { vi: 'Loạt Đấm', en: 'Flurry' },
   machamp: { vi: 'Đấm Hạ Gục', en: 'K.O. Rush' },
@@ -296,6 +299,12 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   /** Giác đấu – Phản Đòn đang giữ thế đỡ, và buff L/U sau khi phản */
   private counter: { until: number; reduce: number; onHit: () => void; done: boolean } | null = null;
   private counterBuff = { until: 0, mult: 1 };
+  /** huyền thoại: lá chắn lục giác tự động + hào quang lơ lửng */
+  private legendShieldAt = 0;
+  private legendShieldOn = false;
+  private legendLiftPause = 0;
+  private legendNextPuffAt = 0;
+  private legendGfx: Phaser.GameObjects.Graphics | null = null;
   private loadingText: Phaser.GameObjects.Text | null = null;
   /** tiền nhặt được bằng Ném Xu trong trận */
   private bonusMoney = 0;
@@ -800,6 +809,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     // con tự gục trong lượt của nó (Voltorb tự nổ)
     for (const e of [...this.enemies]) if (e.dead) this.killEnemy(e);
     this.checkContactDamage();
+    this.updateLegend();
     this.updateCollisions();
     this.updateProjectiles(dt);
     this.updateOrbs(dt);
@@ -1210,7 +1220,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     // dạng gốc chưa tiến hóa / chưa mở khóa: không có tuyệt chiêu → không tích năng lượng
     if (!this.ultOpen(f)) return;
     const before = f.ultCharge;
-    f.ultCharge = Math.min(1, f.ultCharge + v);
+    f.ultCharge = Math.min(1, f.ultCharge + v * (legendOf(f.species.id)?.ultChargeMult ?? 1));
     if (before < 1 && f.ultCharge >= 1) {
       this.events.emit('toast', t('battle.ultReady', { name: ultName(f.species.types, f.species.id) }));
       playSfx('level');
@@ -1269,7 +1279,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       return;
     }
     f.ultCharge = 0;
-    this.ultLockUntil = this.clock + ULT_PACING.cooldownMs;
+    this.ultLockUntil = this.clock + (legendOf(f.species.id)?.ultCooldownMs ?? ULT_PACING.cooldownMs);
+    this.legendLiftPause = this.clock + 3200;
     const u = ultimateFor(f.species.types);
     const type = f.species.types[0];
     const mv: MoveDef = {
@@ -1989,6 +2000,33 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   }
 
   /** quiet: nhịp sát thương nhỏ (mây, xoay) – không rung, không bật chữ khắc hệ liên tục */
+  /** Huyền thoại: lơ lửng + hạt hào quang + lá chắn lục giác tự động (mỗi shieldEveryMs) */
+  private updateLegend() {
+    const p = this.player;
+    const lg = p && !p.dead ? legendOf(p.species.id) : undefined;
+    if (!lg) {
+      if (this.legendGfx) {
+        this.legendGfx.destroy();
+        this.legendGfx = null;
+      }
+      this.legendShieldOn = false;
+      return;
+    }
+    if (this.legendShieldAt === 0) this.legendShieldAt = this.clock + 3000;
+    if (!this.legendShieldOn && lg.shieldEveryMs > 0 && this.clock >= this.legendShieldAt) {
+      this.legendShieldOn = true;
+      playSfx('swap');
+    }
+    if (this.clock >= this.legendLiftPause) p.anim.lift = lg.levitate + Math.sin(this.clock / 380) * 1.5;
+    if (this.clock >= this.legendNextPuffAt) {
+      this.legendNextPuffAt = this.clock + 110;
+      this.fx.puff('psypuff', p.x + (Math.random() - 0.5) * 16, p.feetY - 8 - Math.random() * 26, 1);
+    }
+    if (!this.legendGfx) this.legendGfx = this.add.graphics().setDepth(99994);
+    this.legendGfx.clear();
+    if (this.legendShieldOn) drawHexCluster(this.legendGfx, p.x, p.chestY, 8, lg.colors, 0.55 + 0.25 * Math.sin(this.clock / 110));
+  }
+
   /** Giác đấu – Va chạm: địch đang bị đánh văng đâm vào địch khác → cả hai chịu sát thương */
   private updateCollisions() {
     for (const e of this.enemies) {
@@ -2281,6 +2319,26 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       // Thu Nhỏ: né hoàn toàn
       f.invulnUntil = this.clock + 250;
       this.fx.floatingLabel(f.x, f.chestY - 20, t('battle.dodge'), '#ffb0f0');
+      return;
+    }
+    // Huyền thoại: lá chắn lục giác tự động hấp thụ hoàn toàn đòn kế tiếp, vỡ thì đẩy lùi địch gần
+    const lg = legendOf(f.species.id);
+    if (lg && f === this.player && this.legendShieldOn) {
+      this.legendShieldOn = false;
+      this.legendShieldAt = this.clock + lg.shieldEveryMs;
+      this.fx.floatingLabel(f.x, f.chestY - 24, t('battle.barrier'), '#ff9ad0');
+      hexShatter(this, f.x, f.chestY, 18, lg.colors);
+      this.fx.shake(0.008, 140);
+      playSfx('swap');
+      const push: MoveDef = { ...MOVES.withdraw, id: 'legendBarrier', type: 'psychic', power: 0, knockback: 280, status: undefined, castSlot: undefined, shatterChild: true };
+      for (const e of this.enemies) {
+        if (e.dead || !e.targetable) continue;
+        const dx = e.x - f.x;
+        const dy = e.y - f.y;
+        const d = Math.hypot(dx, dy / 0.8);
+        if (d > 70 + e.radius) continue;
+        this.damageEnemy(e, push, f.power * 8, dx / (d || 1), dy / (d || 1), true, true);
+      }
       return;
     }
     const mult = effectiveness(type, f.species.types);

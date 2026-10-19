@@ -11,7 +11,7 @@ import type { MoveDef } from '../data/moveKit';
 import type { SkillSlot } from '../data/pokemon';
 import { TYPE_COLOR, type PokemonType } from '../data/types';
 import {
-  AbsoluteZeroParams, KoModeParams, ArchetypeId, ArchetypeParamMap, BloomParams, IMPLEMENTED_ARCHETYPES, InfernoParams, KitEntry, SkillSpec, SpeciesKit, ThunderstormParams, TierDef, TimeStopParams, TsunamiParams, TypeKit,
+  AbsoluteZeroParams, KoModeParams, MindBreakParams, ArchetypeId, ArchetypeParamMap, BloomParams, IMPLEMENTED_ARCHETYPES, InfernoParams, KitEntry, SkillSpec, SpeciesKit, ThunderstormParams, TierDef, TimeStopParams, TsunamiParams, TypeKit,
   UltArchetypeId, UltParamMap, UltSpec,
 } from './types';
 
@@ -86,6 +86,9 @@ export const ARCHETYPE_DEFAULTS: { [A in ArchetypeId]: (m: MoveDef) => Archetype
   strike: () => ({ dialect: 'fighting', hits: 1, gapMs: 100, reach: 44, halfDeg: 55, fists: false, powerMult: 1 }),
   counter: () => ({ dialect: 'fighting', stanceMs: 600, reduce: 0.4, reach: 54, fists: 0, counterMult: 1.6, buffMs: 3000, buffMult: 1.5 }),
   slam: () => ({ dialect: 'fighting', mode: 'toss', reach: 46, tossDist: 50, flyMs: 420, stunMs: 900, powerMult: 1 }),
+  boomerang: () => ({ dialect: 'psychic', blades: 3, spreadDeg: 22, range: 120, flyMs: 380, curve: 24, size: 11, powerMult: 1, colors: [0x3a5aff, 0x7a2aff, 0xc030ff, 0xff40c8] }),
+  barrier: () => ({ dialect: 'psychic', ms: 2500, reach: 70, push: 300, cell: 9, colors: [0x3a5aff, 0x7a2aff, 0xc030ff, 0xff40c8] }),
+  singularity: () => ({ dialect: 'psychic', windupMs: 380, pullMs: 750, r: 62, powerMult: 1, stunMs: 900, shake: [0.014, 300], colors: [0x3a5aff, 0x7a2aff, 0xc030ff, 0xff40c8] }),
   cross: () => ({ dialect: 'fighting', windupMs: 260, r: 34, size: 1, powerMult: 1 }),
   gale: () => ({ dialect: 'ice', windupMs: 260, len: 110, wid: 36, ms: 1000, tickMs: 260, streaks: 3, powerMult: 0.45 }),
   telekinesis: () => ({
@@ -128,8 +131,10 @@ const ABSZERO_DEFAULTS: AbsoluteZeroParams = { dialect: 'ice', windupMs: 700, r:
 
 const KOMODE_DEFAULTS: KoModeParams = { dialect: 'fighting', windupMs: 700, maxTargets: 6, perTargetMs: 320, hitsPer: 4, hitPower: 0.28, slamPower: 0.8, ko: true };
 
+const MINDBREAK_DEFAULTS: MindBreakParams = { dialect: 'psychic', windupMs: 800, r: 230, gatherMs: 1100, holdMs: 700, shards: 110, slamPower: 1, colors: [0x3a5aff, 0x7a2aff, 0xc030ff, 0xff40c8] };
+
 const ULT_DEFAULTS: { [U in UltArchetypeId]: UltParamMap[U] } = {
-  inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS, timestop: TIMESTOP_DEFAULTS, absolutezero: ABSZERO_DEFAULTS, komode: KOMODE_DEFAULTS,
+  inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS, timestop: TIMESTOP_DEFAULTS, absolutezero: ABSZERO_DEFAULTS, komode: KOMODE_DEFAULTS, mindbreak: MINDBREAK_DEFAULTS,
 };
 
 // ---------------------------------------------------------------------------------- bộ chiêu theo hệ
@@ -685,6 +690,25 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
       K: { archetype: 'counter', params: { stanceMs: 900, reduce: 0.25, reach: 84, fists: 4, counterMult: 2.4, buffMs: 3500, buffMult: 1.5 }, tiers: [] },
       L: { archetype: 'slam', params: { mode: 'mega', reach: 60, tossDist: 0, flyMs: 0, windupMs: 520, hitR: 40, size: 5, stunMs: 1600, powerMult: 1.6 }, tiers: [] },
       U: { archetype: 'cross', params: { windupMs: 300, r: 60, size: 1.6, powerMult: 1.5, barrage: { n: 12, gapMs: 55 } }, tiers: [] },
+    },
+  },
+  // ===== HUYỀN THOẠI Mewtwo: bộ chiêu RIÊNG (không trùng Alakazam) – lưỡi liềm quay lại · lá chắn lục giác · giếng trọng lực · tia xoắn gen · Mind Break =====
+  // Đặc quyền (năng lượng 150, ult luôn mở/hồi 22s, hào quang, lá chắn tự động) nằm ở data/legendary.ts; chiêu to hơn ~40% so với dạng thường
+  mewtwo: {
+    kitType: 'psychic',
+    ult: 'mindbreak',
+    slots: {
+      J: { archetype: 'boomerang', params: { blades: 3, spreadDeg: 24, range: 150, flyMs: 400, curve: 30, size: 13, powerMult: 1 }, tiers: [] },
+      K: { archetype: 'barrier', params: { ms: 2500, reach: 84, push: 340, cell: 10 }, tiers: [] },
+      L: { archetype: 'singularity', params: { windupMs: 400, pullMs: 800, r: 84, powerMult: 1.5, stunMs: 1100, shake: [0.016, 320] }, tiers: [] },
+      U: {
+        archetype: 'stream',
+        params: {
+          widthMult: 1.6, lenMult: 1.3, durMult: 1.2, telegraphMs: 420, tickMs: 120, turnRate: 0.9, totalPowerMult: 1.3, shake: [0.006, 200],
+          telegraphColor: 0xd8c0ff, telegraphRing: 0x7a2aff, helix: { colors: [0x7a2aff, 0xff40c8], amp: 20, wave: 14 },
+        },
+        tiers: [],
+      },
     },
   },
   squirtle: {

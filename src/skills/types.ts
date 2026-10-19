@@ -22,9 +22,9 @@ import type { StatusKind } from '../data/moveKit';
  * Dự kiến (chưa làm – chiêu khai báo các id này sẽ rơi về đường cast cũ):
  *  trap   – vùng gài, kích hoạt sau một lúc · summon – gọi trợ thủ / tháp bắn tạm thời
  */
-export type ArchetypeId = 'bolt' | 'dashStrike' | 'stream' | 'blast' | 'nova' | 'chain' | 'rain' | 'whip' | 'cloud' | 'tether' | 'telekinesis' | 'blizzard' | 'lance' | 'gale' | 'strike' | 'counter' | 'slam' | 'cross';
+export type ArchetypeId = 'bolt' | 'dashStrike' | 'stream' | 'blast' | 'nova' | 'chain' | 'rain' | 'whip' | 'cloud' | 'tether' | 'telekinesis' | 'blizzard' | 'lance' | 'gale' | 'strike' | 'counter' | 'slam' | 'cross' | 'boomerang' | 'barrier' | 'singularity';
 export type PlannedArchetypeId = 'trap' | 'summon';
-export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStrike', 'stream', 'blast', 'nova', 'chain', 'rain', 'whip', 'cloud', 'tether', 'telekinesis', 'blizzard', 'lance', 'gale', 'strike', 'counter', 'slam', 'cross'];
+export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStrike', 'stream', 'blast', 'nova', 'chain', 'rain', 'whip', 'cloud', 'tether', 'telekinesis', 'blizzard', 'lance', 'gale', 'strike', 'counter', 'slam', 'cross', 'boomerang', 'barrier', 'singularity'];
 
 /**
  * Nguyên mẫu tuyệt chiêu (phím I).
@@ -33,7 +33,7 @@ export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStri
  *  thunderstorm = trời tối, sét giáng dày đặc + sét nảy chuỗi
  *  bloom        = bão cánh hoa xoay / rễ gai trồi khắp sân + đóa hoa khổng lồ nở rộ (hệ cỏ)
  */
-export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 'timestop' | 'absolutezero' | 'komode';
+export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 'timestop' | 'absolutezero' | 'komode' | 'mindbreak';
 
 /** "Bộ từ vựng" hiệu ứng (vệt, nổ trúng, khói, vụ nổ, cháy xém, cột, vuốt) – xem dialects.ts */
 export type FxDialectId = 'fire' | 'water' | 'electric' | 'grass' | 'ghost' | 'psychic' | 'ice' | 'fighting' | 'generic';
@@ -132,6 +132,8 @@ export interface StreamLayer {
 }
 
 export interface StreamParams {
+  /** tia xoắn gen (huyền thoại): hai sợi sin quấn nhau + nấc ngang */
+  helix?: { colors: [number, number]; amp: number; wave: number };
   /** tia vòng (Siêu linh): chuỗi vòng elip chạy dọc đường bắn thay cho các hình nêm màu */
   ringBeam?: { n: number; colors: number[]; spin: number };
   dialect: FxDialectId;
@@ -460,6 +462,56 @@ export interface KoModeParams {
   ko: boolean;
 }
 
+/** Lưỡi Cắt Tâm Linh (huyền thoại): lưỡi liềm bay ra xuyên địch rồi quay lại chém lần hai */
+export interface BoomerangParams {
+  dialect: FxDialectId;
+  blades: number;
+  spreadDeg: number;
+  range: number;
+  /** thời gian bay ra (ms); tổng = ×2 */
+  flyMs: number;
+  /** độ cong đường bay (px), cỡ lưỡi (px) */
+  curve: number;
+  size: number;
+  powerMult: number;
+  colors: number[];
+}
+
+/** Lá Chắn Lục Giác (huyền thoại): tổ ong lục giác hấp thụ đòn đầu, vỡ thì đẩy địch văng */
+export interface BarrierParams {
+  dialect: FxDialectId;
+  ms: number;
+  reach: number;
+  push: number;
+  /** bán kính mỗi ô lục giác (px) */
+  cell: number;
+  colors: number[];
+}
+
+/** Giếng Trọng Lực (huyền thoại): xoáy đen hút địch, nén lại rồi nổ */
+export interface SingularityParams {
+  dialect: FxDialectId;
+  windupMs: number;
+  pullMs: number;
+  r: number;
+  powerMult: number;
+  stunMs: number;
+  shake: [number, number];
+  colors: number[];
+}
+
+/** Mind Break (huyền thoại): khối tà diện tím nhốt địch rồi vỡ thành trăm mảnh */
+export interface MindBreakParams {
+  dialect: FxDialectId;
+  windupMs: number;
+  r: number;
+  gatherMs: number;
+  holdMs: number;
+  shards: number;
+  slamPower: number;
+  colors: number[];
+}
+
 export interface WhipParams {
   dialect: FxDialectId;
   /** lash: 2 dây quét cung / slam: 2 dây vút lên rồi đập xuống / xslam: 2 dây đập chéo thành chữ X */
@@ -628,6 +680,9 @@ export interface ArchetypeParamMap {
   counter: CounterParams;
   slam: SlamParams;
   cross: CrossParams;
+  boomerang: BoomerangParams;
+  barrier: BarrierParams;
+  singularity: SingularityParams;
   gale: GaleParams;
 }
 
@@ -661,6 +716,7 @@ export interface UltParamMap {
   timestop: TimeStopParams;
   absolutezero: AbsoluteZeroParams;
   komode: KoModeParams;
+  mindbreak: MindBreakParams;
 }
 
 /** Bậc theo cấp: áp mọi bậc có minLevel ≤ cấp, theo thứ tự (gộp dần). Có thể đổi cả cost. */
@@ -692,6 +748,9 @@ export interface TypeKit {
   counter?: KitEntry<CounterParams>;
   slam?: KitEntry<SlamParams>;
   cross?: KitEntry<CrossParams>;
+  boomerang?: KitEntry<BoomerangParams>;
+  barrier?: KitEntry<BarrierParams>;
+  singularity?: KitEntry<SingularityParams>;
   gale?: KitEntry<GaleParams>;
   inferno?: Partial<InfernoParams>;
   tsunami?: Partial<TsunamiParams>;
@@ -700,6 +759,7 @@ export interface TypeKit {
   timestop?: Partial<TimeStopParams>;
   absolutezero?: Partial<AbsoluteZeroParams>;
   komode?: Partial<KoModeParams>;
+  mindbreak?: Partial<MindBreakParams>;
 }
 
 /** Ghi đè cho một ô chiêu của một loài */
@@ -715,7 +775,7 @@ export interface SpeciesKit {
   slots?: Partial<Record<SkillSlot, SlotOverride>>;
   ult?: UltArchetypeId;
   /** ghi đè tham số tuyệt chiêu (theo nguyên mẫu `ult`) */
-  ultParams?: Partial<InfernoParams & TsunamiParams & ThunderstormParams & BloomParams & TimeStopParams & AbsoluteZeroParams & KoModeParams>;
+  ultParams?: Partial<InfernoParams & TsunamiParams & ThunderstormParams & BloomParams & TimeStopParams & AbsoluteZeroParams & KoModeParams & MindBreakParams>;
 }
 
 interface SpecBase {

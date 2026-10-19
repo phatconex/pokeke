@@ -63,8 +63,8 @@ export const CHAPTER: ChapterContent = {
     },
     mewtwo: {
       dex: 150, name: 'Mewtwo', types: ['psychic'], body: { w: 16, h: 13 }, fallbackColor: 0xb8a0d0, scale: 1.35,
-      base: { hp: 150, atk: 90, speed: 140 }, skills: sk('league_psychoCut', 'league_recover', ['league_barrier', 40], ['league_psychic', 60]),
-      catchRate: 10,
+      base: { hp: 170, atk: 140, speed: 140 }, skills: sk('league_cutN', 'league_barrierN', ['league_wellN', 1], ['league_helixN', 1]),
+      catchRate: 3,
       blurb: 'Pokémon được tạo ra bằng gen. Sức mạnh siêu linh của nó không có đối thủ.',
     },
   },
@@ -119,6 +119,15 @@ export const CHAPTER: ChapterContent = {
       windupMs: 600, explode: 72, status: { kind: 'burn', chance: 0.7, ms: 3400 }, desc: 'Gồng 0,6 giây rồi phóng cầu lửa khổng lồ, nổ tung một vùng cực rộng. 70% gây Bỏng.' }),
 
     // ---- Mewtwo
+    // ---- huyền thoại Mewtwo (xem skills/kits.ts → SPECIES_KITS.mewtwo, data/legendary.ts) ----
+    league_cutN: C({ id: 'league_cutN', name: 'Lưỡi Cắt Tâm Linh', type: 'psychic', power: 14, cooldownMs: 420, sfx: 'swap', icon: 'wing', range: 150, halfAngleDeg: 60, particle: 'psypuff', knockback: 60, archetype: 'boomerang',
+      desc: 'Ba lưỡi liềm tím bay xoay xuyên địch rồi QUAY LẠI chém lần hai.' }),
+    league_barrierN: C({ id: 'league_barrierN', name: 'Lá Chắn Lục Giác', type: 'psychic', power: 18, cooldownMs: 4200, sfx: 'swap', icon: 'shield', range: 84, halfAngleDeg: 180, particle: 'psypuff', knockback: 340, archetype: 'barrier',
+      desc: 'Tổ ong lục giác chắn trước mặt 2,5s: hấp thụ đòn đầu tiên; vỡ → mảnh lục giác đẩy địch văng ra.' }),
+    league_wellN: B({ id: 'league_wellN', name: 'Giếng Trọng Lực', type: 'psychic', power: 40, cooldownMs: 4800, sfx: 'thunder', icon: 'spiral', anim: 'charge', animMs: 400, burstRadius: 84, atTarget: true, particle: 'psypuff', knockback: 300, archetype: 'singularity',
+      desc: 'Xoáy đen nhánh cong hút mọi địch về tâm, nén lại rồi nổ; địch trúng bị choáng.' }),
+    league_helixN: C({ id: 'league_helixN', name: 'Tia Xoắn Gen', type: 'psychic', power: 46, cooldownMs: 5600, sfx: 'thunder', icon: 'wave', anim: 'shoot', animMs: 420, line: 260, lineWidth: 34, sprayMs: 800, moveSlow: 0.25, particle: 'psypuff', knockback: 120,
+      status: { kind: 'confuse', chance: 0.4, ms: 2000 }, archetype: 'stream', desc: 'Tia đôi xoắn như chuỗi ADN (hai sợi tím-hồng quấn nhau), siêu dày, xuyên cả sân. 40% gây Rối loạn.' }),
     league_psychoCut: P({ id: 'league_psychoCut', name: 'Lưỡi Siêu Linh', type: 'psychic', power: 10, cooldownMs: 380, sfx: 'zap', icon: 'spiral', speed: 440, lifeMs: 620, radius: 4, texture: 'psyball', particle: 'psypuff', knockback: 50,
       count: 3, spreadDeg: 22, pierce: true, crit: 0.2, desc: 'Phóng 3 lưỡi siêu linh tỏa quạt, xuyên qua địch. 20% Chí mạng.' }),
     league_recover: F({ id: 'league_recover', name: 'Hồi Phục', type: 'normal', power: 0, cooldownMs: 9000, sfx: 'heal', icon: 'heart', heal: 0.3,

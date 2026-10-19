@@ -1,5 +1,6 @@
 // Một Pokémon trong đội khi vào trận. Mỗi lúc chỉ 1 con "ra sân", các con khác ở dự bị.
 // Máu được ghi thẳng vào PartyMember nên giữ nguyên giữa các lần đổi.
+import { legendOf } from '../data/legendary';
 import Phaser from 'phaser';
 import { COMBAT, combatProfile, DASH, PLAYER, SKILL_UPGRADE } from '../config/balance';
 import type { MoveDef } from '../data/moves';
@@ -69,6 +70,8 @@ export class Fighter {
   /** năng lượng chung (COMBAT.energy): mỗi ô chiêu tốn spec.cost, hồi liên tục; không đủ thì không ra chiêu */
   energy: number = COMBAT.energy.max;
   energyMax: number = COMBAT.energy.max;
+  /** hệ số hồi năng lượng (huyền thoại > 1) */
+  regenMult = 1;
   /** chậm sau khi ra chiêu (COMBAT.castSlow) – lướt thì hết chậm */
   private castSlowUntil = 0;
   private castSlowMult = 1;
@@ -176,6 +179,12 @@ export class Fighter {
   /** Tính lại chỉ số & chiêu theo cấp (gọi sau khi lên cấp) */
   refreshStats() {
     const st = memberStats(this.member);
+    // huyền thoại: thanh năng lượng lớn + hồi nhanh
+    const lg = legendOf(this.species.id);
+    const prevMax = this.energyMax;
+    this.energyMax = lg?.energyMax ?? COMBAT.energy.max;
+    this.regenMult = lg ? lg.regenPerSec / 8 : 1;
+    if (this.energy === prevMax && prevMax !== this.energyMax) this.energy = this.energyMax;
     this.maxHp = st.maxHp;
     this.power = st.power;
     this.speed = st.speed;
@@ -263,7 +272,7 @@ export class Fighter {
 
   regenEnergy(dtMs: number, clock: number) {
     if (clock < this.energyPauseUntil) return;
-    if (this.energy < this.energyMax) this.energy = Math.min(this.energyMax, this.energy + (combatProfile().regenPerSec * dtMs) / 1000);
+    if (this.energy < this.energyMax) this.energy = Math.min(this.energyMax, this.energy + (combatProfile().regenPerSec * this.regenMult * dtMs) / 1000);
   }
 
   /** Chậm lại ngắn sau khi ra chiêu (lấy hiệu ứng mạnh hơn nếu đang chậm) */

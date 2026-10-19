@@ -2,6 +2,7 @@
 // Dữ liệu nhiệm vụ / thử thách: data/unlocks.ts · ngưỡng: config/balance.ts → SKILL_UNLOCK.
 // Quy tắc: J có sẵn · K: Lv + J trúng ×30 · L: Lv + nhiệm vụ theo hệ · U: Lv + Thử thách chiêu · I: tiến hóa + thắng trận lớn / KO.
 // Đủ điều kiện giữa trận → toast "sẵn sàng học"; chiêu được HỌC khi trận kết thúc (learnReady) → dùng từ trận sau.
+import { legendOf } from '../data/legendary';
 import { ENEMY_STATS, SKILL_UNLOCK } from '../config/balance';
 import { MOVES } from '../data/moves';
 import { hasPreEvolution, hasUltimate, POKEMON, SkillSlot } from '../data/pokemon';
@@ -83,6 +84,8 @@ function up(m: PartyMember): UnlockProgress {
 
 export function isLearned(m: PartyMember, slot: SkillSlot | 'I'): boolean {
   if (slot === 'J') return true;
+  // huyền thoại: mọi chiêu (kể cả tuyệt chiêu) mở sẵn, không cần nhiệm vụ / thử thách
+  if (legendOf(m.speciesId)) return true;
   return !!m.unlocks?.learned?.includes(slot);
 }
 

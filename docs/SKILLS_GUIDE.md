@@ -95,3 +95,8 @@ Hệ chưa có mẫu: Normal, Bug, Poison, Flying, Rock, Ground, Dragon (đang d
 - **Phản Đòn (K):** `armCounter` – trong lúc đỡ, lần đầu người chơi bị đánh trúng: nhận sát thương × `reduce`, gọi hàm phản (đánh mọi địch gần), và `setCounterBuff` → L/U ×1,5 trong vài giây.
 - **Va chạm:** đòn Giác đấu có `knockback ≥ 150` đặt `bangUntil` lên địch; trong 0,45s nếu địch đó đâm vào địch khác (`updateCollisions`) thì cả hai chịu sát thương.
 - Hệ Giác đấu và Băng KHÔNG dùng vòng tròn trong `skillFlair`.
+
+## 10. Huyền thoại (dữ liệu trong `src/data/legendary.ts`)
+Thêm một huyền thoại = 1 mục trong `LEGENDARY` + bộ chiêu riêng trong `SPECIES_KITS` + base stat cao (HP/ATK) + `TRAITS` (haste/crit) + `catchRate: 3`.
+Đặc quyền tự động áp dụng: thanh năng lượng lớn + hồi nhanh (`Fighter.refreshStats`), tuyệt chiêu luôn mở + nạp nhanh + hồi ngắn (`isLearned`, `gainUlt`, `castUltimate`), hào quang lơ lửng + lá chắn lục giác tự động (`BattleScene.updateLegend`, `damageFighter`).
+Mẫu đã làm: **Mewtwo** (lưỡi liềm quay lại · lá chắn lục giác · giếng trọng lực · tia xoắn gen · Mind Break). Khuôn: `boomerang`, `barrier`, `singularity`, `stream.helix`, ult `mindbreak` (`legendArchetypes.ts`).

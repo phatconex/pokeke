@@ -15,6 +15,7 @@ import type { Enemy } from '../entities/Enemy';
 import { bulbCharge, crackBetween, flattenedGrass, groundCracks, leafBurst, windStreak } from '../fx/GrassFx';
 import { castCloud, castTether, castWhip } from './grassArchetypes';
 import { castTelekinesis, castTimeStop } from './psyArchetypes';
+import { castBarrier, castBoomerang, castMindBreak, castSingularity } from './legendArchetypes';
 import { castCounter, castCross, castKoMode, castSlam, castStrike } from './fightArchetypes';
 import { castAbsoluteZero, castBlizzard, castGale, castLance } from './iceArchetypes';
 
@@ -39,6 +40,9 @@ export function castArchetype(h: SkillHost, f: Fighter, m: MoveDef, spec: SkillS
     case 'counter': return castCounter(h, f, m, spec.params);
     case 'slam': return castSlam(h, f, m, spec.params, dir);
     case 'cross': return castCross(h, f, m, spec.params);
+    case 'boomerang': return castBoomerang(h, f, m, spec.params, dir);
+    case 'barrier': return castBarrier(h, f, m, spec.params);
+    case 'singularity': return castSingularity(h, f, m, spec.params);
     default: return undefined;
   }
 }
@@ -52,6 +56,7 @@ export function castUltArchetype(h: SkillHost, f: Fighter, spec: UltSpec, u: Ult
   else if (spec.archetype === 'timestop') castTimeStop(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'absolutezero') castAbsoluteZero(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'komode') castKoMode(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'mindbreak') castMindBreak(h, f, spec.params, u, mv, amount);
 }
 
 /** Vạch chấm từ (x1, y1) tới (x2, y2) – vạch ngắm */
@@ -421,6 +426,22 @@ function castStream(h: SkillHost, f: Fighter, m: MoveDef, P: StreamParams, dir: 
             core.lineStyle(2.5, RB.colors[(i + Math.floor(now / 90)) % RB.colors.length], 0.95 - tt * 0.35).strokePoints(pts, true);
           }
           core.lineStyle(2, 0xffe0f8, 0.7).lineBetween(o.x, o.y, o.x + aim.x * len * 0.95, o.y + aim.y * len * 0.95);
+        } else if (P.helix) {
+          // tia xoắn gen: hai sợi sin quấn nhau (lệch pha π) + nấc ngang, lõi trắng mờ
+          const H = P.helix;
+          core.lineStyle(10 * (w / 40 + 0.6), 0xffffff, 0.22).lineBetween(o.x, o.y, o.x + aim.x * len * 0.95, o.y + aim.y * len * 0.95);
+          const strands: Phaser.Math.Vector2[][] = [[], []];
+          for (let sIdx = 0; sIdx <= 34; sIdx++) {
+            const tt = sIdx / 34;
+            const amp = H.amp * (0.4 + 0.6 * Math.min(1, tt * 3));
+            for (let k = 0; k < 2; k++) {
+              const lat = Math.sin(tt * H.wave + k * Math.PI + now / 120) * amp;
+              strands[k].push(new Phaser.Math.Vector2(o.x + aim.x * len * tt * 0.95 + nx * lat, o.y + aim.y * len * tt * 0.95 + ny * lat));
+            }
+          }
+          for (let k = 0; k < 2; k++) core.lineStyle(5, H.colors[k], 0.95).strokePoints(strands[k], false);
+          core.lineStyle(2, 0xffffff, 0.8);
+          for (let sIdx = 1; sIdx < 34; sIdx += 3) core.lineBetween(strands[0][sIdx].x, strands[0][sIdx].y, strands[1][sIdx].x, strands[1][sIdx].y);
         } else
         for (const L of P.layers) {
           const l = len * L.len * flick;

@@ -8,11 +8,12 @@ const ICE = [0xe8fbff, 0xa8e4ff, 0x5ab8f0, 0x2a78c8];
 const V = (x: number, y: number) => new Phaser.Math.Vector2(x, y);
 
 /** các mảnh băng nhọn bắn tỏa ra từ một điểm (thay cho vòng nổ tròn) */
-export function radialShards(sc: Phaser.Scene, x: number, y: number, n: number, dist: number) {
+export function radialShards(sc: Phaser.Scene, x: number, y: number, n: number, dist: number, tint?: number) {
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + Math.random() * 0.5;
     const d = dist * (0.6 + Math.random() * 0.6);
     const img = sc.add.image(x, y, Math.random() < 0.5 ? 'iceShardB' : 'shardbit').setRotation(a).setDepth(y + 3000).setScale(0.8 + Math.random() * 0.5);
+    if (tint !== undefined) img.setTint(tint);
     sc.tweens.add({ targets: img, x: x + Math.cos(a) * d, y: y + Math.sin(a) * d * 0.8, alpha: 0, duration: 320 + Math.random() * 220, ease: 'Cubic.out', onComplete: () => img.destroy() });
   }
 }

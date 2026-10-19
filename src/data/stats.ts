@@ -43,7 +43,9 @@ const TRAITS: Record<string, { crit?: number; haste?: number; regen?: number }> 
   beedrill: { crit: 0.1 }, spearow: { crit: 0.08 }, fearow: { crit: 0.1 }, dugtrio: { crit: 0.1 },
   raticate: { crit: 0.08 }, aerodactyl: { crit: 0.08 },
   // nhanh trí / nhanh nhẹn: hồi chiêu nhanh hơn
-  abra: { haste: 0.08 }, kadabra: { haste: 0.08 }, alakazam: { haste: 0.1 }, mewtwo: { haste: 0.1 },
+  // huyền thoại: giảm hồi chiêu 20% + chí mạng cao
+  mewtwo: { crit: 0.1, haste: 0.2 },
+  abra: { haste: 0.08 }, kadabra: { haste: 0.08 }, alakazam: { haste: 0.1 },
   jolteon: { haste: 0.08 }, electrode: { haste: 0.06 }, gengar: { haste: 0.06 }, starmie: { haste: 0.06 },
   pikachu: { haste: 0.04 }, raichu: { haste: 0.05 },
   // tự hồi máu (Quang Hợp, Ngủ, Tái Sinh...)
