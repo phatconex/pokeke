@@ -56,8 +56,8 @@ export function skillTypeOf(e: Enemy): PokemonType {
 }
 
 export function skillCooldown(e: Enemy, boss: boolean): number {
-  if (boss) return 4200;
-  if (e.trainer) return 5400;
+  if (boss) return e.trainer ? 2600 : 3600;
+  if (e.trainer) return 3000;
   return e.alpha ? 6500 : 9500;
 }
 
@@ -67,7 +67,7 @@ const STUB = { id: 'enemySkill', name: '', type: 'normal', power: 0, cooldownMs:
 export function tickEnemySkill(e: Enemy, ctx: BattleCtx, target: Fighter, boss = false) {
   if (e.dead || e.dummy || e.beingCaught) return;
   const now = ctx.clock;
-  if (e.nextSkillAt === 0) e.nextSkillAt = now + 2500 + Math.random() * 5000;
+  if (e.nextSkillAt === 0) e.nextSkillAt = now + (e.trainer || boss ? 900 + Math.random() * 1500 : 2500 + Math.random() * 5000);
   if (now < e.nextSkillAt || e.isStunned(now)) return;
   const dist = Math.hypot(target.x - e.x, target.y - e.y);
   if (dist > 300) return;
@@ -85,7 +85,7 @@ const alive = (e: Enemy) => !e.dead && !e.beingCaught;
 
 function volley(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, def: TypeSkill, dmg: number) {
   const a = Math.atan2(target.y - e.y, target.x - e.x);
-  const tele = 520;
+  const tele = e.trainer ? 360 : 520;
   const now = ctx.clock;
   ctx.fx.addTelegraph({ kind: 'line', x: e.x, y: e.y, angle: a, len: 130, width: 5, start: now, end: now + tele, color: def.warn[0], owner: e });
   e.anim.playOnce('shoot', tele + 150);
@@ -103,7 +103,8 @@ function volley(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, de
 }
 
 function zone(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, def: TypeSkill, dmg: number) {
-  const [n, r, warnMs] = def.zone;
+  const [n, r, w0] = def.zone;
+  const warnMs = e.trainer ? Math.round(w0 * 0.7) : w0;
   const d = dialectFor(DIALECT[type] ?? 'generic', ctx.fx, { ...STUB, type } as MoveDef);
   const spots: { x: number; y: number }[] = [];
   for (let i = 0; i < n; i++) {
@@ -130,7 +131,7 @@ function zone(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, def:
 
 function nova(e: Enemy, ctx: BattleCtx, type: PokemonType, def: TypeSkill, dmg: number) {
   const R = 74;
-  const warnMs = 700;
+  const warnMs = e.trainer ? 500 : 700;
   const d = dialectFor(DIALECT[type] ?? 'generic', ctx.fx, { ...STUB, type } as MoveDef);
   const now = ctx.clock;
   e.anim.playOnce('charge', warnMs);
