@@ -1253,6 +1253,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     // Giác đấu / Băng: không dùng vòng tròn (giữ bản sắc hình dáng riêng của hệ)
     else if (m.type === 'fighting') impactRays(this, f.x, f.chestY, 10, 14, 34, 0xfff06a, 260);
     else if (m.type === 'ice') radialShards(this, f.x, f.feetY - 6, 8, 26);
+    else if (legendOf(f.species.id) && m.type === 'fire') scatter(this, 'fireFeather', f.x, f.feetY - 4, 8, 34);
     else if (FLAIR_TEX[m.type]) scatter(this, FLAIR_TEX[m.type]!, f.x, f.feetY - 4, 8, 28);
     else {
       const ring = this.add.circle(f.x, f.feetY, 10, TYPE_COLOR[m.type], 0.25).setStrokeStyle(3, TYPE_COLOR[m.type], 1).setDepth(-2700);
