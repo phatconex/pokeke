@@ -145,7 +145,7 @@ export class StageMapScene extends Phaser.Scene {
   // ======================================================================= vẽ bản đồ
 
   private unlocked(i: number) {
-    return isUnlocked(i, (id) => stageCleared(this.game_, id));
+    return !!this.game_?.flags.devUnlockAll || isUnlocked(i, (id) => stageCleared(this.game_, id));
   }
 
   private furthestUnlocked() {

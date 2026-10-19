@@ -282,6 +282,26 @@ export function battleTeam(state: GameState): PartyMember[] {
 }
 
 /** Thêm Pokémon mới bắt vào Hộp, tự đưa vào đội nếu còn chỗ */
+/** Chế độ thử (chỉ bản dev, mở bằng ?test trên URL): mở mọi ải + tặng 3 Pokémon dạng cuối Lv50 làm đội hình. Chạy 1 lần mỗi save. */
+export const DEV_TEST_TEAM = ['charizard', 'blastoise', 'venusaur'];
+export function applyDevTest(state: GameState): boolean {
+  if (state.flags.devUnlockAll) return false;
+  state.flags.devUnlockAll = true;
+  const uids: string[] = [];
+  for (const sp of DEV_TEST_TEAM) {
+    const m = makeMember(sp, 50);
+    state.box.push(m);
+    uids.push(m.uid);
+  }
+  state.team = uids;
+  state.items.pokeball += 20;
+  state.items.ultraball += 10;
+  state.items.potion += 10;
+  state.money += 20000;
+  saveGame();
+  return true;
+}
+
 export function addToBox(state: GameState, m: PartyMember) {
   state.box.push(m);
   if (state.team.length < TEAM_SIZE) state.team.push(m.uid);

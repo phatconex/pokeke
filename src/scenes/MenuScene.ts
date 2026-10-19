@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 import { generateTitleScene } from '../art/titleArt';
 import { STAGE_BY_ID } from '../data/stages';
 import { BADGES } from '../data/trainers';
-import { getGame, hasSave, loadGame, teamMembers } from '../game/state';
+import { applyDevTest, getGame, hasSave, loadGame, teamMembers } from '../game/state';
 import { formatTime, loadRecords } from '../systems/records';
 import { getSettings, toggleSetting } from '../systems/settings';
 import { playSfx } from '../systems/sfx';
@@ -73,6 +73,11 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create() {
+    // bản dev: ?test trên URL → mở mọi ải + tặng đội 3 Pokémon dạng cuối Lv50 (xem applyDevTest)
+    if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('test')) {
+      const g0 = getGame() ?? loadGame();
+      if (g0 && applyDevTest(g0)) console.info('[dev] test mode: all stages open, team = Charizard/Blastoise/Venusaur Lv50');
+    }
     playMusic('title');
     this.leaving = false;
     this.confirmNew = false;
