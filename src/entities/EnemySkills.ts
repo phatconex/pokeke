@@ -13,7 +13,7 @@ import type { Enemy } from './Enemy';
 import type { Fighter } from './Fighter';
 import type { BattleCtx } from './types';
 
-type Kind = 'volley' | 'zone' | 'nova';
+type Kind = 'volley' | 'zone' | 'nova' | 'charge' | 'barrage';
 
 interface TypeSkill {
   kinds: [Kind, Kind];
@@ -49,6 +49,75 @@ const DIALECT: Record<string, FxDialectId> = {
   dragon: 'dragon', rock: 'rock', ground: 'ground', flying: 'flying', poison: 'poison', bug: 'bug', normal: 'normal',
 };
 
+/** hồ sơ chiêu của MỘT loài: suy từ hệ + kiểu hành vi + cỡ (tiến hóa) + độ lệch cố định theo tên loài; bảng OVERRIDE ghi đè cho loài đặc biệt */
+interface Profile {
+  kinds: Kind[];
+  shot: string;
+  fan: [number, number, number];
+  zone: [number, number, number];
+  nova: number;
+  charge: [number, number];
+  barrage: number;
+  def: TypeSkill;
+}
+
+const OVERRIDE: Record<string, Partial<Pick<Profile, 'kinds' | 'shot' | 'fan' | 'nova' | 'barrage'>>> = {
+  onix: { kinds: ['barrage', 'nova', 'charge'], barrage: 9, nova: 96 },
+  geodude: { kinds: ['nova', 'charge'], nova: 62 },
+  graveler: { kinds: ['charge', 'barrage', 'nova'] },
+  golem: { kinds: ['barrage', 'charge', 'nova'], barrage: 8, nova: 90 },
+  staryu: { kinds: ['volley', 'zone'], fan: [8, 360, 140], shot: 'starshot' },
+  starmie: { kinds: ['volley', 'barrage', 'nova'], fan: [12, 360, 170], shot: 'starshot' },
+  voltorb: { kinds: ['nova', 'charge'], nova: 70 },
+  electrode: { kinds: ['nova', 'barrage', 'charge'], nova: 92 },
+  pikachu: { kinds: ['charge', 'volley', 'zone'], fan: [3, 20, 240] },
+  raichu: { kinds: ['volley', 'barrage', 'charge'], fan: [5, 30, 260] },
+  zubat: { kinds: ['charge', 'volley'] },
+  gengar: { kinds: ['volley', 'zone', 'nova'], fan: [7, 80, 150] },
+  gyarados: { kinds: ['barrage', 'volley', 'nova'], nova: 100, barrage: 9 },
+  dragonite: { kinds: ['volley', 'barrage', 'nova'], fan: [7, 60, 200], nova: 104 },
+  charizard: { kinds: ['barrage', 'volley', 'charge'], barrage: 8 },
+  arcanine: { kinds: ['charge', 'barrage'] },
+  machamp: { kinds: ['nova', 'charge', 'zone'], nova: 96 },
+  alakazam: { kinds: ['volley', 'zone', 'nova'], fan: [5, 50, 170] },
+};
+
+const cache = new Map<string, Profile>();
+const hashOf = (id: string) => [...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+
+function profileFor(e: Enemy, boss: boolean): Profile {
+  const key = e.species.id + (boss ? ':b' : '');
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const type = skillTypeOf(e);
+  const def = T[type] ?? T.normal!;
+  const h = hashOf(e.species.id);
+  const hp = e.stats.bossHp ?? e.stats.hp;
+  const tier = hp < 28 ? 0 : hp < 55 ? 1 : 2;
+  const beh = e.stats.behavior;
+  const byBeh: Kind[] = beh === 'rusher' ? ['charge'] : beh === 'ranged' ? ['volley'] : beh === 'tank' ? ['nova'] : beh === 'burrow' ? ['zone'] : beh === 'phantom' ? ['volley'] : beh === 'bomber' ? ['zone'] : [];
+  const seq: Kind[] = [];
+  for (const k of [...byBeh, ...def.kinds, ...(tier >= 1 ? (['barrage'] as Kind[]) : [])]) if (!seq.includes(k)) seq.push(k);
+  // đảo thứ tự theo tên loài để hai loài cùng hệ không mở đầu giống nhau
+  if (h % 2 === 1 && seq.length > 1) seq.push(seq.shift()!);
+  const kinds = seq.slice(0, boss ? 3 : tier >= 1 ? 3 : 2);
+  const j = (a: number, b: number) => a + ((h >> 3) % 100) / 100 * (b - a);
+  const prof: Profile = {
+    kinds,
+    shot: def.shot,
+    fan: [Math.max(2, def.fan[0] - 1 + tier + (h % 2)), Math.round(def.fan[1] * j(0.8, 1.25)), Math.round(def.fan[2] * j(0.9, 1.15))],
+    zone: [def.zone[0] + tier - (h % 2), Math.round(def.zone[1] * (1 + 0.12 * tier)), def.zone[2]],
+    nova: 58 + tier * 14 + (h % 3) * 6,
+    charge: [100 + tier * 30 + (h % 3) * 10, 12 + tier * 4],
+    barrage: 5 + tier + (h % 2),
+    def,
+  };
+  const o = OVERRIDE[e.species.id];
+  if (o) Object.assign(prof, o);
+  cache.set(key, prof);
+  return prof;
+}
+
 /** hệ thể hiện của loài: ưu tiên hệ khác Thường (Pidgey = Bay) */
 export function skillTypeOf(e: Enemy): PokemonType {
   const ty = e.species.types;
@@ -72,18 +141,21 @@ export function tickEnemySkill(e: Enemy, ctx: BattleCtx, target: Fighter, boss =
   const dist = Math.hypot(target.x - e.x, target.y - e.y);
   if (dist > 300) return;
   const type = skillTypeOf(e);
-  const def = T[type] ?? T.normal!;
+  const pf = profileFor(e, boss);
   e.nextSkillAt = now + skillCooldown(e, boss) * e.rangedCdMult * (0.85 + Math.random() * 0.3);
-  const kind = def.kinds[e.skillIdx++ % 2];
+  const kind = pf.kinds[e.skillIdx++ % pf.kinds.length];
   const base = Math.max(7, (e.stats.rangedDamage ?? e.stats.contactDamage * 0.9)) * (boss ? 1.5 : 1.2) * e.dmgMult;
-  if (kind === 'volley') volley(e, ctx, target, type, def, base);
-  else if (kind === 'zone') zone(e, ctx, target, type, def, base * 1.3);
-  else nova(e, ctx, type, def, base * 1.4);
+  if (kind === 'volley') volley(e, ctx, target, type, pf, base * 0.7);
+  else if (kind === 'zone') zone(e, ctx, target, type, pf, base * 0.8);
+  else if (kind === 'nova') nova(e, ctx, type, pf, base * 0.9);
+  else if (kind === 'charge') charge(e, ctx, target, type, pf, base * 0.9);
+  else barrage(e, ctx, target, type, pf, base * 0.5);
 }
 
 const alive = (e: Enemy) => !e.dead && !e.beingCaught;
 
-function volley(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, def: TypeSkill, dmg: number) {
+function volley(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, pf: Profile, dmg: number) {
+  const def = pf.def;
   const a = Math.atan2(target.y - e.y, target.x - e.x);
   const tele = e.trainer ? 360 : 520;
   const now = ctx.clock;
@@ -93,17 +165,18 @@ function volley(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, de
   ctx.host.time.delayedCall(tele, () => {
     if (!alive(e)) return;
     playSfx(def.sfx);
-    const [n, spread, speed] = def.fan;
+    const [n, spread, speed] = pf.fan;
     for (let i = 0; i < n; i++) {
-      const ang = a + (n === 1 ? 0 : ((i / (n - 1)) - 0.5) * (spread * Math.PI) / 180);
-      const s = ctx.enemyShots.spawn(def.shot, e.x, e.centerY, Math.cos(ang) * speed, Math.sin(ang) * speed, 5, dmg, 2400, 6);
+      const ang = spread >= 360 ? a + (i / n) * Math.PI * 2 : a + (n === 1 ? 0 : ((i / (n - 1)) - 0.5) * (spread * Math.PI) / 180);
+      const s = ctx.enemyShots.spawn(pf.shot, e.x, e.centerY, Math.cos(ang) * speed, Math.sin(ang) * speed, 5, dmg, 2400, 6);
       s.type = type;
     }
   });
 }
 
-function zone(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, def: TypeSkill, dmg: number) {
-  const [n, r, w0] = def.zone;
+function zone(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, pf: Profile, dmg: number) {
+  const def = pf.def;
+  const [n, r, w0] = pf.zone;
   const warnMs = e.trainer ? Math.round(w0 * 0.7) : w0;
   const d = dialectFor(DIALECT[type] ?? 'generic', ctx.fx, { ...STUB, type } as MoveDef);
   const spots: { x: number; y: number }[] = [];
@@ -129,8 +202,9 @@ function zone(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, def:
   });
 }
 
-function nova(e: Enemy, ctx: BattleCtx, type: PokemonType, def: TypeSkill, dmg: number) {
-  const R = 74;
+function nova(e: Enemy, ctx: BattleCtx, type: PokemonType, pf: Profile, dmg: number) {
+  const def = pf.def;
+  const R = pf.nova;
   const warnMs = e.trainer ? 500 : 700;
   const d = dialectFor(DIALECT[type] ?? 'generic', ctx.fx, { ...STUB, type } as MoveDef);
   const now = ctx.clock;
@@ -153,5 +227,78 @@ function nova(e: Enemy, ctx: BattleCtx, type: PokemonType, def: TypeSkill, dmg: 
     for (const f of ctx.aliveFighters()) {
       if (Math.hypot(f.x - e.x, (f.y - e.y) / 0.8) <= R + 8) ctx.damageFighter(f, dmg, e.x, e.y, type);
     }
+  });
+}
+
+/** Lao: vạch báo dài rồi phóng thẳng tới theo vạch, gây sát thương ai nằm trên đường */
+function charge(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, pf: Profile, dmg: number) {
+  const def = pf.def;
+  const d = dialectFor(DIALECT[type] ?? 'generic', ctx.fx, { ...STUB, type } as MoveDef);
+  const a = Math.atan2(target.y - e.y, target.x - e.x);
+  const [len, wid] = pf.charge;
+  const warnMs = e.trainer ? 420 : 560;
+  const now = ctx.clock;
+  ctx.fx.addTelegraph({ kind: 'line', x: e.x, y: e.y, angle: a, len, width: wid, start: now, end: now + warnMs, color: def.warn[0], owner: e });
+  e.anim.playOnce('attack', warnMs + 300);
+  playSfx('warn');
+  ctx.host.time.delayedCall(warnMs, () => {
+    if (!alive(e)) return;
+    playSfx(def.sfx);
+    const sx = e.x;
+    const sy = e.y;
+    const o = { k: 0 };
+    const hit = new Set<Fighter>();
+    ctx.host.tweens.add({
+      targets: o, k: 1, duration: 280, ease: 'Cubic.in',
+      onUpdate: () => {
+        if (!alive(e)) return;
+        const x = sx + Math.cos(a) * len * o.k;
+        const y = sy + Math.sin(a) * len * o.k;
+        e.body.reset(x, y);
+        d.trail(x, y + 6, 1);
+        for (const f of ctx.aliveFighters()) {
+          if (hit.has(f)) continue;
+          if (Math.hypot(f.x - x, (f.y - y) / 0.8) <= wid + 8) {
+            hit.add(f);
+            d.hit(f.x, f.chestY, true);
+            ctx.damageFighter(f, dmg, x, y, type);
+          }
+        }
+      },
+      onComplete: () => {
+        if (alive(e)) {
+          ctx.fx.shake(0.006, 100);
+          d.explosion(e.x, e.y, 16);
+        }
+      },
+    });
+  });
+}
+
+/** Hàng loạt nổ: một đường ô nổ nối tiếp nhau chạy từ chân địch tới chỗ người chơi (đá nhô, cột lửa, gai băng...) */
+function barrage(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, pf: Profile, dmg: number) {
+  const def = pf.def;
+  const d = dialectFor(DIALECT[type] ?? 'generic', ctx.fx, { ...STUB, type } as MoveDef);
+  const n = pf.barrage;
+  const a = Math.atan2(target.y - e.y, target.x - e.x);
+  const reach = Math.max(90, Math.min(220, Math.hypot(target.x - e.x, target.y - e.y) + 40));
+  const r = Math.round(pf.zone[1] * 0.85);
+  const warnMs = e.trainer ? 420 : 560;
+  const gap = 90;
+  const spots = Array.from({ length: n }, (_, i) => ({ x: e.x + Math.cos(a) * (24 + ((i + 1) / n) * reach), y: e.y + Math.sin(a) * (24 + ((i + 1) / n) * reach) * 0.9 }));
+  e.anim.playOnce('shoot', warnMs + 200);
+  playSfx('warn');
+  spots.forEach((s, i) => groundWarn(ctx.host, s.x, s.y, warnMs + i * gap, def.warn[0], def.warn[1]));
+  spots.forEach((s, i) => {
+    ctx.host.time.delayedCall(warnMs + i * gap, () => {
+      if (e.dead) return;
+      if (i === 0) playSfx(def.sfx);
+      d.explosion(s.x, s.y, r);
+      d.pillar(s.x, s.y, 2);
+      d.scorch(s.x, s.y, r, 700);
+      for (const f of ctx.aliveFighters()) {
+        if (Math.hypot(f.x - s.x, (f.y - s.y) / 0.8) <= r + 8) ctx.damageFighter(f, dmg, s.x, s.y, type);
+      }
+    });
   });
 }

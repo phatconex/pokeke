@@ -131,3 +131,6 @@ Cơ chế riêng (BattleScene.typeMechanicsOnHit): Rồng – Cơn giận (100 �
 
 ### Độ khó tăng dần theo ải (`STAGE_RAMP`, `stageRamp` trong config/balance.ts)
 Trước đây ải dùng hệ số phẳng (máu ×4,4, sát thương ×2,9) từ ải đầu. Giờ nhân thêm độ dốc theo vị trí ải trong STAGES: ải 1 = sát thương ×0,5, máu ×0,7, địch ra đòn thưa gấp đôi; tăng đều tới vị trí 9 thì đủ. Hội quán không xuống dưới ×0,8. Pokémon hoang dã chỉ có chiêu đặc trưng từ ải vị trí 4 trở đi (`wildSkillsFromIndex`).
+
+### Chiêu địch theo từng loài (`EnemySkills.profileFor`)
+Mỗi loài có hồ sơ chiêu riêng thay vì chỉ theo hệ: bộ chiêu xoay vòng 2–3 loại (đạn xòe · ô nổ · sóng quanh thân · **Lao** (vạch báo rồi phóng thẳng) · **Hàng nổ** (đường ô nổ nối tiếp tới người chơi)) suy từ kiểu hành vi (rusher→Lao, ranged→đạn, tank→sóng…), hệ, cỡ (HP: nhỏ/vừa/lớn → số đạn, bán kính, tầm tăng) và độ lệch cố định theo tên loài (thứ tự mở đầu, góc xòe, tốc độ). Bảng `OVERRIDE` ghi đè cho loài đặc biệt (Onix, Golem, Starmie, Gyarados, Dragonite, Raichu…); thêm loài = thêm 1 dòng. Sát thương mỗi chiêu đã hạ (đạn ×0,7 · nổ ×0,8 · sóng ×0,9 · lao ×0,9 · hàng nổ ×0,5/ô) để không một đòn mất gần nửa máu.
