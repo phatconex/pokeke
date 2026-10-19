@@ -71,12 +71,15 @@ SPECIES_KITS.arcanine = { template: 'fire.big', slots: { J: { params: { scale: 1
 | `psychic.big` | Alakazam | vòng lớn vệt dày · dịch chuyển · tia Psybeam rộng đổi màu · Psystrike cầu gai nổ sao 6 cánh |
 | `ice.small` | Seel | mảnh băng đơn vỡ vụn · nanh băng + 3 tinh thể · Mũi Băng (cột tinh thể mảnh) · Gió Tuyết (đường gió ngang) |
 | `ice.big` | Dewgong | 3 mảnh băng xòe xuyên · đập băng + hàng gai · Mũi Băng Lớn (lăng trụ có nhánh) · Mưa Băng (giá băng rơi + gió) · ult Kỷ Băng Hà (vết nứt lan khắp sân, tinh thể nhốt địch, vỡ tung) |
+| `fighting.small` | Machop | chặt đơn · Phản Đòn · Quật Đất · Chặt Chéo |
+| `fighting.mid` | Machoke | chặt đôi · Phản Đòn Nặng · Siết & Quật · Chặt Chéo Nặng · ult Loạt Đấm |
+| `fighting.big` | Machamp | 4 nắm đấm bay · Phản Đòn 4 tay · Đấm Động Lực (nắm đấm khổng lồ) · Trăm Cú Đấm · ult Đấm Hạ Gục (K.O.) |
 | `electric.small` | Pikachu | sét zig-zag mảnh · lao sét · sét nảy 3 · 3 tia sét trời |
 | `electric.big` | Raichu | sét 2 lõi · lao 8 bóng sét · nảy 5 · 5 tia sét trời · ult bão sét |
 
 Lưu ý: khuôn lấy số (tầm, bề rộng tia, bán kính nổ…) từ chính move, nên move của loài mới nên sao chép từ move mẫu cùng ô (ví dụ move L của `water.heavy` là `hydroPumpS`) rồi đổi tên/số.
 
-Hệ chưa có mẫu: Normal, Bug, Poison, Flying, Rock, Ground, Fighting, Dragon (đang dùng chiêu cũ). Mỗi hệ mới = viết `TYPE_KITS.<hệ>` + dialect hiệu ứng, rồi làm 1–3 mẫu theo dạng nhỏ/vừa/lớn.
+Hệ chưa có mẫu: Normal, Bug, Poison, Flying, Rock, Ground, Dragon (đang dùng chiêu cũ). Mỗi hệ mới = viết `TYPE_KITS.<hệ>` + dialect hiệu ứng, rồi làm 1–3 mẫu theo dạng nhỏ/vừa/lớn.
 
 ## 7. Nguồn asset
 - Sprite Pokémon (đi, đứng yên, tấn công): **PMD SpriteCollab** (CC BY-NC), đang dùng trong game.
@@ -87,3 +90,8 @@ Hệ chưa có mẫu: Normal, Bug, Poison, Flying, Rock, Ground, Fighting, Drago
 - **Vỡ nát:** đòn băng kế tiếp trúng địch đang đóng băng → sát thương ×1,6, mảnh băng văng gây sát thương lan (và cộng Lạnh) cho địch trong 52px.
 - Chiêu băng cũ của các Pokémon khác (Articuno, Jynx…) cũng có cơ chế này vì chỉ cần `type: 'ice'`.
 - **Hình của hệ Băng:** chỉ dùng hình góc cạnh, chiều thẳng đứng, hướng gió (lăng trụ, giá băng, vết nứt phân nhánh, mảng băng rách). KHÔNG dùng vòng tròn/elip/sigil xoay (giống Siêu linh).
+
+## 9. Cơ chế hệ Giác đấu (trong `BattleScene`)
+- **Phản Đòn (K):** `armCounter` – trong lúc đỡ, lần đầu người chơi bị đánh trúng: nhận sát thương × `reduce`, gọi hàm phản (đánh mọi địch gần), và `setCounterBuff` → L/U ×1,5 trong vài giây.
+- **Va chạm:** đòn Giác đấu có `knockback ≥ 150` đặt `bangUntil` lên địch; trong 0,45s nếu địch đó đâm vào địch khác (`updateCollisions`) thì cả hai chịu sát thương.
+- Hệ Giác đấu và Băng KHÔNG dùng vòng tròn trong `skillFlair`.

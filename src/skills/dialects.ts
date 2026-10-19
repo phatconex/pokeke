@@ -4,6 +4,8 @@ import type { Effects } from '../fx/Effects';
 import type { MoveDef } from '../data/moveKit';
 import type { SkillHost } from './host';
 import type { FxDialectId } from './types';
+import { impactRays, powBurst, speedLines } from '../fx/FightFx';
+import { groundCracks } from '../fx/GrassFx';
 import { frostSheet, iceSpike, radialShards, shardStar } from '../fx/IceFx';
 
 export interface FxDialect {
@@ -176,6 +178,26 @@ const ice = (fx: Effects, h?: SkillHost): FxDialect => ({
   streaks: (x1, y1, x2, y2) => fx.scratchMarks(x2, y2, Math.atan2(y2 - y1, x2 - x1), 3, 12, 0xa8e4ff, 0xffffff),
 });
 
+/** Giác đấu: bụi, vụ nổ truyện tranh răng cưa, tia va chạm thẳng, đường tốc độ, vết nứt thẳng + đá văng */
+const fighting = (fx: Effects): FxDialect => ({
+  trail: (x, y, n) => fx.dustPuff(x, y, n),
+  hit: (x, y, big) => {
+    powBurst(fx.scn, x, y, big ? 20 : 12, 220);
+    impactRays(fx.scn, x, y, 6, 8, big ? 30 : 20, 0xfff06a, 180);
+  },
+  spray: (x, y, _a, n) => fx.dustPuff(x, y, n),
+  smoke: (x, y, n) => fx.dustPuff(x, y, n),
+  puff: (x, y, n) => fx.dustPuff(x, y, n),
+  explosion: (x, y, r) => {
+    powBurst(fx.scn, x, y, r * 0.8, 300);
+    impactRays(fx.scn, x, y, 12, r * 0.8, r * 1.6, 0xffffff, 280);
+    fx.debrisBurst(x, y, 10);
+  },
+  scorch: (x, y, r) => groundCracks(fx.scn, x, y, r * 0.9, 4, 1200, 0),
+  pillar: (x, y) => fx.dustPuff(x, y, 4),
+  streaks: (x1, y1, x2, y2) => speedLines(fx.scn, x1, y1, x2, y2, 5, 0xffffff),
+});
+
 /** Hệ chưa có bộ hiệu ứng riêng: dùng hạt của chiêu (move.particle) + tia sáng chung */
 const generic = (fx: Effects, m: MoveDef): FxDialect => {
   const tex = m.particle ?? 'spark';
@@ -208,6 +230,7 @@ export function dialectFor(id: FxDialectId, fx: Effects, m: MoveDef, h?: SkillHo
     case 'ghost': return ghost(fx, h);
     case 'psychic': return psy(fx, h);
     case 'ice': return ice(fx, h);
+    case 'fighting': return fighting(fx);
     default: return generic(fx, m);
   }
 }

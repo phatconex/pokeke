@@ -37,6 +37,10 @@ export interface SkillHost {
   /** hệ số tích lũy (chiêu có stack) – gọi đúng 1 lần mỗi lần ra chiêu */
   stackMult(f: Fighter, m: MoveDef): number;
   hitStop(ms: number): void;
+  /** Phản Đòn: trong ms tới, lần đầu người chơi bị đánh trúng thì nhận sát thương × reduce và gọi onHit */
+  armCounter(ms: number, reduce: number, onHit: () => void): void;
+  /** sau Phản Đòn: sát thương L/U của người chơi × mult trong ms */
+  setCounterBuff(ms: number, mult: number): void;
   addZone(z: LingerZone): void;
   spawnShot(texture: string, x: number, y: number, vx: number, vy: number, radius: number, damage: number, lifeMs: number, spin: number): Projectile;
   /** chuỗi nhát cận chiến chuẩn (hình quạt / đường thẳng, nhiều nhát) theo hướng aim */

@@ -11,7 +11,7 @@ import type { MoveDef } from '../data/moveKit';
 import type { SkillSlot } from '../data/pokemon';
 import { TYPE_COLOR, type PokemonType } from '../data/types';
 import {
-  AbsoluteZeroParams, ArchetypeId, ArchetypeParamMap, BloomParams, IMPLEMENTED_ARCHETYPES, InfernoParams, KitEntry, SkillSpec, SpeciesKit, ThunderstormParams, TierDef, TimeStopParams, TsunamiParams, TypeKit,
+  AbsoluteZeroParams, KoModeParams, ArchetypeId, ArchetypeParamMap, BloomParams, IMPLEMENTED_ARCHETYPES, InfernoParams, KitEntry, SkillSpec, SpeciesKit, ThunderstormParams, TierDef, TimeStopParams, TsunamiParams, TypeKit,
   UltArchetypeId, UltParamMap, UltSpec,
 } from './types';
 
@@ -83,6 +83,10 @@ export const ARCHETYPE_DEFAULTS: { [A in ArchetypeId]: (m: MoveDef) => Archetype
     dialect: 'ice', telegraphMs: 320, len: 150, segs: 6, growMs: 480, w: 6, growH: 4, branch: false, powerMult: 1,
     frost: { n: 4, r: 14, ms: 2600 },
   }),
+  strike: () => ({ dialect: 'fighting', hits: 1, gapMs: 100, reach: 44, halfDeg: 55, fists: false, powerMult: 1 }),
+  counter: () => ({ dialect: 'fighting', stanceMs: 600, reduce: 0.4, reach: 54, fists: 0, counterMult: 1.6, buffMs: 3000, buffMult: 1.5 }),
+  slam: () => ({ dialect: 'fighting', mode: 'toss', reach: 46, tossDist: 50, flyMs: 420, stunMs: 900, powerMult: 1 }),
+  cross: () => ({ dialect: 'fighting', windupMs: 260, r: 34, size: 1, powerMult: 1 }),
   gale: () => ({ dialect: 'ice', windupMs: 260, len: 110, wid: 36, ms: 1000, tickMs: 260, streaks: 3, powerMult: 0.45 }),
   telekinesis: () => ({
     dialect: 'psychic', r: 60, telegraphMs: 420, pullMs: 320, holdMs: 600, liftH: 18, pull: true, slamMult: 1,
@@ -122,8 +126,10 @@ const TIMESTOP_DEFAULTS: TimeStopParams = {
 
 const ABSZERO_DEFAULTS: AbsoluteZeroParams = { dialect: 'ice', windupMs: 700, r: 200, freezeMs: 2000, slamPower: 0.8 };
 
+const KOMODE_DEFAULTS: KoModeParams = { dialect: 'fighting', windupMs: 700, maxTargets: 6, perTargetMs: 320, hitsPer: 4, hitPower: 0.28, slamPower: 0.8, ko: true };
+
 const ULT_DEFAULTS: { [U in UltArchetypeId]: UltParamMap[U] } = {
-  inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS, timestop: TIMESTOP_DEFAULTS, absolutezero: ABSZERO_DEFAULTS,
+  inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS, timestop: TIMESTOP_DEFAULTS, absolutezero: ABSZERO_DEFAULTS, komode: KOMODE_DEFAULTS,
 };
 
 // ---------------------------------------------------------------------------------- bộ chiêu theo hệ
@@ -319,6 +325,13 @@ export const TYPE_KITS: Partial<Record<PokemonType, TypeKit>> = {
     lance: { params: { dialect: 'ice' } },
     gale: { params: { dialect: 'ice' } },
     absolutezero: { dialect: 'ice' },
+  },
+  fighting: {
+    strike: { params: { dialect: 'fighting' } },
+    counter: { params: { dialect: 'fighting' } },
+    slam: { params: { dialect: 'fighting' } },
+    cross: { params: { dialect: 'fighting' } },
+    komode: { dialect: 'fighting' },
   },
   // các hệ khác: chưa có bộ riêng → chiêu có archetype dùng ARCHETYPE_DEFAULTS (màu theo hệ, hiệu ứng 'generic');
   // chiêu không có archetype giữ nguyên đường cast cũ.
@@ -642,6 +655,38 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
       U: { archetype: 'blizzard', params: { r: 100, count: 10, ms: 2600, windupMs: 560 }, tiers: [] },
     },
   },
+  // ===== Dòng Giác đấu: Machop (chặt đơn, đỡ nhẹ, quật vai, chữ X) · Machoke (chặt đôi, đỡ rộng, xoay rồi quật, chữ X lớn; ult nhỏ) · Machamp (4 đấm, đỡ 4 tay, Đấm Động Lực, Trăm Cú Đấm; ult K.O.) =====
+  // Cơ chế riêng ở BattleScene: Phản Đòn (armCounter) + Va chạm (địch bị đánh văng đâm địch khác)
+  machop: {
+    kitType: 'fighting',
+    slots: {
+      J: { archetype: 'strike', params: { hits: 1, gapMs: 100, reach: 44, halfDeg: 55, fists: false, powerMult: 1 }, tiers: [] },
+      K: { archetype: 'counter', params: { stanceMs: 600, reduce: 0.4, reach: 54, fists: 0, counterMult: 1.6, buffMs: 3000, buffMult: 1.5 }, tiers: [] },
+      L: { archetype: 'slam', params: { mode: 'toss', reach: 46, tossDist: 52, flyMs: 420, stunMs: 900, powerMult: 1 }, tiers: [] },
+      U: { archetype: 'cross', params: { windupMs: 260, r: 34, size: 1, powerMult: 1 }, tiers: [] },
+    },
+  },
+  machoke: {
+    kitType: 'fighting',
+    ult: 'komode',
+    ultParams: { maxTargets: 3, perTargetMs: 300, hitsPer: 3, hitPower: 0.25, slamPower: 0.5, ko: false },
+    slots: {
+      J: { archetype: 'strike', params: { hits: 2, gapMs: 110, reach: 48, halfDeg: 58, fists: false, powerMult: 0.75 }, tiers: [] },
+      K: { archetype: 'counter', params: { stanceMs: 800, reduce: 0.3, reach: 72, fists: 0, counterMult: 2, buffMs: 3200, buffMult: 1.5 }, tiers: [] },
+      L: { archetype: 'slam', params: { mode: 'spin', reach: 54, tossDist: 64, flyMs: 380, spinMs: 400, stunMs: 1100, powerMult: 1.2 }, tiers: [] },
+      U: { archetype: 'cross', params: { windupMs: 300, r: 46, size: 1.4, powerMult: 1.3 }, tiers: [] },
+    },
+  },
+  machamp: {
+    kitType: 'fighting',
+    ult: 'komode',
+    slots: {
+      J: { archetype: 'strike', params: { hits: 4, gapMs: 90, reach: 54, halfDeg: 60, fists: true, powerMult: 0.4 }, tiers: [] },
+      K: { archetype: 'counter', params: { stanceMs: 900, reduce: 0.25, reach: 84, fists: 4, counterMult: 2.4, buffMs: 3500, buffMult: 1.5 }, tiers: [] },
+      L: { archetype: 'slam', params: { mode: 'mega', reach: 60, tossDist: 0, flyMs: 0, windupMs: 520, hitR: 40, size: 5, stunMs: 1600, powerMult: 1.6 }, tiers: [] },
+      U: { archetype: 'cross', params: { windupMs: 300, r: 60, size: 1.6, powerMult: 1.5, barrage: { n: 12, gapMs: 55 } }, tiers: [] },
+    },
+  },
   squirtle: {
     kitType: 'water',
     slots: {
@@ -892,6 +937,9 @@ export const KIT_TEMPLATES: Record<string, SpeciesKit> = {
   'psychic.big': SPECIES_KITS.alakazam,
   'ice.small': SPECIES_KITS.seel,
   'ice.big': SPECIES_KITS.dewgong,
+  'fighting.small': SPECIES_KITS.machop,
+  'fighting.mid': SPECIES_KITS.machoke,
+  'fighting.big': SPECIES_KITS.machamp,
   'electric.small': SPECIES_KITS.pikachu,
   'electric.big': SPECIES_KITS.raichu,
 };

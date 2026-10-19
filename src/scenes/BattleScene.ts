@@ -22,7 +22,8 @@ import { addBigWin, addKo, addQuest, isLearned, learnReady, markTrialCleared, re
 import type { QuestEvent } from '../data/unlocks';
 import { readyToast, reqLine, slotLockShort } from '../ui/unlockText';
 import type { HazardDef, HazardFx, HazardHit, Solid } from '../data/hazards';
-import { iceBlock, shardBurst } from '../fx/IceFx';
+import { impactRays, powBurst } from '../fx/FightFx';
+import { iceBlock, radialShards, shardBurst } from '../fx/IceFx';
 import { finalizeSpecies, queueSheets } from '../systems/spriteLoader';
 import { dexOf, markCaught, markSeen } from '../game/dex';
 import { playMusic } from '../systems/music';
@@ -58,6 +59,8 @@ const ULT_NAME_BY_SPECIES: Record<string, { vi: string; en: string }> = {
   kadabra: { vi: 'Ngưng Đọng Thời Gian', en: 'Time Stop' },
   alakazam: { vi: 'Ngưng Đọng Thời Gian', en: 'Time Stop' },
   dewgong: { vi: 'Kỷ Băng Hà', en: 'Ice Age' },
+  machoke: { vi: 'Loạt Đấm', en: 'Flurry' },
+  machamp: { vi: 'Đấm Hạ Gục', en: 'K.O. Rush' },
 };
 const ultName = (types: PokemonType[], speciesId?: string) => {
   const o = speciesId ? ULT_NAME_BY_SPECIES[speciesId] : undefined;
@@ -290,6 +293,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private zones: MoveZone[] = [];
   private spinTickAt = 0;
   private preloadIds = new Set<string>();
+  /** Giác đấu – Phản Đòn đang giữ thế đỡ, và buff L/U sau khi phản */
+  private counter: { until: number; reduce: number; onHit: () => void; done: boolean } | null = null;
+  private counterBuff = { until: 0, mult: 1 };
   private loadingText: Phaser.GameObjects.Text | null = null;
   /** tiền nhặt được bằng Ném Xu trong trận */
   private bonusMoney = 0;
@@ -663,6 +669,13 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       damageEnemy: (e, m, amount, dx, dy, big, quiet) => b.damageEnemy(e, m, amount, dx, dy, big, quiet),
       stackMult: (f, m) => b.stackMult(f, m),
       hitStop: (ms) => b.hitStop(ms),
+      armCounter: (ms, reduce, onHit) => {
+        b.counter = { until: b.clock + ms, reduce, onHit, done: false };
+      },
+      setCounterBuff: (ms, mult) => {
+        b.counterBuff = { until: b.clock + ms, mult };
+        b.fx.floatingLabel(b.player.x, b.player.chestY - 28, t('battle.counterBuff'), '#ffd34a');
+      },
       addZone: (z) => b.zones.push({ x: z.x, y: z.y, r: z.r, until: b.clock + z.ms, nextTick: b.clock + z.firstTickMs, move: z.move, power: z.power, gfx: b.add.graphics().setDepth(-2950), color: z.color }),
       spawnShot: (tex, x, y, vx, vy, r, dmg, life, spin) => b.playerShots.spawn(tex, x, y, vx, vy, r, dmg, life, spin),
       meleeSequence: (f, m, aim, mult) => b.meleeSequence(f, m, aim, mult),
@@ -787,6 +800,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     // con tự gục trong lượt của nó (Voltorb tự nổ)
     for (const e of [...this.enemies]) if (e.dead) this.killEnemy(e);
     this.checkContactDamage();
+    this.updateCollisions();
     this.updateProjectiles(dt);
     this.updateOrbs(dt);
     this.fx.update(clock, dt);
@@ -1177,6 +1191,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private skillFlair(f: Fighter, m: MoveDef) {
     this.events.emit('callout', moveName(m), TYPE_COLOR[m.type]);
     if (m.type === 'grass') leafBurst(this, f.x, f.feetY, 46, 8, ['leafA', 'leafB', 'petalP'], 480, 0.8);
+    // Giác đấu / Băng: không dùng vòng tròn (giữ bản sắc hình dáng riêng của hệ)
+    else if (m.type === 'fighting') impactRays(this, f.x, f.chestY, 10, 14, 34, 0xfff06a, 260);
+    else if (m.type === 'ice') radialShards(this, f.x, f.feetY - 6, 8, 26);
     else {
       const ring = this.add.circle(f.x, f.feetY, 10, TYPE_COLOR[m.type], 0.25).setStrokeStyle(3, TYPE_COLOR[m.type], 1).setDepth(-2700);
       this.tweens.add({ targets: ring, scale: 5, alpha: 0, duration: 420, onComplete: () => ring.destroy() });
@@ -1972,6 +1989,28 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   }
 
   /** quiet: nhịp sát thương nhỏ (mây, xoay) – không rung, không bật chữ khắc hệ liên tục */
+  /** Giác đấu – Va chạm: địch đang bị đánh văng đâm vào địch khác → cả hai chịu sát thương */
+  private updateCollisions() {
+    for (const e of this.enemies) {
+      if (e.dead || this.clock > e.bangUntil || e.knockSpeed < 70 || this.clock < e.bangHitAt) continue;
+      for (const o of this.enemies) {
+        if (o === e || o.dead || !o.targetable) continue;
+        const dx = o.x - e.x;
+        const dy = o.y - e.y;
+        const d = Math.hypot(dx, dy / 0.8);
+        if (d > e.radius + o.radius) continue;
+        e.bangHitAt = this.clock + 350;
+        const mv: MoveDef = { ...MOVES.withdraw, id: 'collision', type: 'fighting', power: 0, knockback: 120, status: undefined, castSlot: undefined, shatterChild: true };
+        this.fx.floatingLabel(o.x, o.topY - 14, t('battle.collision'), '#ffb02a');
+        powBurst(this, (o.x + e.x) / 2, (o.y + e.y) / 2 - 6, 14, 200);
+        this.fx.shake(0.005, 100);
+        this.damageEnemy(o, mv, e.bangAmount, dx / (d || 1), dy / (d || 1), true, true);
+        this.damageEnemy(e, mv, e.bangAmount * 0.6, -dx / (d || 1), -dy / (d || 1), false, true);
+        break;
+      }
+    }
+  }
+
   /** Lạnh (hệ Băng): cộng dồn, địch chậm dần; đủ 3 điểm → Đóng băng (boss chỉ bị chậm) */
   private applyChill(e: Enemy, n: number) {
     if (e.dead) return;
@@ -2021,6 +2060,12 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (moveCrit) raw *= 1.8;
     else if (statCrit) raw *= CRIT_MULT;
     raw *= this.comboMult;
+    if ((m.castSlot === 'L' || m.castSlot === 'U') && this.clock < this.counterBuff.until) raw *= this.counterBuff.mult;
+    // Giác đấu – Va chạm: bị đánh văng mạnh thì trong 0,45s đâm địch khác sẽ gây sát thương cho cả hai
+    if (m.type === 'fighting' && !m.shatterChild && (m.knockback ?? 0) >= 150) {
+      e.bangUntil = this.clock + 450;
+      e.bangAmount = amount * 0.4;
+    }
     // hệ Băng: đòn băng trúng địch ĐANG ĐÓNG BĂNG → VỠ NÁT (×1,6, mảnh băng văng sang địch bên cạnh)
     const iceMove = m.type === 'ice' && !m.shatterChild;
     const shatter = iceMove && e.hasStatus('freeze', this.clock);
@@ -2239,6 +2284,15 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       return;
     }
     const mult = effectiveness(type, f.species.types);
+    // Phản Đòn: đang giữ thế đỡ → nhận ít sát thương hơn và phản lại
+    if (this.counter && !this.counter.done && this.clock < this.counter.until && f === this.player) {
+      amount *= this.counter.reduce;
+      this.counter.done = true;
+      const fn = this.counter.onHit;
+      this.counter = null;
+      this.fx.floatingLabel(f.x, f.chestY - 22, t('battle.counter'), '#ffd34a');
+      fn();
+    }
     const dmg = f.takeDamage(amount * mult, this.clock);
     if (!dmg) return;
     this.gainUlt(ULT_GAIN.hurt);

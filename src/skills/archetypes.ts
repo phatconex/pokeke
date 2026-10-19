@@ -15,6 +15,7 @@ import type { Enemy } from '../entities/Enemy';
 import { bulbCharge, crackBetween, flattenedGrass, groundCracks, leafBurst, windStreak } from '../fx/GrassFx';
 import { castCloud, castTether, castWhip } from './grassArchetypes';
 import { castTelekinesis, castTimeStop } from './psyArchetypes';
+import { castCounter, castCross, castKoMode, castSlam, castStrike } from './fightArchetypes';
 import { castAbsoluteZero, castBlizzard, castGale, castLance } from './iceArchetypes';
 
 /** Ra chiêu theo nguyên mẫu đã phân giải (spec.archetype khác null) */
@@ -34,6 +35,10 @@ export function castArchetype(h: SkillHost, f: Fighter, m: MoveDef, spec: SkillS
     case 'blizzard': return castBlizzard(h, f, m, spec.params);
     case 'lance': return castLance(h, f, m, spec.params, dir);
     case 'gale': return castGale(h, f, m, spec.params, dir);
+    case 'strike': return castStrike(h, f, m, spec.params, dir);
+    case 'counter': return castCounter(h, f, m, spec.params);
+    case 'slam': return castSlam(h, f, m, spec.params, dir);
+    case 'cross': return castCross(h, f, m, spec.params);
     default: return undefined;
   }
 }
@@ -46,6 +51,7 @@ export function castUltArchetype(h: SkillHost, f: Fighter, spec: UltSpec, u: Ult
   else if (spec.archetype === 'bloom') castBloom(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'timestop') castTimeStop(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'absolutezero') castAbsoluteZero(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'komode') castKoMode(h, f, spec.params, u, mv, amount);
 }
 
 /** Vạch chấm từ (x1, y1) tới (x2, y2) – vạch ngắm */

@@ -41,6 +41,13 @@ export class Enemy {
   /** Lạnh (hệ Băng): điểm cộng dồn, hết hạn sau chillUntil; đủ 3 → Đóng băng */
   chill = 0;
   chillUntil = 0;
+  /** Giác đấu – Va chạm: sau khi bị đánh văng, trong bangUntil nếu đâm địch khác thì cả hai chịu sát thương */
+  bangUntil = 0;
+  bangAmount = 0;
+  bangHitAt = 0;
+  get knockSpeed() {
+    return this.kb.length();
+  }
   private stunUsed = false;
   private stars: Phaser.GameObjects.Image[] = [];
   /** đang nằm trong bóng (chờ kết quả bắt) */

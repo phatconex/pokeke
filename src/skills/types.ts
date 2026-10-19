@@ -22,9 +22,9 @@ import type { StatusKind } from '../data/moveKit';
  * Dự kiến (chưa làm – chiêu khai báo các id này sẽ rơi về đường cast cũ):
  *  trap   – vùng gài, kích hoạt sau một lúc · summon – gọi trợ thủ / tháp bắn tạm thời
  */
-export type ArchetypeId = 'bolt' | 'dashStrike' | 'stream' | 'blast' | 'nova' | 'chain' | 'rain' | 'whip' | 'cloud' | 'tether' | 'telekinesis' | 'blizzard' | 'lance' | 'gale';
+export type ArchetypeId = 'bolt' | 'dashStrike' | 'stream' | 'blast' | 'nova' | 'chain' | 'rain' | 'whip' | 'cloud' | 'tether' | 'telekinesis' | 'blizzard' | 'lance' | 'gale' | 'strike' | 'counter' | 'slam' | 'cross';
 export type PlannedArchetypeId = 'trap' | 'summon';
-export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStrike', 'stream', 'blast', 'nova', 'chain', 'rain', 'whip', 'cloud', 'tether', 'telekinesis', 'blizzard', 'lance', 'gale'];
+export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStrike', 'stream', 'blast', 'nova', 'chain', 'rain', 'whip', 'cloud', 'tether', 'telekinesis', 'blizzard', 'lance', 'gale', 'strike', 'counter', 'slam', 'cross'];
 
 /**
  * Nguyên mẫu tuyệt chiêu (phím I).
@@ -33,10 +33,10 @@ export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStri
  *  thunderstorm = trời tối, sét giáng dày đặc + sét nảy chuỗi
  *  bloom        = bão cánh hoa xoay / rễ gai trồi khắp sân + đóa hoa khổng lồ nở rộ (hệ cỏ)
  */
-export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 'timestop' | 'absolutezero';
+export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 'timestop' | 'absolutezero' | 'komode';
 
 /** "Bộ từ vựng" hiệu ứng (vệt, nổ trúng, khói, vụ nổ, cháy xém, cột, vuốt) – xem dialects.ts */
-export type FxDialectId = 'fire' | 'water' | 'electric' | 'grass' | 'ghost' | 'psychic' | 'ice' | 'generic';
+export type FxDialectId = 'fire' | 'water' | 'electric' | 'grass' | 'ghost' | 'psychic' | 'ice' | 'fighting' | 'generic';
 
 export interface BoltParams {
   dialect: FxDialectId;
@@ -394,6 +394,72 @@ export interface AbsoluteZeroParams {
   slamPower: number;
 }
 
+/** Chặt (Giác đấu): 1 hoặc nhiều nhát / nắm đấm bay trong hình quạt ngắn phía trước */
+export interface StrikeParams {
+  dialect: FxDialectId;
+  hits: number;
+  gapMs: number;
+  reach: number;
+  halfDeg: number;
+  /** dùng nắm đấm bay thay cho vệt chặt (Machamp) */
+  fists: boolean;
+  /** hệ số sát thương mỗi nhát */
+  powerMult: number;
+}
+
+/** Phản Đòn (Giác đấu): giữ thế đỡ; bị đánh trúng thì giảm sát thương, phản lại mọi địch gần và tăng L/U kế tiếp */
+export interface CounterParams {
+  dialect: FxDialectId;
+  stanceMs: number;
+  /** hệ số sát thương nhận vào khi đỡ (0,3 = nhận 30%) */
+  reduce: number;
+  reach: number;
+  /** số nắm đấm bay vào mỗi địch khi phản (0 = không) */
+  fists: number;
+  counterMult: number;
+  buffMs: number;
+  buffMult: number;
+}
+
+/** Quật / Đấm khổng lồ (Giác đấu) */
+export interface SlamParams {
+  dialect: FxDialectId;
+  /** toss: tóm ném qua vai · spin: xoay 1 vòng rồi ném · mega: gồng rồi nắm đấm khổng lồ giáng xuống */
+  mode: 'toss' | 'spin' | 'mega';
+  reach: number;
+  tossDist: number;
+  flyMs: number;
+  spinMs?: number;
+  windupMs?: number;
+  /** bán kính trúng đòn (mega), cỡ nắm đấm (mega) */
+  hitR?: number;
+  size?: number;
+  stunMs: number;
+  powerMult: number;
+}
+
+/** Chặt chéo (chữ X) hoặc Trăm cú đấm (barrage) */
+export interface CrossParams {
+  dialect: FxDialectId;
+  windupMs: number;
+  r: number;
+  size: number;
+  powerMult: number;
+  barrage?: { n: number; gapMs: number };
+}
+
+/** Đấm Hạ Gục (Giác đấu): truyện tranh toàn màn hình, lao qua từng địch tung loạt đấm, nổ cuối + chữ K.O.! */
+export interface KoModeParams {
+  dialect: FxDialectId;
+  windupMs: number;
+  maxTargets: number;
+  perTargetMs: number;
+  hitsPer: number;
+  hitPower: number;
+  slamPower: number;
+  ko: boolean;
+}
+
 export interface WhipParams {
   dialect: FxDialectId;
   /** lash: 2 dây quét cung / slam: 2 dây vút lên rồi đập xuống / xslam: 2 dây đập chéo thành chữ X */
@@ -558,6 +624,10 @@ export interface ArchetypeParamMap {
   telekinesis: TelekinesisParams;
   blizzard: BlizzardParams;
   lance: LanceParams;
+  strike: StrikeParams;
+  counter: CounterParams;
+  slam: SlamParams;
+  cross: CrossParams;
   gale: GaleParams;
 }
 
@@ -590,6 +660,7 @@ export interface UltParamMap {
   bloom: BloomParams;
   timestop: TimeStopParams;
   absolutezero: AbsoluteZeroParams;
+  komode: KoModeParams;
 }
 
 /** Bậc theo cấp: áp mọi bậc có minLevel ≤ cấp, theo thứ tự (gộp dần). Có thể đổi cả cost. */
@@ -617,6 +688,10 @@ export interface TypeKit {
   telekinesis?: KitEntry<TelekinesisParams>;
   blizzard?: KitEntry<BlizzardParams>;
   lance?: KitEntry<LanceParams>;
+  strike?: KitEntry<StrikeParams>;
+  counter?: KitEntry<CounterParams>;
+  slam?: KitEntry<SlamParams>;
+  cross?: KitEntry<CrossParams>;
   gale?: KitEntry<GaleParams>;
   inferno?: Partial<InfernoParams>;
   tsunami?: Partial<TsunamiParams>;
@@ -624,6 +699,7 @@ export interface TypeKit {
   bloom?: Partial<BloomParams>;
   timestop?: Partial<TimeStopParams>;
   absolutezero?: Partial<AbsoluteZeroParams>;
+  komode?: Partial<KoModeParams>;
 }
 
 /** Ghi đè cho một ô chiêu của một loài */
@@ -639,7 +715,7 @@ export interface SpeciesKit {
   slots?: Partial<Record<SkillSlot, SlotOverride>>;
   ult?: UltArchetypeId;
   /** ghi đè tham số tuyệt chiêu (theo nguyên mẫu `ult`) */
-  ultParams?: Partial<InfernoParams & TsunamiParams & ThunderstormParams & BloomParams & TimeStopParams & AbsoluteZeroParams>;
+  ultParams?: Partial<InfernoParams & TsunamiParams & ThunderstormParams & BloomParams & TimeStopParams & AbsoluteZeroParams & KoModeParams>;
 }
 
 interface SpecBase {
