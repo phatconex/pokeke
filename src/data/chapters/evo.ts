@@ -73,6 +73,11 @@ const moves: Record<string, MoveDef> = {
     desc: 'Nổi điên lao tới 60px rồi đấm đá loạn xạ 3–6 đòn quét rộng. Mỗi đòn 20% Chí mạng.' }),
 
   // ---- siêu linh
+  // ---- hệ Siêu linh, bộ chiêu mới cho Alakazam (xem skills/kits.ts → TYPE_KITS.psychic) ----
+  evo_psyBeamN3: C({ id: 'evo_psyBeamN3', name: 'Tia Siêu Linh Lớn', type: 'psychic', power: 34, cooldownMs: 3400, sfx: 'swap', icon: 'spiral', anim: 'shoot', animMs: 380, line: 210, lineWidth: 28, sprayMs: 640, moveSlow: 0.3,
+    particle: 'psypuff', knockback: 80, status: { kind: 'confuse', chance: 0.35, ms: 1800 }, archetype: 'stream', desc: 'Ngắm rồi bắn tia sóng ý nghĩ đổi màu xanh-tím-hồng, dày và dài, xuyên mọi địch. 35% gây Rối loạn.' }),
+  evo_psyStrikeN3: B({ id: 'evo_psyStrikeN3', name: 'Cú Đánh Siêu Linh', type: 'psychic', power: 50, cooldownMs: 4800, sfx: 'thunder', icon: 'eye', anim: 'charge', animMs: 480, burstRadius: 66, atTarget: true, particle: 'psypuff', knockback: 300,
+    status: { kind: 'confuse', chance: 0.5, ms: 2000 }, archetype: 'blast', desc: 'Khóa mục tiêu, ném quả cầu tinh thể có gai nổ thành các vòng sóng ý nghĩ và sao 6 cánh. 50% gây Rối loạn.' }),
   evo_spoonBend: P({ id: 'evo_spoonBend', name: 'Thìa Bay', type: 'psychic', power: 13, cooldownMs: 900, sfx: 'swap', icon: 'spiral', speed: 320, lifeMs: 1200, count: 2, spreadDeg: 20,
     texture: 'psyball', spin: 20, particle: 'psypuff', knockback: 60, boomerang: true, pierce: true, status: { kind: 'confuse', chance: 0.2, ms: 1400 },
     desc: 'Bẻ cong 2 chiếc thìa bằng ý niệm: thìa bay ra rồi quay về như boomerang, xuyên địch. 20% gây Rối loạn.' }),
@@ -170,7 +175,7 @@ const species: ChapterContent['species'] = {
   },
   alakazam: {
     dex: 65, name: 'Alakazam', types: ['psychic'], body: { w: 15, h: 11 }, fallbackColor: 0xd8a830, scale: 1.2,
-    base: { hp: 108, atk: 90, speed: 128 }, skills: sk('psybeam', 'teleport', ['evo_spoonBend', 1], ['evo_psychic', 36]), catchRate: 50,
+    base: { hp: 108, atk: 90, speed: 128 }, skills: sk('psybeam', 'teleport', ['evo_psyBeamN3', 1], ['evo_psyStrikeN3', 36]), catchRate: 50,
     blurb: 'Trí tuệ siêu phàm: dịch chuyển né đòn và bẻ cong thìa thành vũ khí.',
   },
   weepinbell: {

@@ -8,6 +8,23 @@ import { A, many, s, sk } from '../kit';
 // ======================================================================= chiêu mới
 const MOVES: Record<string, MoveDef> = {
   // ---------------------------------------------------------------- Băng
+  // ---- hệ Băng, bộ chiêu mới (xem skills/kits.ts → TYPE_KITS.ice + SPECIES_KITS seel/dewgong) ----
+  ch7_iceShardN1: P({ id: 'ch7_iceShardN1', name: 'Mảnh Băng', type: 'ice', power: 9, cooldownMs: 400, sfx: 'waterHi', icon: 'sparkle', speed: 420, lifeMs: 620, texture: 'iceShardB', particle: 'snowdot', knockback: 40,
+    chill: 0.5, archetype: 'bolt', desc: 'Bắn một mảnh băng nhọn, vệt tuyết; trúng thì vỡ thành mảnh vụn. Cộng dồn Lạnh.' }),
+  ch7_iceShardN3: P({ id: 'ch7_iceShardN3', name: 'Mảnh Băng', type: 'ice', power: 12, cooldownMs: 440, sfx: 'waterHi', icon: 'sparkle', speed: 440, lifeMs: 640, texture: 'iceShardA', particle: 'snowdot', knockback: 60, pierce: true,
+    chill: 0.5, archetype: 'bolt', desc: 'Ba mảnh băng lớn xòe quạt xuyên qua địch, vỡ nát thành chùm mảnh vụn. Cộng dồn Lạnh.' }),
+  ch7_iceFangN1: C({ id: 'ch7_iceFangN1', name: 'Nanh Băng', type: 'ice', power: 14, cooldownMs: 900, sfx: 'dash', icon: 'fang', range: 40, halfAngleDeg: 55, particle: 'snowdot', knockback: 100, lunge: 56,
+    chill: 1, archetype: 'dashStrike', desc: 'Lao ngắn cắn địch, để lại 3 tinh thể băng nhỏ mọc dọc đường lao. +1 Lạnh.' }),
+  ch7_iceSlamN3: C({ id: 'ch7_iceSlamN3', name: 'Đập Băng', type: 'ice', power: 26, cooldownMs: 1900, sfx: 'waterLo', icon: 'fist', range: 56, halfAngleDeg: 70, particle: 'snowdot', knockback: 200, lunge: 30,
+    chill: 1, archetype: 'dashStrike', desc: 'Đập mình xuống đất: nền nứt, hàng gai băng mọc thẳng về phía trước. +1 Lạnh.' }),
+  ch7_iceBeamN1: C({ id: 'ch7_iceBeamN1', name: 'Mũi Băng', type: 'ice', power: 20, cooldownMs: 2600, sfx: 'waterHi', icon: 'wave', anim: 'shoot', animMs: 300, line: 150, lineWidth: 14, sprayMs: 520, moveSlow: 0.5,
+    particle: 'snowdot', knockback: 20, chill: 1, archetype: 'lance', desc: 'Một mũi tinh thể mọc dài từng đốt ra phía trước, xuyên mọi địch; để lại mảng băng rách làm trơn.' }),
+  ch7_iceBeamN3: C({ id: 'ch7_iceBeamN3', name: 'Mũi Băng Lớn', type: 'ice', power: 34, cooldownMs: 3600, sfx: 'waterLo', icon: 'wave', anim: 'shoot', animMs: 420, line: 220, lineWidth: 30, sprayMs: 700, moveSlow: 0.3,
+    particle: 'snowdot', knockback: 30, chill: 1, archetype: 'lance', desc: 'Cột tinh thể lăng trụ lớn mọc dài, có nhánh con hai bên, xuyên mọi địch; đường mũi băng hóa thành mảng băng trơn.' }),
+  ch7_snowGustN1: C({ id: 'ch7_snowGustN1', name: 'Gió Tuyết', type: 'ice', power: 12, cooldownMs: 3200, sfx: 'powder', icon: 'wind', anim: 'attack', animMs: 340, range: 84, halfAngleDeg: 40, particle: 'flake',
+    knockback: 0, chill: 0.5, archetype: 'gale', desc: 'Thổi những đường gió tuyết dài ngang qua dải phía trước, bông tuyết bay theo gió; địch trong đó cộng dồn Lạnh.' }),
+  ch7_blizzardN3: B({ id: 'ch7_blizzardN3', name: 'Mưa Băng', type: 'ice', power: 14, cooldownMs: 5200, sfx: 'waterLo', icon: 'cloud', anim: 'charge', animMs: 420, burstRadius: 60, atTarget: true, particle: 'snowdot',
+    knockback: 0, chill: 0.5, archetype: 'blizzard', desc: 'Hiện bóng báo trước rồi nhiều giá băng dài rơi đâm xuống đất, để lại cụm tinh thể; gió tuyết ngang quét qua cộng dồn Lạnh.' }),
   ch7_powderSnow: P({ id: 'ch7_powderSnow', name: 'Bột Tuyết', type: 'ice', power: 7, cooldownMs: 400, sfx: 'water', icon: 'sparkle', speed: 300, lifeMs: 620, texture: 'icepuff', spin: 8, particle: 'icepuff', knockback: 30,
     count: 3, spreadDeg: 14, slow: 0.6, status: { kind: 'freeze', chance: 0.08, ms: 1200 },
     desc: 'Thổi 3 nắm tuyết hình quạt: địch trúng bị chậm lại, 8% Đóng băng.' }),
@@ -161,13 +178,13 @@ export const CHAPTER: ChapterContent = {
   species: {
     seel: {
       dex: 86, name: 'Seel', types: ['water'], body: { w: 15, h: 10 }, fallbackColor: 0xe8eef8,
-      base: { hp: 112, atk: 50, speed: 100 }, skills: sk('ch7_powderSnow', 'headbutt', ['ch7_bellySlide', 28], ['ch7_auroraBeam', 32]),
+      base: { hp: 112, atk: 50, speed: 100 }, skills: sk('ch7_iceShardN1', 'ch7_iceFangN1', ['ch7_iceBeamN1', 28], ['ch7_snowGustN1', 32]),
       evolution: { into: 'dewgong', level: 34 }, catchRate: 190,
       blurb: 'Hải cẩu tinh nghịch, thích trượt bụng trên băng để húc đối thủ.',
     },
     dewgong: {
       dex: 87, name: 'Dewgong', types: ['water', 'ice'], body: { w: 20, h: 12 }, fallbackColor: 0xf0f4fc, scale: 1.3,
-      base: { hp: 140, atk: 66, speed: 106 }, skills: sk('ch7_powderSnow', 'ch7_bellySlide', ['ch7_auroraBeam', 1], ['ch7_sheerCold', 1]), catchRate: 75,
+      base: { hp: 140, atk: 66, speed: 106 }, skills: sk('ch7_iceShardN3', 'ch7_iceSlamN3', ['ch7_iceBeamN3', 1], ['ch7_blizzardN3', 1]), catchRate: 75,
       blurb: 'Bơi trong nước băng như không. Hơi lạnh của nó cắt nửa sinh lực kẻ địch.',
     },
     shellder: {

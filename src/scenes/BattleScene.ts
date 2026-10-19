@@ -22,6 +22,7 @@ import { addBigWin, addKo, addQuest, isLearned, learnReady, markTrialCleared, re
 import type { QuestEvent } from '../data/unlocks';
 import { readyToast, reqLine, slotLockShort } from '../ui/unlockText';
 import type { HazardDef, HazardFx, HazardHit, Solid } from '../data/hazards';
+import { iceBlock, shardBurst } from '../fx/IceFx';
 import { finalizeSpecies, queueSheets } from '../systems/spriteLoader';
 import { dexOf, markCaught, markSeen } from '../game/dex';
 import { playMusic } from '../systems/music';
@@ -54,6 +55,9 @@ const STRIKE_FX: Partial<Record<PokemonType, HazardFx>> = {
 const ULT_NAME_BY_SPECIES: Record<string, { vi: string; en: string }> = {
   ivysaur: { vi: 'Vũ Điệu Cánh Hoa', en: 'Petal Dance' },
   venusaur: { vi: 'Rừng Cây Phủ Sân', en: 'Overgrowth' },
+  kadabra: { vi: 'Ngưng Đọng Thời Gian', en: 'Time Stop' },
+  alakazam: { vi: 'Ngưng Đọng Thời Gian', en: 'Time Stop' },
+  dewgong: { vi: 'Kỷ Băng Hà', en: 'Ice Age' },
 };
 const ultName = (types: PokemonType[], speciesId?: string) => {
   const o = speciesId ? ULT_NAME_BY_SPECIES[speciesId] : undefined;
@@ -1968,6 +1972,43 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   }
 
   /** quiet: nhịp sát thương nhỏ (mây, xoay) – không rung, không bật chữ khắc hệ liên tục */
+  /** Lạnh (hệ Băng): cộng dồn, địch chậm dần; đủ 3 điểm → Đóng băng (boss chỉ bị chậm) */
+  private applyChill(e: Enemy, n: number) {
+    if (e.dead) return;
+    if (this.clock > e.chillUntil) e.chill = 0;
+    e.chillUntil = this.clock + 3200;
+    const before = Math.floor(e.chill);
+    e.chill += n;
+    e.applySlow(Math.max(0.5, 1 - 0.14 * e.chill), 1800, this.clock);
+    if (e.chill >= 3) {
+      e.chill = 0;
+      if (e.applyStatus('freeze', 2400, this.clock)) {
+        this.questEvent('freeze');
+        this.fx.floatingLabel(e.x, e.topY - 16, t('battle.frozen'), '#9ae8ff');
+        iceBlock(this, e, () => e.hasStatus('freeze', this.clock));
+      }
+    } else if (Math.floor(e.chill) > before) {
+      this.fx.floatingLabel(e.x, e.topY - 16, t('battle.chill', { n: Math.floor(e.chill) }), '#bfefff');
+    }
+  }
+
+  /** Vỡ nát: mảnh băng văng ra gây sát thương lan + cộng Lạnh cho địch bên cạnh */
+  private iceShatter(e: Enemy, m: MoveDef, amount: number) {
+    this.fx.floatingLabel(e.x, e.topY - 22, t('battle.shatter'), '#e8fbff');
+    shardBurst(this.fx, e.x, e.centerY, 14);
+    this.fx.shake(0.006, 120);
+    const frag: MoveDef = { ...m, id: `${m.id}Frag`, status: undefined, knockback: 80, castSlot: undefined, shatterChild: true, chill: 0 };
+    for (const o of this.enemies) {
+      if (o === e || o.dead || !o.targetable) continue;
+      const dx = o.x - e.x;
+      const dy = o.y - e.y;
+      const d = Math.hypot(dx, dy);
+      if (d > 52) continue;
+      this.damageEnemy(o, frag, amount * 0.5, dx / (d || 1), dy / (d || 1), false, true);
+      this.applyChill(o, 1);
+    }
+  }
+
   private damageEnemy(e: Enemy, m: MoveDef, amount: number, dirX: number, dirY: number, big = false, quiet = false) {
     if (!e.targetable) return;
     const mult = m.fixedPerLevel ? 1 : effectiveness(m.type, e.species.types);
@@ -1980,6 +2021,14 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (moveCrit) raw *= 1.8;
     else if (statCrit) raw *= CRIT_MULT;
     raw *= this.comboMult;
+    // hệ Băng: đòn băng trúng địch ĐANG ĐÓNG BĂNG → VỠ NÁT (×1,6, mảnh băng văng sang địch bên cạnh)
+    const iceMove = m.type === 'ice' && !m.shatterChild;
+    const shatter = iceMove && e.hasStatus('freeze', this.clock);
+    if (shatter) {
+      raw *= 1.6;
+      delete e.status.freeze;
+      this.iceShatter(e, m, amount);
+    }
     // tuyệt chiêu chỉ tích từ đòn K/L/U (J, tuyệt chiêu, phản đòn... không tích)
     this.lastDealtAt = this.clock;
     if (m.castSlot && m.castSlot !== 'J') this.gainUlt(quiet ? ULT_GAIN.hit * 0.3 : ULT_GAIN.hit);
@@ -2006,6 +2055,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     const dmg = Math.max(1, Math.round(raw));
     const wasStunned = e.isStunned(this.clock);
     e.hit(dmg, dirX, dirY, m.knockback, this.clock, !quiet);
+    if (iceMove && !shatter && !e.dead) this.applyChill(e, m.chill ?? 1);
     if (m.slow && !e.dead) e.applySlow(m.slow, 2000, this.clock);
     if (m.drain) this.player.heal(Math.round(dmg * m.drain));
     // nhiệm vụ mở khóa L (chỉ đòn của người chơi): hút máu, đẩy lùi, chí mạng, rất hiệu quả

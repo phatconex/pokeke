@@ -4,6 +4,7 @@ import type { Effects } from '../fx/Effects';
 import type { MoveDef } from '../data/moveKit';
 import type { SkillHost } from './host';
 import type { FxDialectId } from './types';
+import { frostSheet, iceSpike, radialShards, shardStar } from '../fx/IceFx';
 
 export interface FxDialect {
   /** hạt vệt sau đạn / khi lao / khi ngắm */
@@ -123,6 +124,58 @@ const ghost = (fx: Effects, h?: SkillHost): FxDialect => ({
   streaks: (x1, y1, x2, y2) => fx.scratchMarks(x2, y2, Math.atan2(y2 - y1, x2 - x1), 3, 12, 0xa080e0, 0xf0e0ff),
 });
 
+/** Siêu linh: vòng elip đổi màu xanh → tím → hồng, sao 6 cánh, vòng lơ lửng, nền ý nghĩ làm chậm nhẹ */
+const PSY = [0x3a5aff, 0x7a2aff, 0xc030ff, 0xff40c8];
+const psy = (fx: Effects, h?: SkillHost): FxDialect => ({
+  trail: (x, y, n) => {
+    fx.puff('psypuff', x, y, n);
+    if (Math.random() < 0.18) fx.ringBurst(x, y, 7, PSY[Math.floor(Math.random() * 4)], 0xffffff, 240);
+  },
+  hit: (x, y, big) => {
+    fx.puff('psypuff', x, y, big ? 5 : 3);
+    fx.ringBurst(x, y, big ? 18 : 11, PSY[1], PSY[3], 280);
+  },
+  spray: (x, y, a, n) => fx.jetOf('psypuff', x, y, a, 8, n),
+  smoke: (x, y, n) => fx.puff('psypuff', x, y, n),
+  puff: (x, y, n) => fx.puff('psypuff', x, y, n),
+  explosion: (x, y, r) => {
+    PSY.forEach((c, i) => fx.ringBurst(x, y, r * (0.5 + i * 0.28), c, PSY[(i + 1) % 4], 300 + i * 70));
+    fx.starBurst(x, y, r * 0.8, 6, 0xc030ff, 0xffe0ff);
+    fx.puff('psypuff', x, y, Math.max(4, Math.round(r / 4)));
+  },
+  scorch: (x, y, r, ms) => {
+    fx.ringBurst(x, y, r, PSY[1], PSY[2], 600);
+    fx.puff('psypuff', x, y, Math.max(3, Math.round(r / 6)));
+    slowZone(h, x, y, r, ms, 0.75);
+  },
+  pillar: (x, y, hgt) => {
+    for (let i = 0; i < Math.max(3, Math.round(hgt)); i++) fx.ringBurst(x, y - i * 7, 10 - i, PSY[i % 4], 0xffffff, 340);
+  },
+  streaks: (x1, y1, x2, y2) => fx.scratchMarks(x2, y2, Math.atan2(y2 - y1, x2 - x1), 3, 12, 0xc030ff, 0xffe0ff),
+});
+
+/** Băng: hạt tuyết, mảnh băng vỡ, sao 6 cánh, gai băng mọc từ đất, vệt băng trơn làm chậm */
+const ice = (fx: Effects, h?: SkillHost): FxDialect => ({
+  trail: (x, y, n) => {
+    fx.puff('snowdot', x, y, n);
+    if (Math.random() < 0.2) fx.puff('flake', x, y, 1);
+  },
+  hit: (x, y, big) => {
+    radialShards(fx.scn, x, y, big ? 9 : 6, big ? 24 : 15);
+    fx.puff('snowdot', x, y, 2);
+  },
+  spray: (x, y, a, n) => fx.jetOf('snowdot', x, y, a, 10, n),
+  smoke: (x, y, n) => fx.puff('flake', x, y, n),
+  puff: (x, y, n) => fx.puff('snowdot', x, y, n),
+  explosion: (x, y, r) => shardStar(fx, x, y, r),
+  scorch: (x, y, r, ms) => {
+    frostSheet(fx.scn, x, y, r, ms);
+    slowZone(h, x, y, r, ms, 0.6);
+  },
+  pillar: (x, y, hgt) => iceSpike(fx.scn, x, y, 10 + hgt * 6, 5 + hgt),
+  streaks: (x1, y1, x2, y2) => fx.scratchMarks(x2, y2, Math.atan2(y2 - y1, x2 - x1), 3, 12, 0xa8e4ff, 0xffffff),
+});
+
 /** Hệ chưa có bộ hiệu ứng riêng: dùng hạt của chiêu (move.particle) + tia sáng chung */
 const generic = (fx: Effects, m: MoveDef): FxDialect => {
   const tex = m.particle ?? 'spark';
@@ -153,6 +206,8 @@ export function dialectFor(id: FxDialectId, fx: Effects, m: MoveDef, h?: SkillHo
     case 'electric': return electric(fx, h);
     case 'grass': return grass(fx, h);
     case 'ghost': return ghost(fx, h);
+    case 'psychic': return psy(fx, h);
+    case 'ice': return ice(fx, h);
     default: return generic(fx, m);
   }
 }

@@ -38,6 +38,9 @@ export class Enemy {
   /** có thể thu phục (Pokémon hoang dã) */
   catchable = false;
   stunnedUntil = 0;
+  /** Lạnh (hệ Băng): điểm cộng dồn, hết hạn sau chillUntil; đủ 3 → Đóng băng */
+  chill = 0;
+  chillUntil = 0;
   private stunUsed = false;
   private stars: Phaser.GameObjects.Image[] = [];
   /** đang nằm trong bóng (chờ kết quả bắt) */

@@ -11,7 +11,7 @@ Mục tiêu: thêm Pokémon mới chỉ cần vài dòng cấu hình, không vi�
 | `host.ts` | `SkillHost`: những gì khuôn được phép dùng từ BattleScene |
 | `kits.ts` | Cấu hình: `TYPE_KITS` (mặc định theo hệ), `SPECIES_KITS` (riêng từng loài), mốc cấp (tiers), `resolveSkill / resolveUlt` |
 
-Khuôn có sẵn: `bolt` (đạn), `dashStrike` (lao chém), `stream` (tia/luồng), `blast` (nổ có ngắm), `nova` (vòng sóng), `chain` (sét nảy), `rain` (đòn từ trời). Ult: `inferno`, `tsunami`, `thunderstorm`, `bloom`. Còn là stub: `trap`, `summon`.
+Khuôn có sẵn: `bolt` (đạn), `dashStrike` (lao chém), `stream` (tia/luồng; tham số `ringBeam` = tia là chuỗi vòng elip), `blast` (nổ có ngắm), `nova` (vòng sóng), `chain` (sét nảy), `rain` (đòn từ trời), `whip`, `cloud`, `tether` (Cỏ), `lance`/`gale`/`blizzard` (Băng: mũi tinh thể / gió ngang / mưa giá băng, `iceArchetypes.ts`), `telekinesis` (Siêu linh: vòng ma thuật → hút vào → nhấc lên → quật xuống, file `psyArchetypes.ts`). Ult: `inferno`, `tsunami`, `thunderstorm`, `bloom`. Còn là stub: `trap`, `summon`.
 
 ## 2. Thêm một chiêu mới cho loài
 1. Khai báo move trong `src/data/moves.ts` (id, tên VI, type, power, cooldownMs, icon, `archetype: 'bolt' | ...`). Quy ước hậu tố id theo dạng: `C` = Charmeleon, `S` = Squirtle line, `P` = Pikachu line, `G1/G2/G3` = Grass 3 dạng, `F1/F3` = Fire dạng 1/3.
@@ -27,6 +27,8 @@ Khuôn có sẵn: `bolt` (đạn), `dashStrike` (lao chém), `stream` (tia/luồ
    SPECIES_KITS.charizard = { ult: 'inferno', ultParams: { extraMeteors: 12 } };
    ```
 5. Xem thử trong **Skill Lab** (menu chính, bản dev): chọn loài, chỉnh cấp, bấm J/K/L/U/I.
+
+> Đọc thêm `docs/SKILL_FEEDBACK.md` (các góp ý thật của người làm game, mỗi hệ mới phải qua được).
 
 ## 3. Quy tắc thiết kế (đã chốt với người làm game)
 - Mỗi loài, mỗi dạng tiến hóa, mỗi hệ phải KHÁC nhau nhìn là biết (hình dáng, màu, chuyển động, rung/hit-stop, âm thanh).
@@ -64,13 +66,24 @@ SPECIES_KITS.arcanine = { template: 'fire.big', slots: { J: { params: { scale: 1
 | `ghost.small` | Gastly | đốm ma nhỏ vệt khói · liếm lao ngắn · tia mê hoặc · đám khí ma tím (độc + rối loạn) |
 | `ghost.mid` | Haunter | đốm ma tự đuổi · vuốt bóng có vệt cào tím · tia Hex xuyên địch · tàng hình tập kích (chiêu cũ) |
 | `ghost.big` | Gengar | cầu bóng ma lớn · tàng hình tập kích · cột bóng tối dày (rung màn hình) · bùng bóng ma nổ sao 8 cánh |
+| `psychic.small` | Abra | vòng ý nghĩ nhỏ · dịch chuyển (cũ) · sóng ripple đơn |
+| `psychic.mid` | Kadabra | 2 vòng ý nghĩ · dịch chuyển · sóng ripple đôi · thìa bay |
+| `psychic.big` | Alakazam | vòng lớn vệt dày · dịch chuyển · tia Psybeam rộng đổi màu · Psystrike cầu gai nổ sao 6 cánh |
+| `ice.small` | Seel | mảnh băng đơn vỡ vụn · nanh băng + 3 tinh thể · Mũi Băng (cột tinh thể mảnh) · Gió Tuyết (đường gió ngang) |
+| `ice.big` | Dewgong | 3 mảnh băng xòe xuyên · đập băng + hàng gai · Mũi Băng Lớn (lăng trụ có nhánh) · Mưa Băng (giá băng rơi + gió) · ult Kỷ Băng Hà (vết nứt lan khắp sân, tinh thể nhốt địch, vỡ tung) |
 | `electric.small` | Pikachu | sét zig-zag mảnh · lao sét · sét nảy 3 · 3 tia sét trời |
 | `electric.big` | Raichu | sét 2 lõi · lao 8 bóng sét · nảy 5 · 5 tia sét trời · ult bão sét |
 
 Lưu ý: khuôn lấy số (tầm, bề rộng tia, bán kính nổ…) từ chính move, nên move của loài mới nên sao chép từ move mẫu cùng ô (ví dụ move L của `water.heavy` là `hydroPumpS`) rồi đổi tên/số.
 
-Hệ chưa có mẫu: Normal, Bug, Poison, Flying, Rock, Ground, Psychic, Fighting, Ice, Dragon (đang dùng chiêu cũ). Mỗi hệ mới = viết `TYPE_KITS.<hệ>` + dialect hiệu ứng, rồi làm 1–3 mẫu theo dạng nhỏ/vừa/lớn.
+Hệ chưa có mẫu: Normal, Bug, Poison, Flying, Rock, Ground, Fighting, Dragon (đang dùng chiêu cũ). Mỗi hệ mới = viết `TYPE_KITS.<hệ>` + dialect hiệu ứng, rồi làm 1–3 mẫu theo dạng nhỏ/vừa/lớn.
 
 ## 7. Nguồn asset
 - Sprite Pokémon (đi, đứng yên, tấn công): **PMD SpriteCollab** (CC BY-NC), đang dùng trong game.
 - Hiệu ứng chiêu trong game này được **vẽ bằng code** (hạt, đường, vòng), không dùng ảnh ngoài, nên không phải xin phép nguồn nào và đổi màu/kích thước rất nhanh.
+
+## 8. Cơ chế hệ Băng (áp dụng cho MỌI chiêu hệ Băng, trong `BattleScene.damageEnemy`)
+- **Lạnh:** mỗi đòn băng trúng cộng điểm Lạnh (`MoveDef.chill`, mặc định 1; tia/vùng cộng ít mỗi nhịp), địch chậm dần; đủ 3 điểm → **Đóng băng** 2,4 giây (boss chỉ bị chậm).
+- **Vỡ nát:** đòn băng kế tiếp trúng địch đang đóng băng → sát thương ×1,6, mảnh băng văng gây sát thương lan (và cộng Lạnh) cho địch trong 52px.
+- Chiêu băng cũ của các Pokémon khác (Articuno, Jynx…) cũng có cơ chế này vì chỉ cần `type: 'ice'`.
+- **Hình của hệ Băng:** chỉ dùng hình góc cạnh, chiều thẳng đứng, hướng gió (lăng trụ, giá băng, vết nứt phân nhánh, mảng băng rách). KHÔNG dùng vòng tròn/elip/sigil xoay (giống Siêu linh).

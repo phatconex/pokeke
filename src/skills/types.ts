@@ -22,9 +22,9 @@ import type { StatusKind } from '../data/moveKit';
  * Dự kiến (chưa làm – chiêu khai báo các id này sẽ rơi về đường cast cũ):
  *  trap   – vùng gài, kích hoạt sau một lúc · summon – gọi trợ thủ / tháp bắn tạm thời
  */
-export type ArchetypeId = 'bolt' | 'dashStrike' | 'stream' | 'blast' | 'nova' | 'chain' | 'rain' | 'whip' | 'cloud' | 'tether';
+export type ArchetypeId = 'bolt' | 'dashStrike' | 'stream' | 'blast' | 'nova' | 'chain' | 'rain' | 'whip' | 'cloud' | 'tether' | 'telekinesis' | 'blizzard' | 'lance' | 'gale';
 export type PlannedArchetypeId = 'trap' | 'summon';
-export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStrike', 'stream', 'blast', 'nova', 'chain', 'rain', 'whip', 'cloud', 'tether'];
+export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStrike', 'stream', 'blast', 'nova', 'chain', 'rain', 'whip', 'cloud', 'tether', 'telekinesis', 'blizzard', 'lance', 'gale'];
 
 /**
  * Nguyên mẫu tuyệt chiêu (phím I).
@@ -33,10 +33,10 @@ export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStri
  *  thunderstorm = trời tối, sét giáng dày đặc + sét nảy chuỗi
  *  bloom        = bão cánh hoa xoay / rễ gai trồi khắp sân + đóa hoa khổng lồ nở rộ (hệ cỏ)
  */
-export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom';
+export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 'timestop' | 'absolutezero';
 
 /** "Bộ từ vựng" hiệu ứng (vệt, nổ trúng, khói, vụ nổ, cháy xém, cột, vuốt) – xem dialects.ts */
-export type FxDialectId = 'fire' | 'water' | 'electric' | 'grass' | 'ghost' | 'generic';
+export type FxDialectId = 'fire' | 'water' | 'electric' | 'grass' | 'ghost' | 'psychic' | 'ice' | 'generic';
 
 export interface BoltParams {
   dialect: FxDialectId;
@@ -132,6 +132,8 @@ export interface StreamLayer {
 }
 
 export interface StreamParams {
+  /** tia vòng (Siêu linh): chuỗi vòng elip chạy dọc đường bắn thay cho các hình nêm màu */
+  ringBeam?: { n: number; colors: number[]; spin: number };
   dialect: FxDialectId;
   telegraphMs: number;
   /** khoảng cách giữa 2 nhịp sát thương (ms) */
@@ -315,6 +317,83 @@ export interface RainParams {
   rootLine?: number;
 }
 
+/** Tâm linh nhấc bổng: vòng ma thuật → (hút vào) → nhấc lên → quật xuống */
+export interface TelekinesisParams {
+  dialect: FxDialectId;
+  /** bán kính vòng (px) */
+  r: number;
+  telegraphMs: number;
+  /** thời gian hút/nhấc lên, thời gian giữ lơ lửng (ms) */
+  pullMs: number;
+  holdMs: number;
+  /** độ nhấc lên (px) */
+  liftH: number;
+  /** hút địch vào giữa vòng */
+  pull: boolean;
+  /** hệ số sát thương lúc quật xuống */
+  slamMult: number;
+  /** 4 màu: viền ngoài, nền, viền trong, sao */
+  colors: number[];
+  hitStopMs?: number;
+  shake?: [number, number];
+}
+
+/** Mưa Băng (Băng): bóng báo trước → nhiều giá băng dài rơi đâm xuống đất, cụm tinh thể; gió tuyết ngang quét qua, cộng Lạnh dần */
+export interface BlizzardParams {
+  dialect: FxDialectId;
+  windupMs: number;
+  /** khoảng cách đặt vùng khi không khóa được địch (px) */
+  reach: number;
+  /** nửa chiều rộng vùng (px) */
+  r: number;
+  /** thời gian gió thổi, nhịp gây Lạnh (ms) */
+  ms: number;
+  tickMs: number;
+  /** số giá băng, cách nhau (ms), thời gian rơi, chiều dài (px) */
+  count: number;
+  fallGapMs: number;
+  fallMs: number;
+  icicleH: number;
+  powerMult: number;
+  shake: [number, number];
+}
+
+/** Mũi Băng (Băng): cột tinh thể lăng trụ mọc dài ra phía trước từng đốt, để lại mảng băng rách góc làm trơn */
+export interface LanceParams {
+  dialect: FxDialectId;
+  telegraphMs: number;
+  len: number;
+  segs: number;
+  growMs: number;
+  /** nửa bề rộng lăng trụ, độ cao tăng dần mỗi đốt (px) */
+  w: number;
+  growH: number;
+  branch: boolean;
+  powerMult: number;
+  frost: { n: number; r: number; ms: number };
+}
+
+/** Gió Tuyết (Băng): đường gió dài thổi ngang một dải phía trước */
+export interface GaleParams {
+  dialect: FxDialectId;
+  windupMs: number;
+  len: number;
+  wid: number;
+  ms: number;
+  tickMs: number;
+  streaks: number;
+  powerMult: number;
+}
+
+/** Không Độ Tuyệt Đối (Băng): đóng băng cả sân rồi vỡ nát cùng lúc */
+export interface AbsoluteZeroParams {
+  dialect: FxDialectId;
+  windupMs: number;
+  r: number;
+  freezeMs: number;
+  slamPower: number;
+}
+
 export interface WhipParams {
   dialect: FxDialectId;
   /** lash: 2 dây quét cung / slam: 2 dây vút lên rồi đập xuống / xslam: 2 dây đập chéo thành chữ X */
@@ -476,6 +555,32 @@ export interface ArchetypeParamMap {
   whip: WhipParams;
   cloud: CloudParams;
   tether: TetherParams;
+  telekinesis: TelekinesisParams;
+  blizzard: BlizzardParams;
+  lance: LanceParams;
+  gale: GaleParams;
+}
+
+/** Ngưng Đọng Thời Gian (Siêu linh): tối màn hình, vòng ma thuật phủ sân, đóng băng + nhấc bổng mọi địch, lưỡi dao tâm linh xoay rồi lao đâm, cuối cùng quật xuống cùng lúc */
+export interface TimeStopParams {
+  dialect: FxDialectId;
+  windupMs: number;
+  /** bán kính vòng ma thuật (px thế giới) */
+  r: number;
+  darken: number;
+  /** tổng thời gian đóng băng = lúc quật xuống */
+  freezeMs: number;
+  liftMs: number;
+  liftH: number;
+  blades: number;
+  /** mốc bắt đầu xoay, mốc phóng, thời gian bay của lưỡi dao */
+  orbitFromMs: number;
+  launchMs: number;
+  bladeFlyMs: number;
+  /** sát thương lưỡi dao / cú quật (× amount của tuyệt chiêu) */
+  bladePower: number;
+  slamPower: number;
+  colors: number[];
 }
 
 export interface UltParamMap {
@@ -483,6 +588,8 @@ export interface UltParamMap {
   tsunami: TsunamiParams;
   thunderstorm: ThunderstormParams;
   bloom: BloomParams;
+  timestop: TimeStopParams;
+  absolutezero: AbsoluteZeroParams;
 }
 
 /** Bậc theo cấp: áp mọi bậc có minLevel ≤ cấp, theo thứ tự (gộp dần). Có thể đổi cả cost. */
@@ -507,10 +614,16 @@ export interface TypeKit {
   whip?: KitEntry<WhipParams>;
   cloud?: KitEntry<CloudParams>;
   tether?: KitEntry<TetherParams>;
+  telekinesis?: KitEntry<TelekinesisParams>;
+  blizzard?: KitEntry<BlizzardParams>;
+  lance?: KitEntry<LanceParams>;
+  gale?: KitEntry<GaleParams>;
   inferno?: Partial<InfernoParams>;
   tsunami?: Partial<TsunamiParams>;
   thunderstorm?: Partial<ThunderstormParams>;
   bloom?: Partial<BloomParams>;
+  timestop?: Partial<TimeStopParams>;
+  absolutezero?: Partial<AbsoluteZeroParams>;
 }
 
 /** Ghi đè cho một ô chiêu của một loài */
@@ -526,7 +639,7 @@ export interface SpeciesKit {
   slots?: Partial<Record<SkillSlot, SlotOverride>>;
   ult?: UltArchetypeId;
   /** ghi đè tham số tuyệt chiêu (theo nguyên mẫu `ult`) */
-  ultParams?: Partial<InfernoParams & TsunamiParams & ThunderstormParams & BloomParams>;
+  ultParams?: Partial<InfernoParams & TsunamiParams & ThunderstormParams & BloomParams & TimeStopParams & AbsoluteZeroParams>;
 }
 
 interface SpecBase {

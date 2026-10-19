@@ -11,7 +11,7 @@ import type { MoveDef } from '../data/moveKit';
 import type { SkillSlot } from '../data/pokemon';
 import { TYPE_COLOR, type PokemonType } from '../data/types';
 import {
-  ArchetypeId, ArchetypeParamMap, BloomParams, IMPLEMENTED_ARCHETYPES, InfernoParams, KitEntry, SkillSpec, SpeciesKit, ThunderstormParams, TierDef, TsunamiParams, TypeKit,
+  AbsoluteZeroParams, ArchetypeId, ArchetypeParamMap, BloomParams, IMPLEMENTED_ARCHETYPES, InfernoParams, KitEntry, SkillSpec, SpeciesKit, ThunderstormParams, TierDef, TimeStopParams, TsunamiParams, TypeKit,
   UltArchetypeId, UltParamMap, UltSpec,
 } from './types';
 
@@ -76,6 +76,18 @@ export const ARCHETYPE_DEFAULTS: { [A in ArchetypeId]: (m: MoveDef) => Archetype
     dialect: 'grass', colors: [[0xd8f060, 0xb8e050, 0xeaff8a]], halfDeg: 38, range: 70, puffN: 34, lingerMs: 2000, tickMs: 400, totalPowerMult: 1,
     statuses: [{ kind: 'sleep', chance: 0.6, ms: 1800 }], shake: [0.002, 80],
   }),
+  blizzard: () => ({
+    dialect: 'ice', windupMs: 520, reach: 90, r: 84, ms: 2400, tickMs: 400, count: 8, fallGapMs: 90, fallMs: 190, icicleH: 70, powerMult: 0.9, shake: [0.004, 100],
+  }),
+  lance: () => ({
+    dialect: 'ice', telegraphMs: 320, len: 150, segs: 6, growMs: 480, w: 6, growH: 4, branch: false, powerMult: 1,
+    frost: { n: 4, r: 14, ms: 2600 },
+  }),
+  gale: () => ({ dialect: 'ice', windupMs: 260, len: 110, wid: 36, ms: 1000, tickMs: 260, streaks: 3, powerMult: 0.45 }),
+  telekinesis: () => ({
+    dialect: 'psychic', r: 60, telegraphMs: 420, pullMs: 320, holdMs: 600, liftH: 18, pull: true, slamMult: 1,
+    colors: [0x3a5aff, 0x7a2aff, 0xc030ff, 0xff40c8], hitStopMs: 60,
+  }),
   tether: () => ({
     dialect: 'grass', flyMs: 360, arcH: 26, range: 240, drainMs: 3000, pulseMs: 500, spread: 1, spreadRange: 90, spreadDelayMs: 900,
   }),
@@ -103,7 +115,16 @@ const BLOOM_DEFAULTS: BloomParams = {
   rootH: 6, rootSpikes: 4, bloom: null, moss: null, shake: 0.02,
 };
 
-const ULT_DEFAULTS: { [U in UltArchetypeId]: UltParamMap[U] } = { inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS };
+const TIMESTOP_DEFAULTS: TimeStopParams = {
+  dialect: 'psychic', windupMs: 700, r: 230, darken: 0.5, freezeMs: 2200, liftMs: 500, liftH: 30, blades: 10, orbitFromMs: 300, launchMs: 1300, bladeFlyMs: 260,
+  bladePower: 0.45, slamPower: 1.1, colors: [0x3a5aff, 0x7a2aff, 0xc030ff, 0xff40c8],
+};
+
+const ABSZERO_DEFAULTS: AbsoluteZeroParams = { dialect: 'ice', windupMs: 700, r: 200, freezeMs: 2000, slamPower: 0.8 };
+
+const ULT_DEFAULTS: { [U in UltArchetypeId]: UltParamMap[U] } = {
+  inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS, timestop: TIMESTOP_DEFAULTS, absolutezero: ABSZERO_DEFAULTS,
+};
 
 // ---------------------------------------------------------------------------------- bộ chiêu theo hệ
 
@@ -251,6 +272,53 @@ export const TYPE_KITS: Partial<Record<PokemonType, TypeKit>> = {
       },
     },
     cloud: { params: { dialect: 'ghost', colors: [[0x4a2a80, 0x7a50b8, 0xa888e0]] } },
+  },
+  psychic: {
+    bolt: { params: { dialect: 'psychic', scale: 1, trail: 'thin', trailPuffChance: 0.35 } },
+    dashStrike: { params: { dialect: 'psychic', dashMs: 130, iframeExtraMs: 160, trailCount: 2, streaks: true, impactShake: [0.003, 100], impactSfx: 'swap' } },
+    stream: {
+      params: {
+        dialect: 'psychic', telegraphMs: 300, tickMs: 130, turnRate: 1.3, telegraphTurn: 16, totalPowerMult: 1.1, tickKnockback: 20,
+        telegraphColor: 0xd8c0ff, telegraphRing: 0x7a2aff,
+        layers: [
+          { len: 0.95, w0: 3, w1: 1, color: 0x3a5aff, alpha: 0.5 },
+          { len: 0.85, w0: 2.2, w1: 0.65, color: 0xc030ff, alpha: 0.7 },
+          { len: 0.65, w0: 1.4, w1: 0.3, color: 0xffd0f4, alpha: 0.92 },
+        ],
+      },
+    },
+    blast: {
+      params: {
+        dialect: 'psychic', telegraphMs: 440, speed: 360, hitStopMs: 70, arcHeight: 20, ballTexture: 'psyball', ballScale: 2.2, haloScale: 2.6, haloTint: 0xc030ff,
+        telegraphLine: 0xd8c0ff, telegraphFill: 0x4a1a90, telegraphFill2: 0xc030ff, telegraphStroke: 0xffd0f4, linger: null,
+      },
+    },
+    nova: {
+      params: {
+        dialect: 'psychic', pulses: 1, pulseGapMs: 260, pulseGrowth: 1.2, delayMs: 120, expandMs: 360, push: 180, pulsePower: [1, 0.6], squash: 0.75, fill: 0x7a2aff, fillAlpha: 0.14,
+        rings: [{ color: 0x3a5aff, width: 4, alpha: 0.8, r: 1 }, { color: 0xc030ff, width: 4, alpha: 0.85, r: 0.86 }, { color: 0xff40c8, width: 3, alpha: 0.9, r: 0.72 }],
+        sprayCount: 8, crests: 0, shake: [0.006, 180], residue: null, hitStopMs: 40,
+      },
+    },
+  },
+  ice: {
+    bolt: { params: { dialect: 'ice', scale: 1, trail: 'thin', trailPuffChance: 0.35, texPick: ['iceShardB', 'iceShardA'] } },
+    dashStrike: { params: { dialect: 'ice', dashMs: 130, iframeExtraMs: 140, trailCount: 1, streaks: true, impactShake: [0.003, 100], impactSfx: 'waterHi' } },
+    stream: {
+      params: {
+        dialect: 'ice', telegraphMs: 300, tickMs: 140, turnRate: 1.2, telegraphTurn: 16, totalPowerMult: 1.1, tickKnockback: 8,
+        telegraphColor: 0xe8fbff, telegraphRing: 0x5ab8f0,
+        layers: [
+          { len: 0.95, w0: 3, w1: 1, color: 0x2a78c8, alpha: 0.5 },
+          { len: 0.85, w0: 2.2, w1: 0.65, color: 0x7ad0ff, alpha: 0.75 },
+          { len: 0.65, w0: 1.4, w1: 0.3, color: 0xffffff, alpha: 0.95 },
+        ],
+      },
+    },
+    blizzard: { params: { dialect: 'ice' } },
+    lance: { params: { dialect: 'ice' } },
+    gale: { params: { dialect: 'ice' } },
+    absolutezero: { dialect: 'ice' },
   },
   // các hệ khác: chưa có bộ riêng → chiêu có archetype dùng ARCHETYPE_DEFAULTS (màu theo hệ, hiệu ứng 'generic');
   // chiêu không có archetype giữ nguyên đường cast cũ.
@@ -510,6 +578,70 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
       },
     },
   },
+  // ===== Dòng Siêu linh: Abra (nhỏ, vòng ý nghĩ) · Kadabra (hai thìa bay, sóng đôi) · Alakazam (tia Psybeam rộng, Psystrike cầu gai nổ) =====
+  // Dịch Chuyển (K) giữ cơ chế cũ
+  abra: {
+    kitType: 'psychic',
+    slots: {
+      J: { archetype: 'bolt', params: { scale: 0.85, trail: 'thin', trailPuffChance: 0.3, speedMult: 1.05 }, tiers: [] },
+      L: { archetype: 'telekinesis', params: { r: 46, telegraphMs: 360, pullMs: 260, holdMs: 450, liftH: 14, pull: false, slamMult: 1, hitStopMs: 40, shake: [0.006, 160] }, tiers: [] },
+    },
+  },
+  kadabra: {
+    kitType: 'psychic',
+    ult: 'timestop',
+    ultParams: { r: 170, blades: 6, freezeMs: 1800, launchMs: 1050, liftH: 22 },
+    slots: {
+      J: { archetype: 'bolt', params: { scale: 1, trail: 'thin', trailPuffChance: 0.4, split: 2, splitSpreadDeg: 10, splitPowerMult: 0.62 }, tiers: [] },
+      L: { archetype: 'telekinesis', params: { r: 62, telegraphMs: 400, pullMs: 300, holdMs: 650, liftH: 20, pull: true, slamMult: 1.1, hitStopMs: 55, shake: [0.009, 220] }, tiers: [] },
+      U: { archetype: 'bolt', params: { scale: 1.2, trail: 'thick', trailPuffChance: 0.5, speedMult: 1.1 }, tiers: [] },
+    },
+  },
+  alakazam: {
+    kitType: 'psychic',
+    ult: 'timestop',
+    slots: {
+      J: { archetype: 'bolt', params: { scale: 1.4, trail: 'thick', trailPuffChance: 0.5, speedMult: 1.1, powerMult: 1.2 }, tiers: [] },
+      L: {
+        archetype: 'stream',
+        params: { widthMult: 1.5, lenMult: 1.15, durMult: 1.1, telegraphMs: 380, tickMs: 120, turnRate: 1, totalPowerMult: 1.15, shake: [0.005, 160], ringBeam: { n: 9, colors: [0x3a5aff, 0x7a2aff, 0xc030ff, 0xff40c8], spin: 1.5 } },
+        tiers: [],
+      },
+      U: { archetype: 'telekinesis', params: { r: 96, telegraphMs: 520, pullMs: 380, holdMs: 850, liftH: 30, pull: true, slamMult: 1.6, hitStopMs: 90, shake: [0.016, 340] }, tiers: [] },
+    },
+  },
+  // ===== Dòng Băng: Seel (nhỏ, nhẹ: mảnh băng đơn, tia mảnh, gió tuyết) · Dewgong (3 mảnh xòe, hàng gai băng, tia dày hóa băng đường đi, Bão Tuyết; tuyệt chiêu Không Độ Tuyệt Đối) =====
+  // Cơ chế chung của hệ Băng nằm ở BattleScene.damageEnemy: Lạnh cộng dồn (3 → Đóng băng), đòn băng kế tiếp làm VỠ NÁT
+  seel: {
+    kitType: 'ice',
+    slots: {
+      J: { archetype: 'bolt', params: { scale: 0.95, trail: 'thin', trailPuffChance: 0.3, texPick: ['iceShardB'], speedMult: 1.05 }, tiers: [] },
+      K: {
+        archetype: 'dashStrike',
+        params: { dashMs: 120, lungeMult: 0.8, iframeExtraMs: 100, trailCount: 0, streaks: false, impactShake: [0.002, 80], impactSfx: null, startSfx: 'waterHi', roots: { n: 3, step: 26, delayMs: 70, h: 1.2 } },
+        tiers: [],
+      },
+      L: { archetype: 'lance', params: { telegraphMs: 260, len: 120, segs: 5, growMs: 400, w: 4, growH: 3, branch: false, powerMult: 1, frost: { n: 3, r: 11, ms: 2400 } }, tiers: [] },
+      U: { archetype: 'gale', params: { windupMs: 240, len: 100, wid: 30, ms: 900, tickMs: 260, streaks: 3, powerMult: 0.45 }, tiers: [] },
+    },
+  },
+  dewgong: {
+    kitType: 'ice',
+    ult: 'absolutezero',
+    slots: {
+      J: { archetype: 'bolt', params: { scale: 1.5, trail: 'thick', trailPuffChance: 0.4, texPick: ['iceShardA'], split: 3, splitSpreadDeg: 16, splitPowerMult: 0.6, speedMult: 1.05 }, tiers: [] },
+      K: {
+        archetype: 'dashStrike',
+        params: {
+          dashMs: 90, lungeMult: 0.5, iframeExtraMs: 160, trailCount: 0, streaks: false, impactShake: [0.008, 160], impactSfx: 'waterLo', startSfx: 'waterLo',
+          roots: { n: 6, step: 30, delayMs: 60, h: 2.4 },
+        },
+        tiers: [],
+      },
+      L: { archetype: 'lance', params: { telegraphMs: 380, len: 230, segs: 8, growMs: 560, w: 8, growH: 5, branch: true, powerMult: 1.15, frost: { n: 7, r: 18, ms: 3200 } }, tiers: [] },
+      U: { archetype: 'blizzard', params: { r: 100, count: 10, ms: 2600, windupMs: 560 }, tiers: [] },
+    },
+  },
   squirtle: {
     kitType: 'water',
     slots: {
@@ -755,6 +887,11 @@ export const KIT_TEMPLATES: Record<string, SpeciesKit> = {
   'ghost.small': SPECIES_KITS.gastly,
   'ghost.mid': SPECIES_KITS.haunter,
   'ghost.big': SPECIES_KITS.gengar,
+  'psychic.small': SPECIES_KITS.abra,
+  'psychic.mid': SPECIES_KITS.kadabra,
+  'psychic.big': SPECIES_KITS.alakazam,
+  'ice.small': SPECIES_KITS.seel,
+  'ice.big': SPECIES_KITS.dewgong,
   'electric.small': SPECIES_KITS.pikachu,
   'electric.big': SPECIES_KITS.raichu,
 };

@@ -82,6 +82,10 @@ export interface MoveDef {
   spreadDeg?: number;
   /** xuyên qua địch */
   pierce?: boolean;
+  /** hệ Băng: điểm Lạnh cộng thêm cho mỗi đòn trúng (mặc định 1 với chiêu hệ Băng); đủ 3 điểm → Đóng băng */
+  chill?: number;
+  /** mảnh băng vỡ (do Vỡ nát gây ra): không cộng Lạnh, không vỡ tiếp */
+  shatterChild?: boolean;
   /** tự đuổi theo địch (rad/giây) */
   homing?: number;
   /** bay ra rồi quay về */

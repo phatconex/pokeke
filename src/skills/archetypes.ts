@@ -14,6 +14,8 @@ import type {
 import type { Enemy } from '../entities/Enemy';
 import { bulbCharge, crackBetween, flattenedGrass, groundCracks, leafBurst, windStreak } from '../fx/GrassFx';
 import { castCloud, castTether, castWhip } from './grassArchetypes';
+import { castTelekinesis, castTimeStop } from './psyArchetypes';
+import { castAbsoluteZero, castBlizzard, castGale, castLance } from './iceArchetypes';
 
 /** Ra chiêu theo nguyên mẫu đã phân giải (spec.archetype khác null) */
 export function castArchetype(h: SkillHost, f: Fighter, m: MoveDef, spec: SkillSpec, dir: Phaser.Math.Vector2) {
@@ -28,6 +30,10 @@ export function castArchetype(h: SkillHost, f: Fighter, m: MoveDef, spec: SkillS
     case 'whip': return castWhip(h, f, m, spec.params, dir);
     case 'cloud': return castCloud(h, f, m, spec.params, dir);
     case 'tether': return castTether(h, f, m, spec.params, dir);
+    case 'telekinesis': return castTelekinesis(h, f, m, spec.params);
+    case 'blizzard': return castBlizzard(h, f, m, spec.params);
+    case 'lance': return castLance(h, f, m, spec.params, dir);
+    case 'gale': return castGale(h, f, m, spec.params, dir);
     default: return undefined;
   }
 }
@@ -38,6 +44,8 @@ export function castUltArchetype(h: SkillHost, f: Fighter, spec: UltSpec, u: Ult
   else if (spec.archetype === 'tsunami') castTsunami(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'thunderstorm') castThunderstorm(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'bloom') castBloom(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'timestop') castTimeStop(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'absolutezero') castAbsoluteZero(h, f, spec.params, u, mv, amount);
 }
 
 /** Vạch chấm từ (x1, y1) tới (x2, y2) – vạch ngắm */
@@ -388,6 +396,26 @@ function castStream(h: SkillHost, f: Fighter, m: MoveDef, P: StreamParams, dir: 
         const o = { x: m0.x + nx * off, y: m0.y + ny * off };
         const flick = 0.85 + Math.random() * 0.3;
         // lõi: các hình nêm thuôn từ miệng ra, nhiều lớp màu (ngoài → trong)
+        if (P.ringBeam) {
+          // tia vòng: các vòng elip nối đuôi nhau chạy ra xa, to dần, đổi màu
+          const RB = P.ringBeam;
+          for (let i = 0; i < RB.n; i++) {
+            const tt = (i / RB.n + (now * RB.spin) / 1000) % 1;
+            const px = o.x + aim.x * len * tt;
+            const py = o.y + aim.y * len * tt;
+            const rw = (w / 2) * (0.35 + 0.65 * tt) * flick;
+            const rh = rw * 0.42;
+            const pts: Phaser.Math.Vector2[] = [];
+            for (let q = 0; q < 20; q++) {
+              const ang = (q / 20) * Math.PI * 2;
+              const lx = Math.cos(ang) * rh;
+              const ly = Math.sin(ang) * rw;
+              pts.push(new Phaser.Math.Vector2(px + aim.x * lx + nx * ly, py + aim.y * lx + ny * ly));
+            }
+            core.lineStyle(2.5, RB.colors[(i + Math.floor(now / 90)) % RB.colors.length], 0.95 - tt * 0.35).strokePoints(pts, true);
+          }
+          core.lineStyle(2, 0xffe0f8, 0.7).lineBetween(o.x, o.y, o.x + aim.x * len * 0.95, o.y + aim.y * len * 0.95);
+        } else
         for (const L of P.layers) {
           const l = len * L.len * flick;
           const w0 = L.w0;

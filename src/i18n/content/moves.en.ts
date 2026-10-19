@@ -122,6 +122,8 @@ export const EN_MOVES: Record<string, { name: string; desc: string }> = {
   evo_explosion: { name: 'Explosion', desc: 'Charges 0.5s; huge 135px blast. Costs 60% current HP (never KOs).' },
   evo_powerGem: { name: 'Power Gem', desc: 'Piercing gem beam (30% crit); each foe hit drops +3₽.' },
   evo_thrash: { name: 'Thrash', desc: 'Lunges 60px, then 3–6 wild wide hits. Each 20% crit.' },
+  evo_psyBeamN3: { name: 'Psybeam', desc: 'Aims, then fires a thick, long beam of colour-shifting mind waves through every foe. 35% Confusion.' },
+  evo_psyStrikeN3: { name: 'Psystrike', desc: 'Locks on and hurls a spiked crystal orb that bursts into mind-wave rings and a 6-point star. 50% Confusion.' },
   evo_spoonBend: { name: 'Spoon Bend', desc: '2 boomerang spoons pierce foes and return. 20% Confusion.' },
   evo_psychic: { name: 'Psychic', desc: 'Charges 0.5s; piercing psychic mass bursts on hit. 60% Confusion.' },
   evo_dreamEater: { name: 'Dream Eater', desc: 'Eats dreams in 90px, heals 60% of damage. Sleeping foes ×1.5.' },
@@ -230,6 +232,14 @@ export const EN_MOVES: Record<string, { name: string; desc: string }> = {
   ch6_melt: { name: 'Melt', desc: 'Melt into a puddle: heal 10% max HP, 55% dodge chance for 3s.' },
 
   // ── src/data/chapters/ch7.ts ──
+  ch7_iceShardN1: { name: 'Ice Shard', desc: 'Fires a sharp ice shard with a snow trail; shatters on hit. Stacks Chill.' },
+  ch7_iceShardN3: { name: 'Ice Shard', desc: 'Three big ice shards fan out through foes and shatter into fragments. Stacks Chill.' },
+  ch7_iceFangN1: { name: 'Ice Fang', desc: 'Short lunge-bite leaving 3 small ice crystals along the path. +1 Chill.' },
+  ch7_iceSlamN3: { name: 'Ice Slam', desc: 'Slams the ground: it cracks and a row of ice spikes erupts forward. +1 Chill.' },
+  ch7_iceBeamN1: { name: 'Crystal Lance', desc: 'A crystal spike grows segment by segment ahead, piercing every foe; leaves slippery torn frost sheets.' },
+  ch7_iceBeamN3: { name: 'Great Crystal Lance', desc: 'A big prismatic crystal column grows forward with side branches, piercing every foe; its path turns to slippery ice.' },
+  ch7_snowGustN1: { name: 'Snow Gust', desc: 'Long streaks of wind-driven snow blow across the strip ahead; foes inside stack Chill.' },
+  ch7_blizzardN3: { name: 'Icicle Rain', desc: 'Warning shadows appear, then many long icicles fall and stab the ground leaving crystal clusters; a sideways snow wind stacks Chill.' },
   ch7_powderSnow: { name: 'Powder Snow', desc: '3 snowballs in a fan: slows foes hit, 8% Freeze.' },
   ch7_iceShard: { name: 'Ice Shard', desc: 'Ultra-fast ice shard, nearly impossible to dodge. 20% crit.' },
   ch7_auroraBeam: { name: 'Aurora Beam', desc: 'Aurora pierces a row of foes, slowing all. 10% Freeze.' },

@@ -947,6 +947,11 @@ export class Effects {
   }
 
   /** chữ lớn giữa trận (KO!) bật ra rồi tan */
+  /** scene chứa hiệu ứng (cho các hàm vẽ riêng từng hệ) */
+  get scn() {
+    return this.scene;
+  }
+
   bigLabel(x: number, y: number, label: string, color = '#ffe14a') {
     const t = this.scene.add.text(x, y, label, { fontFamily: FONT_SMALL, fontSize: '24px', color, stroke: '#8a1a08', strokeThickness: 4 })
       .setShadow(2, 2, '#1a0a00', 0, true, true).setOrigin(0.5).setDepth(100010).setScale(0.2);

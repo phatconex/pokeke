@@ -6,6 +6,7 @@ import { SPRITE_SHEETS } from '../data/spriteSheets';
 import { assetStatus, BOOT_ANIMS, finalizeSpecies, queueSheets } from '../systems/spriteLoader';
 import { generateFxTextures, generateWorldTextures } from '../art/textures';
 import { generateGrassTextures } from '../art/grassArt';
+import { generateIceTextures } from '../art/iceArt';
 import { generateMoveTextures, generateTownTextures, generateTrainerTextures } from '../art/townArt';
 import { generateIcons } from '../art/icons';
 
@@ -33,6 +34,7 @@ export class BootScene extends Phaser.Scene {
     generateFxTextures(this);
     generateMoveTextures(this);
     generateGrassTextures(this);
+    generateIceTextures(this);
     generateTownTextures(this);
     generateTrainerTextures(this);
     generateIcons(this);
