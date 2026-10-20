@@ -2658,6 +2658,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       if (f.hp <= f.maxHp * 0.3) return;
       amount *= 0.12;
     }
+    // hội quán: một đòn không bao giờ lấy quá 30% máu tối đa (người chơi cấp thấp không bị hạ trong 1–2 đòn)
+    if (this.gym && f === this.player) amount = Math.min(amount, f.maxHp * 0.3);
     if (!f.isInvulnerable(this.clock) && f.tryEvade(this.clock)) {
       // Thu Nhỏ: né hoàn toàn
       f.invulnUntil = this.clock + 250;
