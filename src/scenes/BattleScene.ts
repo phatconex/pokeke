@@ -3059,6 +3059,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private updateGymRoster(dt: number) {
     if (!this.gym || !this.gymShuffled || this.introActive || this.over || !this.gymRoster.length) return;
     for (const r of this.gymRoster) if (r.state === 'rest') r.hpRatio = Math.min(0.7, r.hpRatio + (dt * 0.012) / 1000);
+    for (const x of this.enemies) if (x.trainer && !x.isBoss && !x.dead && !x.rageOn && x.hp / x.maxHp <= 0.3) this.gymEnrage(x);
     if (this.gymRecallBusy || this.gymRecalls >= 2) return;
     const e = this.enemies.find((x) => x.gymIdx !== undefined && !x.dead && !x.isBoss);
     if (!e || e.gymIdx === undefined) return;
@@ -3068,6 +3069,32 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     const aceIdx = this.gymRoster.length - 1;
     const others = this.gymRoster.some((x, i) => i !== e.gymIdx && i !== aceIdx && (x.state === 'wait' || x.state === 'rest'));
     if (others && Math.random() < 0.6) this.gymRecallEnemy(e);
+  }
+
+  /** dưới 30% máu: nổi cuồng nộ (hào quang đỏ, nhanh hơn, mạnh hơn, ra đòn dồn dập); hệ Đá thì mưa đá dày hơn */
+  private gymEnrage(e: Enemy) {
+    e.rageOn = true;
+    e.speedMult *= 1.25;
+    e.dmgMult *= 1.2;
+    e.nextSkillAt = Math.min(e.nextSkillAt, this.clock + 500);
+    this.events.emit('banner', t('gym.rage', { name: e.species.name }));
+    playSfx('warn');
+    this.cameras.main.shake(260, 0.008);
+    const spr = e.anim.sprite;
+    this.tweens.add({ targets: spr, scaleX: spr.scaleX * 1.12, scaleY: spr.scaleY * 1.12, duration: 160, yoyo: true });
+    const aura = this.add.graphics().setDepth(e.sprite.depth - 1);
+    const ev = this.time.addEvent({
+      delay: 50, loop: true,
+      callback: () => {
+        if (e.dead || !e.sprite?.active) { aura.destroy(); ev.remove(); return; }
+        const k = 0.5 + Math.sin(this.clock / 90) * 0.2;
+        aura.clear().fillStyle(0xff2020, 0.22 * k + 0.1).fillEllipse(e.x, e.feetY - 4, 46, 16);
+        aura.fillStyle(0xff4040, 0.16).fillEllipse(e.x, e.centerY, 40 + k * 8, 50 + k * 8);
+      },
+    });
+    if (e.species.types.includes('rock')) {
+      for (const h of this.hazards) if (h.kind === 'rain') { h.count = Math.max(h.count, 3); h.periodMs = Math.min(h.periodMs, 2600); }
+    }
   }
 
   /** thủ lĩnh thu hồi con đang đánh (tia đỏ vào bóng), cho nghỉ hồi máu chậm rồi ném con khác */
@@ -3143,6 +3170,15 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       markSeen(getGame(), p.species);
       e.catchable = !trainer && !!this.stage?.catchable?.includes(p.species);
       if (trainer && p.ridx !== undefined) e.gymIdx = p.ridx;
+      if (trainer && !p.boss) {
+        const ok = (['J', 'K', 'L', 'U'] as SkillSlot[]).some((sl) => {
+          const sk = e.species.skills.find((x) => x.slot === sl);
+          const mv = sk ? MOVES[sk.move] : undefined;
+          return !!mv && !!resolveSkill(e.species.id, e.level, sl, mv).archetype;
+        });
+        e.usesKit = ok;
+      }
+      if (trainer && !p.boss) e.persona = (['brawler', 'stalker', 'skirmisher', 'sniper'] as const)[Math.floor(Math.random() * 4)];
       applyStageTuning(e, trainer ? STAGE_TUNING.gymHpMult : STAGE_TUNING.hpMult, STAGE_TUNING.dmgMult, STAGE_TUNING.rangedCooldownMult);
       // độ khó tăng dần theo thứ tự ải (ải đầu nhẹ hơn)
       if (this.stage) {
@@ -3738,10 +3774,12 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     const p = this.player;
     if (!p || p.dead || !p.onField) return;
     for (const e of this.enemies) {
-      if (e.dead || e.dummy || e.beingCaught || !legendOf(e.species.id)) continue;
+      const legend = !!legendOf(e.species.id);
+      // Pokémon hội quán (không phải đầu lĩnh) cũng dùng bộ chiêu riêng của loài, nhẹ tay hơn huyền thoại
+      if (e.dead || e.dummy || e.beingCaught || (!legend && !(e.trainer && !e.isBoss && e.usesKit))) continue;
       let st = this.legendFoes.get(e);
       if (!st) {
-        st = { next: this.clock + 800, idx: 0, ults: [0.75, 0.5, 0.25], ...this.makeLegendFoe(e) };
+        st = { next: this.clock + 1200, idx: 0, ults: legend ? [0.75, 0.5, 0.25] : [], ...this.makeLegendFoe(e) };
         this.legendFoes.set(e, st);
       }
       if (e.isStunned(this.clock) || this.clock < st.next) continue;
@@ -3754,11 +3792,18 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         st.next = this.clock + 2600;
         continue;
       }
-      const rot = BattleScene.LEGEND_FOE_ROT[st.idx++ % BattleScene.LEGEND_FOE_ROT.length];
+      let rot = BattleScene.LEGEND_FOE_ROT[st.idx++ % BattleScene.LEGEND_FOE_ROT.length];
+      if (!legend) {
+        // hội quán: chọn ô chiêu ngẫu nhiên có trọng số (không theo vòng cố định)
+        const pick = [['J', 5], ['K', 3], ['L', 2.2], ['U', 1.6]] as [SkillSlot, number][];
+        let r = Math.random() * pick.reduce((a, x) => a + x[1], 0);
+        const slot = (pick.find((x) => (r -= x[1]) < 0) ?? pick[0])[0];
+        rot = { slot, gap: slot === 'J' ? 900 : slot === 'K' ? 1500 : 2000 };
+      }
       const sk = e.species.skills.find((x) => x.slot === rot.slot);
       const move = sk ? MOVES[sk.move] : undefined;
       // dưới 35% máu: nổi giận, ra chiêu dồn dập hơn
-      st.next = this.clock + rot.gap * (ratio < 0.35 ? 0.7 : 1) * (0.9 + Math.random() * 0.2);
+      st.next = this.clock + rot.gap * (ratio < 0.35 || e.rageOn ? 0.7 : 1) * (0.9 + Math.random() * 0.2);
       if (!move) continue;
       const spec = resolveSkill(e.species.id, e.level, rot.slot, move);
       if (!spec.archetype) continue;
@@ -3844,7 +3889,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       const p = b.player;
       if (!p || p.dead || !p.onField) return;
       const lv = Phaser.Math.Clamp(Math.pow(e.level / Math.max(1, p.level), 1.2), 0.6, 2);
-      b.damageFighter(p, power * p.maxHp * LEGEND_FOE_DMG * lv, x, y, type);
+      b.damageFighter(p, power * p.maxHp * LEGEND_FOE_DMG * lv * (e.trainer && !e.isBoss ? 0.5 : 1) * (e.rageOn ? 1.2 : 1), x, y, type);
     };
     const host: SkillHost = {
       scene: this,
@@ -3874,7 +3919,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         }, () => g.destroy());
       },
       spawnShot: (tex, x, y, vx, vy, r, dmg, life, spin) => {
-        const sh = b.enemyShots.spawn(tex, x, y, vx, vy, r, dmg * b.player.maxHp * LEGEND_FOE_DMG, life, spin);
+        const sh = b.enemyShots.spawn(tex, x, y, vx, vy, r, dmg * b.player.maxHp * LEGEND_FOE_DMG * (e.trainer && !e.isBoss ? 0.5 : 1), life, spin);
         sh.type = e.species.types[0];
         return sh;
       },

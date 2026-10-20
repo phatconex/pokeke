@@ -36,6 +36,19 @@ export class Enemy {
   skillIdx = 0;
   /** vị trí trong danh sách Pokémon của thủ lĩnh (hội quán) */
   gymIdx: number | undefined = undefined;
+  /** "tính cách" di chuyển của Pokémon hội quán (khác nhau giữa các con, kể cả cùng loài) */
+  /** nổi cuồng nộ (hội quán, dưới 30% máu) */
+  /** dùng bộ chiêu riêng của loài (qua cầu nối huyền thoại) thay vì chiêu địch chung */
+  usesKit = false;
+  rageOn = false;
+  get enraged(): boolean {
+    return this.rageOn;
+  }
+  lastKind = '';
+  persona: 'brawler' | 'stalker' | 'skirmisher' | 'sniper' | null = null;
+  private stance: 'in' | 'out' | 'strafe' = 'in';
+  private stanceUntil = 0;
+  private strafeDir = 1;
   /** đã xét thu hồi (một lần khi máu ≤ 40%) */
   recallChecked = false;
   /** tắt chiêu đặc trưng (ải đầu) */
@@ -565,6 +578,13 @@ export class Enemy {
       }
     }
 
+    // tính cách di chuyển (hội quán): thay vì lao thẳng vào, rình quanh / đánh rồi lùi / đứng xa bắn
+    if (this.persona && this.persona !== 'brawler' && this.state === 'move' && !this.isBoss) {
+      const adj = this.personaMove(nx, ny, dist, clock);
+      vx = adj.x;
+      vy = adj.y;
+    }
+
     // đi đâu nhìn đó; đứng yên hoặc đang ra đòn thì nhìn người chơi / hướng đòn
     if (this.state === 'move') {
       if (vx * vx + vy * vy > 100) this.look.set(vx, vy);
@@ -573,6 +593,35 @@ export class Enemy {
 
     this.applyVelocity(vx, vy, dtMs);
     this.syncVisual(clock, dtMs);
+  }
+
+  /** đánh lừa: nháy sáng + rung nhẹ rồi hủy đòn */
+  feint(ctx: { host: Phaser.Scene }) {
+    this.sprite.setTintFill(0xffffff);
+    ctx.host.time.delayedCall(90, () => this.sprite?.active && this.sprite.clearTint());
+    playSfx('warn');
+  }
+
+  private personaMove(nx: number, ny: number, dist: number, clock: number): { x: number; y: number } {
+    const base = Math.max(70, this.stats.speed);
+    const toward = (k: number) => ({ x: nx * base * k, y: ny * base * k });
+    const strafe = (k: number) => ({ x: -ny * base * k * this.strafeDir, y: nx * base * k * this.strafeDir });
+    const mix = (a: { x: number; y: number }, b: { x: number; y: number }) => ({ x: a.x + b.x, y: a.y + b.y });
+    if (clock >= this.stanceUntil) {
+      this.strafeDir = Math.random() < 0.5 ? 1 : -1;
+      if (this.persona === 'skirmisher') {
+        this.stance = this.stance === 'in' ? 'out' : 'in';
+        this.stanceUntil = clock + (this.stance === 'in' ? 1100 + Math.random() * 500 : 800 + Math.random() * 500);
+      } else this.stanceUntil = clock + 1500 + Math.random() * 1600;
+    }
+    if (this.persona === 'skirmisher') {
+      return this.stance === 'in' ? toward(1.15) : mix(toward(-0.9), strafe(0.35));
+    }
+    // stalker: vòng quanh ở cỡ 120px · sniper: giữ xa cỡ 185px, tránh bị áp sát
+    const ring = this.persona === 'sniper' ? 185 : 120;
+    if (dist > ring + 35) return mix(toward(0.85), strafe(0.25));
+    if (dist < ring - 30) return mix(toward(-0.8), strafe(0.4));
+    return strafe(this.persona === 'sniper' ? 0.7 : 1);
   }
 
   protected faceAngle(a: number) {

@@ -547,7 +547,14 @@ export function arenaLayout(biome: ArenaBiome, W: number, H: number): ArenaLayou
       }],
     };
   }
-  if (biome === 'gym-pewter') return { inset: 24, solids: pewterSlabs(f) };
+  if (biome === 'gym-pewter') {
+    return {
+      inset: 24,
+      solids: pewterSlabs(f),
+      // đá rơi từ trần hang: báo trước rồi đập xuống; thủ lĩnh nổi cuồng nộ thì dày hơn
+      hazards: [{ kind: 'rain', count: 1, radius: 30, periodMs: 5200, warnMs: 800, fx: 'rock', color: 0xb8a038, damagePct: 0.07, type: 'rock', immuneTypes: ['flying'] }],
+    };
+  }
   // vật cản nhỏ (gốc cây / thạch nhũ / đá / băng...) ở cùng vị trí với hình vẽ
   return { inset: 26, solids: basePropSolids(f) };
 }

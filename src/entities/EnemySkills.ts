@@ -127,7 +127,7 @@ export function skillTypeOf(e: Enemy): PokemonType {
 
 export function skillCooldown(e: Enemy, boss: boolean): number {
   if (boss) return e.trainer ? 2600 : 3600;
-  if (e.trainer) return 3000;
+  if (e.trainer) return e.enraged ? 1900 : 3000;
   return e.alpha ? 6500 : 9500;
 }
 
@@ -135,7 +135,7 @@ const STUB = { id: 'enemySkill', name: '', type: 'normal', power: 0, cooldownMs:
 
 /** gọi mỗi khung từ Enemy/Boss.update khi đã biết mục tiêu */
 export function tickEnemySkill(e: Enemy, ctx: BattleCtx, target: Fighter, boss = false) {
-  if (e.dead || e.dummy || e.beingCaught || e.skillsOff || legendOf(e.species.id)) return;
+  if (e.dead || e.dummy || e.beingCaught || e.skillsOff || e.usesKit || legendOf(e.species.id)) return;
   const now = ctx.clock;
   if (e.nextSkillAt === 0) e.nextSkillAt = now + (e.trainer || boss ? 900 + Math.random() * 1500 : 2500 + Math.random() * 5000);
   if (now < e.nextSkillAt || e.isStunned(now)) return;
@@ -144,7 +144,22 @@ export function tickEnemySkill(e: Enemy, ctx: BattleCtx, target: Fighter, boss =
   const type = skillTypeOf(e);
   const pf = profileFor(e, boss);
   e.nextSkillAt = now + skillCooldown(e, boss) * e.rangedCdMult * (0.85 + Math.random() * 0.3);
-  const kind = pf.kinds[e.skillIdx++ % pf.kinds.length];
+  let kind = pf.kinds[e.skillIdx++ % pf.kinds.length];
+  if (e.trainer) {
+    // hội quán: chọn ngẫu nhiên có trọng số (không lặp một vòng cố định), hạn chế lặp lại đòn vừa dùng
+    const w = pf.kinds.map((k) => (k === e.lastKind ? 0.35 : 1) * (k === 'charge' && dist < 70 ? 0.4 : 1));
+    let r = Math.random() * w.reduce((a, b) => a + b, 0);
+    kind = pf.kinds[w.findIndex((x) => (r -= x) < 0)] ?? kind;
+    // đánh lừa: khởi động đòn rồi hủy, đổi sang đòn khác
+    if (!e.enraged || Math.random() < 0.5) {
+      if (pf.kinds.length > 1 && Math.random() < 0.22) {
+        const alt = pf.kinds.filter((k) => k !== kind);
+        e.feint(ctx);
+        kind = alt[Math.floor(Math.random() * alt.length)];
+      }
+    }
+    e.lastKind = kind;
+  }
   const base = Math.max(7, (e.stats.rangedDamage ?? e.stats.contactDamage * 0.9)) * (boss ? 1.5 : 1.2) * e.dmgMult;
   if (kind === 'volley') volley(e, ctx, target, type, pf, base * 0.7);
   else if (kind === 'zone') zone(e, ctx, target, type, pf, base * 0.8);
@@ -158,9 +173,11 @@ const alive = (e: Enemy) => !e.dead && !e.beingCaught;
 function volley(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, pf: Profile, dmg: number) {
   const def = pf.def;
   const a = Math.atan2(target.y - e.y, target.x - e.x);
-  const tele = e.trainer ? 360 : 520;
+  const tele = e.trainer ? 280 : 520;
   const now = ctx.clock;
-  ctx.fx.addTelegraph({ kind: 'line', x: e.x, y: e.y, angle: a, len: 130, width: 5, start: now, end: now + tele, color: def.warn[0], owner: e });
+  // đòn nhỏ của hội quán: chỉ báo bằng ánh sáng + âm thanh, không vẽ vạch đỏ
+  if (e.trainer) ctx.fx.addTelegraph({ kind: 'glow', target: { x: e.x, y: e.feetY }, r: 12, start: now, end: now + tele, color: def.warn[0], owner: e });
+  else ctx.fx.addTelegraph({ kind: 'line', x: e.x, y: e.y, angle: a, len: 130, width: 5, start: now, end: now + tele, color: def.warn[0], owner: e });
   e.anim.playOnce('shoot', tele + 150);
   playSfx('warn');
   ctx.host.time.delayedCall(tele, () => {
@@ -178,7 +195,7 @@ function volley(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, pf
 function zone(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, pf: Profile, dmg: number) {
   const def = pf.def;
   const [n, r, w0] = pf.zone;
-  const warnMs = e.trainer ? Math.round(w0 * 0.7) : w0;
+  const warnMs = e.trainer ? Math.round(w0 * 0.5) : w0;
   const d = dialectFor(DIALECT[type] ?? 'generic', ctx.fx, { ...STUB, type } as MoveDef);
   const spots: { x: number; y: number }[] = [];
   for (let i = 0; i < n; i++) {
@@ -206,7 +223,7 @@ function zone(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, pf: 
 function nova(e: Enemy, ctx: BattleCtx, type: PokemonType, pf: Profile, dmg: number) {
   const def = pf.def;
   const R = pf.nova;
-  const warnMs = e.trainer ? 500 : 700;
+  const warnMs = e.trainer ? 380 : 700;
   const d = dialectFor(DIALECT[type] ?? 'generic', ctx.fx, { ...STUB, type } as MoveDef);
   const now = ctx.clock;
   e.anim.playOnce('charge', warnMs);
@@ -237,7 +254,7 @@ function charge(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, pf
   const d = dialectFor(DIALECT[type] ?? 'generic', ctx.fx, { ...STUB, type } as MoveDef);
   const a = Math.atan2(target.y - e.y, target.x - e.x);
   const [len, wid] = pf.charge;
-  const warnMs = e.trainer ? 420 : 560;
+  const warnMs = e.trainer ? 330 : 560;
   const now = ctx.clock;
   ctx.fx.addTelegraph({ kind: 'line', x: e.x, y: e.y, angle: a, len, width: wid, start: now, end: now + warnMs, color: def.warn[0], owner: e });
   e.anim.playOnce('attack', warnMs + 300);
@@ -284,7 +301,7 @@ function barrage(e: Enemy, ctx: BattleCtx, target: Fighter, type: PokemonType, p
   const a = Math.atan2(target.y - e.y, target.x - e.x);
   const reach = Math.max(90, Math.min(220, Math.hypot(target.x - e.x, target.y - e.y) + 40));
   const r = Math.round(pf.zone[1] * 0.85);
-  const warnMs = e.trainer ? 420 : 560;
+  const warnMs = e.trainer ? 320 : 560;
   const gap = 90;
   const spots = Array.from({ length: n }, (_, i) => ({ x: e.x + Math.cos(a) * (24 + ((i + 1) / n) * reach), y: e.y + Math.sin(a) * (24 + ((i + 1) / n) * reach) * 0.9 }));
   e.anim.playOnce('shoot', warnMs + 200);
