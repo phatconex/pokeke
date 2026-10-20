@@ -930,12 +930,29 @@ export class HudScene extends Phaser.Scene {
       t('hud.records', { time: formatTime(info.records.bestTimeMs), kills: info.records.bestKills, lv: info.records.bestLevel }),
       info.newBest.length ? t('hud.newBest', { list: info.newBest.map((k) => t(`hud.best.${k}`)).join(', ') }) : !info.saved ? t('hud.saveFail') : '',
       '',
-      info.reward ? t(info.reward.xp > 0 ? 'hud.survivalReward' : 'hud.survivalRewardCapped', { money: info.reward.money, xp: info.reward.xp }) : t('hud.survivalNoSave'),
+      info.reward ? '' : t('hud.survivalNoSave'),
     ];
-    const body = text(this, width / 2, height / 2 - 30, lines.join('\n'), 12, '#ffffff', { align: 'center', lineSpacing: 6, wordWrap: { width: 520 } }).setOrigin(0.5);
+    const rewardObjs: Phaser.GameObjects.GameObject[] = [];
+    if (info.reward) {
+      // phần thưởng: biểu tượng lớn + con số, dễ nhìn
+      const ry = height / 2 + 22;
+      const col = (cx: number, ico: string, label: string, val: string, color: string) => {
+        rewardObjs.push(
+          this.add.rectangle(cx, ry, 220, 74, 0x1a2250, 0.9).setStrokeStyle(2, 0x5a6ab8),
+          icon(this, cx - 80, ry - 6, ico, 3),
+          text(this, cx - 54, ry - 22, label, 10, '#c8d0f0').setOrigin(0, 0),
+          text(this, cx - 54, ry - 4, val, 22, color).setOrigin(0, 0),
+        );
+      };
+      col(width / 2 - 125, 'coin', t('hud.rewardMoney'), `+${info.reward.money}₽`, COLORS.gold);
+      if (info.reward.xp > 0) col(width / 2 + 125, 'candy', t('hud.rewardXp'), `+${info.reward.xp}`, '#7ad8ff');
+      else rewardObjs.push(text(this, width / 2 + 125, ry, t('hud.rewardCapped'), 10, '#c8d0f0', { align: 'center', wordWrap: { width: 200 } }).setOrigin(0.5));
+      rewardObjs.push(text(this, width / 2, ry + 48, t('hud.rewardNote'), 10, '#9fe08a').setOrigin(0.5));
+    }
+    const body = text(this, width / 2, height / 2 - 50, lines.join('\n'), 12, '#ffffff', { align: 'center', lineSpacing: 6, wordWrap: { width: 520 } }).setOrigin(0.5);
     const b1 = button(this, width / 2 - 130, height / 2 + 130, t('hud.again'), () => this.onEnter(), 240);
     const b2 = button(this, width / 2 + 130, height / 2 + 130, t('hud.menu'), () => this.quit(), 200);
-    const layer = this.add.container(0, 0, [dim, box, ...title.all, body, b1.bg, b1.t, b2.bg, b2.t]).setDepth(1000).setAlpha(0);
+    const layer = this.add.container(0, 0, [dim, box, ...title.all, body, ...rewardObjs, b1.bg, b1.t, b2.bg, b2.t]).setDepth(1000).setAlpha(0);
     this.tweens.add({ targets: layer, alpha: 1, duration: 250 });
     this.overReady = true;
   }

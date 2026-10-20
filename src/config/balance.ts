@@ -492,11 +492,11 @@ export const SURVIVAL = {
  */
 export const SURVIVAL_REWARD = {
   /** tiền mỗi đồng xu rơi khi hạ 1 địch (nhân hệ số cấp); rơi ra thì phải lượm */
-  perKill: 3,
+  perKill: 1.5,
   perSecond: 0,
   levelDiv: 50,
-  bossBonus: 150,
-  maxMoney: 450,
+  bossBonus: 75,
+  maxMoney: 225,
   lossMult: 0.6,
   /** EXP mỗi con trong đội = (hạ × xpPerKill + giây × xpPerSecond) × (0,6 + 0,03 × cấp con), tối đa maxXp */
   xpPerKill: 1.5,
