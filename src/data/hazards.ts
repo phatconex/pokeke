@@ -47,6 +47,8 @@ export interface ArenaLayout {
   solids: Solid[];
   /** vùng làm chậm (nước, cát lún...) */
   slowZones?: Rect[];
+  /** chỗ đứng khô trong vùng làm chậm (đảo gạch giữa hồ): không bị làm chậm ở đây */
+  safeRects?: Rect[];
   /** hệ không bị vùng làm chậm ảnh hưởng (mặc định ['water']) */
   slowImmuneTypes?: PokemonType[];
   hazards?: HazardDef[];

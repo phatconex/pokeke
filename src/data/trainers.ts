@@ -99,9 +99,20 @@ const CORE_GYMS: Record<string, GymDef> = {
       { species: 'staryu', level: 20 },
       { species: 'starmie', level: 23, boss: true },
     ],
+    // hội quán động: 2 con bốc từ kho (khác loài), rồi Starmie
+    pool: [
+      { species: 'goldeen', level: 19 },
+      { species: 'staryu', level: 20 },
+      { species: 'psyduck', level: 20 },
+      { species: 'horsea', level: 20 },
+      { species: 'shellder', level: 21 },
+      { species: 'tentacool', level: 20 },
+    ],
+    pick: 2,
+    ace: { species: 'starmie', level: 23, boss: true },
     intro: [
       'Kasumi: Chào mừng đến Hội quán Cerulean! Ta là Kasumi, nàng tiên cá của Cerulean.',
-      'Kasumi: Hồ nước giữa sân sẽ làm chậm ai không phải hệ Nước. Cẩn thận đấy!',
+      'Kasumi: Cả sân là mặt nước — làm chậm ai không phải hệ Nước. Chỉ có mấy đảo gạch là đứng vững, cẩn thận cột nước phun lên đấy!',
     ],
     sendOut: ['Kasumi: Goldeen, lượn đi!', 'Kasumi: Staryu, ra trận!', 'Kasumi: Starmie, kết thúc trận này!'],
     winLines: [

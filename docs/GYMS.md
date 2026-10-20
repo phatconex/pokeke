@@ -8,11 +8,12 @@ Mục tiêu: **mọi hội quán dùng chung một bộ luật**. Muốn đổi 
 | `recall` | Thủ lĩnh thu hồi con đang yếu: máu ≤ `hpRatio`, xác suất `chance`, tối đa `maxPerBattle` lần/trận |
 | `rest` | Con bị thu hồi nghỉ hồi máu chậm: `regenPerSec` (tỉ lệ máu/giây), trần `cap` |
 | `rage` | Cuồng nộ khi máu ≤ `hpRatio`: nhanh `speedMult`, mạnh `dmgMult`, ra đòn dồn dập `gapMult` (hệ Đá: mưa đá dày hơn) |
-| `maxHitPct` | Một đòn không lấy quá % máu tối đa của Pokémon người chơi (bảo vệ người chơi cấp thấp) |
-| `kitDamageMult` | Sát thương khi Pokémon hội quán dùng bộ chiêu riêng của loài (so với huyền thoại) |
+| `kitDamagePerPower` | Sát thương chiêu riêng của loài = power × hệ số này × `dmgMult` của Pokémon địch. **Không phụ thuộc cấp / máu người chơi** — yếu thì cày thêm |
 | `swapFreezeMs` | Nghỉ ngắn sau khi người chơi đổi Pokémon |
 
 Độ khó theo tiến trình (máu / sát thương theo số huy hiệu, tốc độ, nghỉ giữa các đòn) ở `TRAINER` và `STAGE_TUNING.gymHpMult` cùng file.
+
+> Nguyên tắc: sức mạnh hội quán cố định theo hội quán (cấp địch, dmg, máu theo số huy hiệu), KHÔNG co giãn theo cấp người chơi, không có trần sát thương bảo vệ.
 
 ## 2. Những gì mọi hội quán đều có (code chung ở `BattleScene.ts`)
 1. **Đội hình bốc ngẫu nhiên:** bốc `pick` con khác loài từ kho (`pool`), con át chủ bài (`ace`) ra cuối cùng. Không có kho thì lấy chính đội hình (trừ con `boss`) làm kho.
@@ -39,7 +40,7 @@ pewter: {
 ## 4. Địa hình riêng — `arenaLayout()` trong `src/art/arenaArt.ts`
 Mỗi hội quán một kiểu hazard (khai báo trong `ArenaLayout.hazards`, kiểu ở `src/data/hazards.ts`):
 - Pewter: đá rơi từ trần (`rain`, dày hơn khi Pokémon hệ Đá cuồng nộ).
-- Cerulean: hồ nước làm chậm (`slowZones`).
+- Cerulean: cả sân là mặt nước làm chậm (`slowZones`) với các đảo gạch đứng vững (`safeRects`), cột nước phun lên báo trước (`rain`, dày hơn khi Pokémon hệ Nước cuồng nộ).
 - Vermilion: ô điện giật (`pulse`).
 - Hội quán mới: thêm nhánh `biome === 'gym-xxx'` trả về `{ inset, solids, hazards }`.
 

@@ -291,6 +291,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private slowZones: { x: number; y: number; w: number; h: number }[] = [];
   /** hệ không bị vùng làm chậm ảnh hưởng (mặc định hệ Nước) */
   private slowImmune: PokemonType[] = ['water'];
+  private safeRects: { x: number; y: number; w: number; h: number }[] = [];
   /** bẫy sân đấu (sàn điện, bào tử, mưa đá, ô dịch chuyển, băng, bóng tối, gió) */
   private hazards: HazardDef[] = [];
   private hazardState: { nextAt: number; warned: boolean; group: number; spots: { x: number; y: number }[]; dir: number }[] = [];
@@ -493,6 +494,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.potionReadyAt = 0;
     this.potionsUsed = 0;
     this.slowZones = [];
+    this.safeRects = [];
     this.hazards = [];
     this.hazardState = [];
     this.hiddenWalls = new Map();
@@ -586,6 +588,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       this.physics.world.setBounds(lay.inset, lay.inset, this.worldW - lay.inset * 2, this.worldH - lay.inset * 2);
       this.solidRects = lay.solids;
       this.slowZones = lay.slowZones ?? [];
+      this.safeRects = lay.safeRects ?? [];
       this.slowImmune = lay.slowImmuneTypes ?? ['water'];
       this.hazards = [...(lay.hazards ?? [])];
       if (this.trial) {
@@ -1192,6 +1195,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   }
 
   private inSlowZone(x: number, y: number) {
+    if (this.safeRects.some((z) => x > z.x && x < z.x + z.w && y > z.y && y < z.y + z.h)) return false;
     return this.slowZones.some((z) => x > z.x && x < z.x + z.w && y > z.y && y < z.y + z.h);
   }
 
@@ -2705,8 +2709,6 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       if (f.hp <= f.maxHp * 0.3) return;
       amount *= 0.12;
     }
-    // hội quán: một đòn không bao giờ lấy quá 30% máu tối đa (người chơi cấp thấp không bị hạ trong 1–2 đòn)
-    if (this.gym && f === this.player) amount = Math.min(amount, f.maxHp * GYM_RULES.maxHitPct);
     if (!f.isInvulnerable(this.clock) && f.tryEvade(this.clock)) {
       // Thu Nhỏ: né hoàn toàn
       f.invulnUntil = this.clock + 250;
@@ -3151,8 +3153,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         aura.fillStyle(0xff4040, 0.16).fillEllipse(e.x, e.centerY, 40 + k * 8, 50 + k * 8);
       },
     });
-    if (e.species.types.includes('rock')) {
-      for (const h of this.hazards) if (h.kind === 'rain') { h.count = Math.max(h.count, 3); h.periodMs = Math.min(h.periodMs, 2600); }
+    // cuồng nộ cùng hệ với bẫy của sân (Đá → mưa đá, Nước → cột nước) thì bẫy dày hơn
+    {
+      for (const h of this.hazards) if (h.kind === 'rain' && e.species.types.includes(h.type)) { h.count = Math.max(h.count, 3); h.periodMs = Math.min(h.periodMs, 2600); }
     }
   }
 
@@ -3975,7 +3978,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       const p = b.player;
       if (!p || p.dead || !p.onField) return;
       const lv = Phaser.Math.Clamp(Math.pow(e.level / Math.max(1, p.level), 1.2), 0.6, 2);
-      b.damageFighter(p, power * p.maxHp * LEGEND_FOE_DMG * lv * (e.trainer && !e.isBoss ? GYM_RULES.kitDamageMult : 1) * (e.rageOn ? GYM_RULES.rage.dmgMult : 1), x, y, type);
+      // hội quán: sát thương cố định theo sức mạnh của chính Pokémon địch (không phụ thuộc máu / cấp người chơi); huyền thoại: theo % máu như cũ
+      if (e.trainer && !e.isBoss) b.damageFighter(p, power * GYM_RULES.kitDamagePerPower * e.dmgMult, x, y, type);
+      else b.damageFighter(p, power * p.maxHp * LEGEND_FOE_DMG * lv, x, y, type);
     };
     const host: SkillHost = {
       scene: this,
@@ -4005,7 +4010,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         }, () => g.destroy());
       },
       spawnShot: (tex, x, y, vx, vy, r, dmg, life, spin) => {
-        const sh = b.enemyShots.spawn(tex, x, y, vx, vy, r, dmg * b.player.maxHp * LEGEND_FOE_DMG * (e.trainer && !e.isBoss ? GYM_RULES.kitDamageMult : 1), life, spin);
+        const sh = b.enemyShots.spawn(tex, x, y, vx, vy, r, e.trainer && !e.isBoss ? dmg * GYM_RULES.kitDamagePerPower * e.dmgMult : dmg * b.player.maxHp * LEGEND_FOE_DMG, life, spin);
         sh.type = e.species.types[0];
         return sh;
       },
