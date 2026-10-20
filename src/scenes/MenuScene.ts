@@ -195,7 +195,6 @@ export class MenuScene extends Phaser.Scene {
 
     // ---- chân trang gọn: phiên bản (trái) + phím tắt (phải) ----
     this.add.rectangle(0, height - 28, width, 28, 0x0b0f1e, 0.6).setOrigin(0);
-    fit(text(this, 16, height - 14, t('menu.footer'), 10, '#fff4e0').setOrigin(0, 0.5).setAlpha(0.8), width - 340);
     text(this, width - 16, height - 14, t('common.hint.udConfirm'), 10, '#fff4e0').setOrigin(1, 0.5).setAlpha(0.9);
     if (assetStatus.failed.length) text(this, 16, height - 48, t('menu.missingAssets', { list: assetStatus.failed.join(', ') }), 10, '#ff9a9a');
 
