@@ -3886,6 +3886,24 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         e.hp = Math.min(e.maxHp, e.hp + Math.round(n * 0.5));
       },
       isBurrowed: () => () => false,
+      // lao tới (Tấn Công Nhanh, Húc Sừng...): địch không có cơ chế lao của Fighter nên tự trượt theo hướng đó
+      startLunge: () => (dir: Phaser.Math.Vector2, dist: number, ms: number) => {
+        const sx = e.x;
+        const sy = e.y;
+        const d = dir.clone().normalize();
+        const o = { k: 0 };
+        b.tweens.add({
+          targets: o, k: 1, duration: Math.max(60, ms), ease: 'Cubic.out',
+          onUpdate: () => {
+            if (e.dead || e.beingCaught || b.over) return;
+            const nx = sx + d.x * dist * o.k;
+            const ny = sy + d.y * dist * o.k;
+            if (!circleHitsRects(b.solidRects, nx, ny, 8)) e.body.reset(nx, ny);
+          },
+        });
+      },
+      startBurrow: () => () => {},
+      startSpin: () => () => {},
     };
     const caster = new Proxy(e as unknown as object, {
       get: (t, k) => (typeof k === 'string' && k in casterOver ? casterOver[k]() : k in store ? store[k] : Reflect.get(t, k)),
