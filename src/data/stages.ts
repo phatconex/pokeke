@@ -49,35 +49,35 @@ export const STAGES: StageDef[] = [
   // ---------------------------------------------------------------- Chương 1: Pallet → Pewter
   { id: 'pallet', kind: 'start', name: 'Thị trấn Pallet', area: 'Pallet', x: 32, y: 330, label: 'Pallet', playable: true },
   {
+    id: 'forest-a', kind: 'stage', name: 'Rừng Viridian – Bìa rừng', area: 'Rừng Viridian', x: 140, y: 326, playable: true, biome: 'forest',
+    // ải 1 (dễ nhất, địch chậm: sâu bướm / ong): thứ tự ải đã đổi – xem docs/SKILLS_GUIDE.md
+    waves: [
+      [...many('caterpie', 4, 3), ...many('weedle', 4, 2)],
+      [...many('weedle', 5, 3), ...many('caterpie', 5, 3)],
+      [...many('metapod', 5, 2), ...many('kakuna', 5, 2), ...many('weedle', 5, 2)],
+      [...many('weedle', 6, 3), ...many('caterpie', 6, 2), A('kakuna', 7)],
+    ],
+    catchable: ['caterpie', 'weedle', 'metapod', 'kakuna', 'pidgey'], levels: [4, 7], money: 150, ballsFirstClear: 3, parTimeS: 120,
+  },
+  {
     id: 'route1-a', kind: 'stage', name: 'Đường 1 – Bãi cỏ', area: 'Đường 1', x: 68, y: 332, playable: true, biome: 'forest',
     waves: [
-      [...many('rattata', 3, 5), ...many('pidgey', 3, 3)],
-      [...many('rattata', 4, 6), ...many('pidgey', 4, 3)],
-      [...many('pidgey', 4, 6), ...many('rattata', 4, 4)],
-      [...many('rattata', 5, 5), ...many('pidgey', 5, 2), A('rattata', 6)],
+      [...many('rattata', 4, 2), ...many('pidgey', 4, 2)],
+      [...many('rattata', 5, 3), ...many('pidgey', 5, 2)],
+      [...many('pidgey', 5, 3), ...many('rattata', 5, 2)],
+      [...many('rattata', 6, 3), ...many('pidgey', 6, 1), A('rattata', 6)],
     ],
-    catchable: ['rattata', 'pidgey'], levels: [3, 6], money: 140, ballsFirstClear: 3, parTimeS: 90,
+    catchable: ['rattata', 'pidgey'], levels: [4, 6], money: 170, ballsFirstClear: 2, parTimeS: 100,
   },
   {
     id: 'route1-b', kind: 'stage', name: 'Đường 1 – Lối vào Viridian', area: 'Đường 1', x: 102, y: 330, playable: true, biome: 'forest',
     waves: [
-      [...many('rattata', 5, 5), ...many('pidgey', 5, 3)],
-      [...many('pidgey', 5, 5), ...many('rattata', 5, 4)],
-      [...many('rattata', 6, 6), ...many('pidgey', 6, 3)],
-      [...many('pidgey', 6, 5), ...many('rattata', 6, 4), s('raticate', 7)],
-      [...many('rattata', 7, 4), s('raticate', 7), A('pidgeotto', 8)],
+      [...many('rattata', 5, 3), ...many('pidgey', 5, 2)],
+      [...many('pidgey', 6, 3), ...many('rattata', 6, 2)],
+      [...many('rattata', 6, 3), ...many('pidgey', 6, 2), s('raticate', 7)],
+      [...many('rattata', 7, 2), s('raticate', 7), A('pidgeotto', 8)],
     ],
-    catchable: ['rattata', 'pidgey', 'raticate', 'pidgeotto'], levels: [5, 8], money: 190, parTimeS: 110,
-  },
-  {
-    id: 'forest-a', kind: 'stage', name: 'Rừng Viridian – Bìa rừng', area: 'Rừng Viridian', x: 140, y: 326, playable: true, biome: 'forest',
-    waves: [
-      [...many('caterpie', 6, 4), ...many('weedle', 6, 4)],
-      [...many('weedle', 7, 5), ...many('caterpie', 7, 3), s('pidgey', 7)],
-      [...many('metapod', 7, 3), ...many('kakuna', 7, 3), ...many('weedle', 7, 3)],
-      [...many('weedle', 8, 4), ...many('kakuna', 8, 2), A('kakuna', 9)],
-    ],
-    catchable: ['caterpie', 'weedle', 'metapod', 'kakuna', 'pidgey'], levels: [6, 9], money: 240, ballsFirstClear: 2, parTimeS: 130,
+    catchable: ['rattata', 'pidgey', 'raticate', 'pidgeotto'], levels: [5, 8], money: 200, parTimeS: 110,
   },
   {
     id: 'forest-event', kind: 'event', name: 'Tiếng sấm trong rừng', area: 'Rừng Viridian', x: 178, y: 330, playable: true, biome: 'blossom',

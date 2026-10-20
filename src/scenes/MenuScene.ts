@@ -138,7 +138,7 @@ export class MenuScene extends Phaser.Scene {
     this.items = [
       { icon: 'pokeball', title: t('menu.continue'), sub: g ? `Kanto · ${cur ? stageName(cur) : ''} · ${formatTime(g.playMs)}` : t('menu.noSave'), enabled: !!g, run: () => this.continueGame() },
       { icon: 'map', title: t('menu.new'), sub: t('menu.newSub'), enabled: true, run: () => this.newGame() },
-      { icon: 'sword', title: t('menu.survival'), sub: t('menu.survivalSub', { time: formatTime(recs.bestTimeMs), kills: recs.bestKills }), enabled: true, run: () => this.go('Battle', { kind: 'survival' }) },
+      { icon: 'sword', title: t('menu.survival'), sub: t('menu.survivalSub', { time: formatTime(recs.bestTimeMs), kills: recs.bestKills }), enabled: true, run: () => (g && g.box.some((m) => !m.injured) ? this.go('SurvivalPick') : this.go('Battle', { kind: 'survival' })) },
       {
         icon: 'people', title: t('menu.account'), enabled: cloudEnabled, run: () => this.go('Account', { from: 'Menu' }),
         sub: !cloudEnabled ? t('menu.accountOff') : user ? t('menu.accountUser', { name: user.trainerName }) : t('menu.accountGuest'),

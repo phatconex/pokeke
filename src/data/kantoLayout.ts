@@ -5,9 +5,9 @@
 // → dọc đỉnh bắc về tây (Indigo → Tứ Thiên Vương → Nhà vô địch → Hang Cerulean).
 export const KANTO_POS: Record<string, { x: number; y: number }> = {
   pallet: { x: 80, y: 585 },
-  'route1-a': { x: 95, y: 530 },
-  'route1-b': { x: 80, y: 475 },
-  'forest-a': { x: 110, y: 425 },
+  'forest-a': { x: 95, y: 530 },
+  'route1-a': { x: 80, y: 475 },
+  'route1-b': { x: 110, y: 425 },
   'forest-event': { x: 85, y: 375 },
   'forest-b': { x: 120, y: 330 },
   'forest-elite': { x: 95, y: 285 },

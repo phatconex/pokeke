@@ -27,7 +27,7 @@ export interface Settings {
   lang: Lang;
 }
 
-const DEFAULTS: Settings = { muted: false, reducedShake: false, aimMode: 'mouse', musicVolume: 0.6, sfxVolume: 0.8, lang: 'en' };
+const DEFAULTS: Settings = { muted: false, reducedShake: false, aimMode: 'auto', musicVolume: 0.6, sfxVolume: 0.8, lang: 'en' };
 
 const vol = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : d);
 
@@ -44,7 +44,14 @@ function sanitize(s: Partial<Settings>): Settings {
   return clean;
 }
 
-let current: Settings = sanitize(loadJson<Settings>('settings', DEFAULTS));
+// Mặc định là Tự ngắm (chỉ cần bàn phím). Người chơi cũ đã lưu cài đặt từ trước được chuyển sang Tự ngắm đúng một lần; sau đó muốn đổi (phím T) thì giữ nguyên lựa chọn của họ.
+const stored = loadJson<Settings>('settings', DEFAULTS);
+if (!loadJson<boolean>('aimAutoMigrated', false)) {
+  stored.aimMode = 'auto';
+  saveJson('aimAutoMigrated', true);
+  saveJson('settings', stored);
+}
+let current: Settings = sanitize(stored);
 
 export function getSettings(): Readonly<Settings> {
   return current;

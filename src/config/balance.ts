@@ -351,10 +351,12 @@ export const ENEMY_STATS: Record<string, EnemyStats> = Object.assign({}, CORE_EN
 /** Độ khó tăng dần theo thứ tự ải: ải đầu nhẹ (địch ít máu, đánh yếu, ra đòn thưa), tới `fullAtIndex` thì như bình thường. */
 export const STAGE_RAMP = {
   /** hệ số sát thương địch ở ải đầu tiên */
-  startDmg: 0.5,
-  startHp: 0.7,
+  startDmg: 0.32,
+  startHp: 0.55,
   /** vị trí ải (trong STAGES) đạt độ khó đủ */
-  fullAtIndex: 9,
+  fullAtIndex: 12,
+  /** hệ số tốc độ Pokémon hoang dã ở 3 ải đầu (thứ tự 1, 2, 3 trong danh sách): ải đầu chậm hơn hẳn để người mới làm quen */
+  earlySpeed: [0.72, 0.72, 0.8] as readonly number[],
   /** hội quán không xuống dưới mức này */
   gymFloor: 0.8,
   /** Pokémon hoang dã chỉ ra chiêu đặc trưng từ ải có vị trí ≥ số này */
@@ -499,6 +501,8 @@ export const SURVIVAL_REWARD = {
   xpPerKill: 1.5,
   xpPerSecond: 0.4,
   maxXp: 400,
+  /** chọn Pokémon của mình: EXP nhận trong trận nhân hệ số này (ít hơn nhiều so với đánh ải, vì một lượt hạ rất nhiều địch) */
+  ownXpMult: 0.12,
 } as const;
 
 export const SPAWN = {

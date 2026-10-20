@@ -91,7 +91,8 @@ function survivalWaveName(name: string): string {
 
 /** Cấu hình trận: chế độ Sinh tồn, hoặc một ải trên bản đồ */
 export type BattleConfig =
-  | { kind: 'survival' }
+  /** Sinh tồn: uid = Pokémon của mình (trong Hộp) làm chủ lực; bỏ trống = Charmander tạm */
+  | { kind: 'survival'; uid?: string }
   | { kind: 'stage'; stageId: string; /** bỏ đoạn mở màn hội quán (kiểm thử) */ skipIntro?: boolean; /** bài hướng dẫn xem lại (không thưởng / không giữ Pokémon bắt được) */ replay?: boolean }
   /** Skill Lab: một Pokémon (không lấy từ save) + hình nộm vô hạn máu; không thưởng / không lưu / không EXP */
   | { kind: 'lab'; speciesId: string; level: number }
@@ -331,6 +332,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private armorGainAt = 0;
   private toxicTickAt = 0;
   private rebirthUsed = false;
+  /** Sinh tồn bằng Pokémon của mình: nhớ máu trước trận để trả lại (không tốn phí chữa) */
+  private survivalOwn: { member: PartyMember; hp: number } | null = null;
   /** Huyền thoại PHE ĐỊCH (ải sự kiện): ra đúng bộ chiêu riêng của loài, nhắm vào người chơi */
   private legendFoes = new Map<Enemy, { next: number; idx: number; ults: number[]; host: SkillHost; caster: Fighter; target: Enemy }>();
   private staticCharge = 0;
@@ -601,10 +604,12 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     }
 
     // ---- đội ----
-    const team: PartyMember[] = cfg.kind === 'lab' ? [makeMember(cfg.speciesId, cfg.level)] : this.trial ? [this.trial.member] : this.stage ? battleTeam(game!) : [makeMember(SURVIVAL.starter, SURVIVAL.starterLevel)];
+    const own = cfg.kind === 'survival' && cfg.uid ? game?.box.find((m) => m.uid === cfg.uid && !m.injured) ?? null : null;
+    this.survivalOwn = own ? { member: own, hp: own.hp } : null;
+    const team: PartyMember[] = cfg.kind === 'lab' ? [makeMember(cfg.speciesId, cfg.level)] : this.trial ? [this.trial.member] : this.stage ? battleTeam(game!) : own ? [own] : [makeMember(SURVIVAL.starter, SURVIVAL.starterLevel)];
     // Skill Lab: không khóa · Sinh tồn: giữ luật cũ theo cấp · Ải / thử thách: học trước các chiêu đã đủ điều kiện ngoài trận (vd. vừa tiến hóa)
-    const free = cfg.kind === 'lab' || cfg.kind === 'survival' || this.tutorial;
-    const lockMode = cfg.kind === 'lab' || this.tutorial ? 'free' : cfg.kind === 'survival' ? 'level' : 'earned';
+    const free = cfg.kind === 'lab' || (cfg.kind === 'survival' && !own) || this.tutorial;
+    const lockMode = cfg.kind === 'lab' || this.tutorial ? 'free' : cfg.kind === 'survival' && !own ? 'level' : 'earned';
     const learnedAtStart: string[] = [];
     if (!free) {
       for (const m of team) {
@@ -708,7 +713,15 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (this.introActive) this.scene.launch('GymIntro');
   }
 
+  /** Sinh tồn bằng Pokémon của mình: trả lại máu trước trận (không bị thương, không tốn phí chữa) */
+  private restoreOwnHp() {
+    const o = this.survivalOwn;
+    if (o && !o.member.injured) o.member.hp = o.hp;
+  }
+
   private cleanup() {
+    this.restoreOwnHp();
+    this.survivalOwn = null;
     // bài hướng dẫn là scene phủ lên trận: trận đóng (thoát / về menu / hết bài) thì phải đóng luôn, không để sót lên màn hình khác
     if (this.scene.isActive('Tutorial') || this.scene.isPaused('Tutorial')) this.scene.stop('Tutorial');
     this.input.keyboard?.removeAllListeners();
@@ -2837,11 +2850,11 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private awardXp(value: number) {
     // Thử thách chiêu / bài hướng dẫn: không thưởng EXP
     if (this.trial || this.tutorial) return;
-    const cap = this.stage ? levelCap() : 50;
+    const cap = this.stage || this.survivalOwn ? levelCap() : 50;
     this.fighters.forEach((f, i) => {
       if (f.dead || i !== this.activeIdx) return;
-      // Thông thái (Huấn luyện) tăng EXP
-      const amount = Math.max(1, Math.round(value * f.xpMult));
+      // Thông thái (Huấn luyện) tăng EXP; Sinh tồn bằng Pokémon của mình nhận ít EXP
+      const amount = Math.max(1, Math.round(value * f.xpMult * (this.survivalOwn ? SURVIVAL_REWARD.ownXpMult : 1)));
       const m = f.member;
       const log = this.xpLog.get(m) ?? { name: f.species.name, xp: 0, from: m.level, fromXp: m.xp, moves: [] };
       log.xp += amount;
@@ -2939,6 +2952,12 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       } else if (!p.boss && !p.alpha) {
         // hoang dã thường chậm hơn một chút (sân ải rộng hơn); đầu đàn / boss giữ nguyên tốc độ
         e.speedMult = STAGE_TUNING.wildSpeedMult;
+        const es = this.stage ? STAGE_RAMP.earlySpeed[STAGES.findIndex((st) => st.id === this.stage!.id) - 1] : undefined;
+        if (es) {
+          e.speedMult *= es;
+          // vồ thưa hơn (lao xa không chậm theo speedMult nên giãn nhịp thay vào đó)
+          e.attackGapMult *= 1 / es;
+        }
       }
       this.addEnemy(e);
       if (trainer) {
@@ -3251,12 +3270,17 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     game.money += money;
     let xp = 0;
     const cap = levelCap(game);
-    for (const m of team) {
+    const ownRun = !!this.survivalOwn;
+    for (const m of ownRun ? [] : team) {
       if (m.level >= cap) continue; // đã chạm giới hạn cấp theo huy hiệu: không nhận EXP
       const amount = Math.round(Math.min(R.maxXp, (this.kills * R.xpPerKill + secs * R.xpPerSecond) * (0.6 + 0.03 * m.level)) * (won ? 1 : 0.6));
       gainXp(m, amount, cap);
       xp = Math.max(xp, amount);
     }
+    if (ownRun) {
+      for (const log of this.xpLog.values()) xp = Math.max(xp, log.xp);
+    }
+    this.restoreOwnHp();
     saveGame();
     return { money, xp };
   }

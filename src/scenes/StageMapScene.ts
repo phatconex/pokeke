@@ -164,6 +164,23 @@ export class StageMapScene extends Phaser.Scene {
     });
 
     this.afterArrive();
+    this.autoAdvance();
+  }
+
+  /** Vừa thắng một ải (về bản đồ từ trận đấu): sau một nhịp, nhân vật tự đi tới ải kế tiếp đã mở */
+  private autoAdvance() {
+    const fromId = this.fromData.from;
+    if (!fromId) return;
+    const i = STAGES.findIndex((st) => st.id === fromId);
+    if (i < 0 || STAGES[i].kind === 'start' || !stageCleared(this.game_, fromId)) return;
+    if (this.cursor !== i) return;
+    const next = i + 1;
+    if (next >= STAGES.length || !this.unlocked(next) || !STAGES[next].playable) return;
+    this.time.delayedCall(900, () => {
+      // hộp thoại (lời cảm ơn thủ lĩnh, kết thúc game...) đang mở hoặc đã tự rời cảnh: không đi
+      if (!this.scene.isActive() || this.dialog.busy || this.moving || this.cursor !== i) return;
+      this.moveTo(next);
+    });
   }
 
   update() {

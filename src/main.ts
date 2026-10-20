@@ -17,6 +17,7 @@ import { PokemonCenterScene } from './scenes/PokemonCenterScene';
 import { AccountScene } from './scenes/AccountScene';
 import { CharacterScene } from './scenes/CharacterScene';
 import { CreditsScene } from './scenes/CreditsScene';
+import { SurvivalPickScene } from './scenes/SurvivalPickScene';
 import { initCloud } from './systems/cloud';
 import { getGame } from './game/state';
 import { installErrorReporting, touchWarning } from './systems/errorReport';
@@ -55,7 +56,7 @@ function startGame() {
     input: { mouse: { preventDefaultWheel: false } },
     // ô nhập HTML (form đăng nhập / đăng ký) nằm đè lên canvas, co giãn theo màn hình
     dom: { createContainer: true },
-    scene: [BootScene, MenuScene, RegionSelectScene, StarterSelectScene, StageMapScene, TeamScene, EvolutionScene, PokedexScene, PokemonCenterScene, AccountScene, CharacterScene, BattleScene, HudScene, GymIntroScene, SkillLabScene, TutorialScene, CreditsScene],
+    scene: [BootScene, MenuScene, RegionSelectScene, StarterSelectScene, StageMapScene, TeamScene, EvolutionScene, PokedexScene, PokemonCenterScene, AccountScene, CharacterScene, BattleScene, HudScene, GymIntroScene, SkillLabScene, TutorialScene, CreditsScene, SurvivalPickScene],
   });
 
   // Hỗ trợ kiểm thử thủ công / tự động trong chế độ development

@@ -147,3 +147,9 @@ Move mới: `ch8_forkZ/blinkZ/stormZ/gridZ` (chapters/ch8.ts), `ch7_auroraA/glid
 ### Huyền thoại PHE ĐỊCH dùng đúng bộ chiêu riêng (BattleScene.updateLegendFoes / makeLegendFoe)
 Ở ải sự kiện, Articuno/Zapdos/Moltres/Mewtwo/Mew ra chiêu bằng CHÍNH khuôn chiêu của bản người chơi: con địch được bọc thành "người ra chiêu" (Proxy), người chơi thành "mục tiêu"; host riêng chuyển sát thương thành `damageFighter` = sức mạnh chiêu × 0,45% máu tối đa người chơi × chênh cấp^1,2 (LEGEND_FOE_DMG). Xoay vòng J-K-J-L-J-U (nghỉ 1,1–2,6s), tuyệt chiêu riêng khi máu tụt qua 70% và 35% (báo trước 1s bằng banner + rung). Chiêu đặc trưng theo hệ (EnemySkills) tắt cho huyền thoại.
 Khó hơn: máu ×1,8 (CATCH.legendHpMult) ngoài hệ số đầu đàn; chỉ choáng/bắt được khi máu ≤ 12%; tỉ lệ tối thiểu 5% / 10% / 18% (Poké/Great/Ultra); 2 lần ném mỗi trận.
+
+### Ải đầu dễ hơn + thứ tự ải mới + Sinh tồn chọn Pokémon (2026-10-20)
+- Thứ tự mới: Rừng Viridian – Bìa rừng (forest-a, địch chậm, Lv4–7) là ải 1 → Đường 1 – Bãi cỏ (Lv4–6) → Đường 1 – Lối vào Viridian (Lv5–8) → … Ba ải đầu: địch ít hơn, cấp thấp hơn, chậm hơn (`STAGE_RAMP.earlySpeed` 0,72 / 0,72 / 0,8; vồ thưa hơn), sát thương/máu địch ải đầu ×0,32 / ×0,55 rồi tăng đều tới ải thứ 12. Vị trí trên bản đồ trong `data/kantoLayout.ts` (phải giữ cùng thứ tự với STAGES).
+- Thắng ải về bản đồ: nhân vật tự đi tới ải kế tiếp đã mở (`StageMapScene.autoAdvance`).
+- Mặc định Tự ngắm (`systems/settings.ts`, người chơi cũ chuyển sang Tự ngắm một lần).
+- Sinh tồn: màn chọn Pokémon (`SurvivalPickScene`): chọn Pokémon khỏe của mình hoặc Charmander mặc định. Chọn Pokémon của mình: nhận EXP rất ít trong trận (`SURVIVAL_REWARD.ownXpMult`), máu được trả lại sau trận, không bao giờ bị thương; vẫn nhận tiền thưởng. Lưu ý: địch Sinh tồn không tăng theo cấp nên đội cấp cao sẽ dễ.
