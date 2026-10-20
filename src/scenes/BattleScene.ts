@@ -707,6 +707,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   }
 
   private cleanup() {
+    // bài hướng dẫn là scene phủ lên trận: trận đóng (thoát / về menu / hết bài) thì phải đóng luôn, không để sót lên màn hình khác
+    if (this.scene.isActive('Tutorial') || this.scene.isPaused('Tutorial')) this.scene.stop('Tutorial');
     this.input.keyboard?.removeAllListeners();
     this.input.removeAllListeners(Phaser.Input.Events.POINTER_MOVE);
     this.input.removeAllListeners(Phaser.Input.Events.POINTER_DOWN);

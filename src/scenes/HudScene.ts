@@ -880,6 +880,8 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onEsc() {
+    // bài hướng dẫn: Esc là "giữ để bỏ qua" (TutorialScene xử lý), không mở menu tạm dừng
+    if (this.scene.isActive('Tutorial')) return;
     if (this.overShown) {
       // màn kết quả ải: Esc = tiếp tục; Sinh tồn: Esc = về menu
       if (this.stageEnd) this.onEnter();
@@ -902,6 +904,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private quit() {
+    this.scene.stop('Tutorial');
     this.scene.stop('Battle');
     if (this.battle.config.kind === 'lab') this.scene.stop('SkillLab');
     if (this.battle.config.kind === 'stage') this.scene.start('StageMap', {});
