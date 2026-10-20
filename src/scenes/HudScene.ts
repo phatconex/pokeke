@@ -929,6 +929,8 @@ export class HudScene extends Phaser.Scene {
       '',
       t('hud.records', { time: formatTime(info.records.bestTimeMs), kills: info.records.bestKills, lv: info.records.bestLevel }),
       info.newBest.length ? t('hud.newBest', { list: info.newBest.map((k) => t(`hud.best.${k}`)).join(', ') }) : !info.saved ? t('hud.saveFail') : '',
+      '',
+      info.reward ? t(info.reward.xp > 0 ? 'hud.survivalReward' : 'hud.survivalRewardCapped', { money: info.reward.money, xp: info.reward.xp }) : t('hud.survivalNoSave'),
     ];
     const body = text(this, width / 2, height / 2 - 30, lines.join('\n'), 12, '#ffffff', { align: 'center', lineSpacing: 6 }).setOrigin(0.5);
     const b1 = button(this, width / 2 - 130, height / 2 + 130, t('hud.again'), () => this.onEnter(), 240);

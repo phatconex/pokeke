@@ -483,6 +483,24 @@ export const SURVIVAL = {
   bossLevel: 9,
 } as const;
 
+/**
+ * Phần thưởng Sinh tồn cho cuộc phiêu lưu đang có (chỉ khi có bản lưu). Sinh tồn dùng Pokémon tạm nên KHÔNG làm bị thương / không tốn phí chăm sóc,
+ * chỉ cộng tiền + một ít EXP cho đội ra trận (ít hơn nhiều so với đánh ải: ~½ cấp cho mỗi con).
+ * tiền = (hạ × perKill + giây × perSecond) × (1 + cấp cao nhất đội / levelDiv) (+ thưởng hạ boss), tối đa maxMoney; thua nhận lossMult.
+ */
+export const SURVIVAL_REWARD = {
+  perKill: 2,
+  perSecond: 1.2,
+  levelDiv: 50,
+  bossBonus: 150,
+  maxMoney: 450,
+  lossMult: 0.6,
+  /** EXP mỗi con trong đội = (hạ × xpPerKill + giây × xpPerSecond) × (0,6 + 0,03 × cấp con), tối đa maxXp */
+  xpPerKill: 1.5,
+  xpPerSecond: 0.4,
+  maxXp: 400,
+} as const;
+
 export const SPAWN = {
   minDistance: 300,
   maxDistance: 430,

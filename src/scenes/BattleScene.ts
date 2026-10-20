@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { scatter } from '../fx/TypeFx';
 import { leafBurst } from '../fx/GrassFx';
-import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, PLAYER, POTION, SKILL_UNLOCK, SPAWN, STAGE_REWARD, STAGE_RAMP, STAGE_TUNING, SURVIVAL, stageRamp, SWITCH, TRAINER, arenaSize } from '../config/balance';
+import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, PLAYER, POTION, SKILL_UNLOCK, SPAWN, STAGE_REWARD, STAGE_RAMP, STAGE_TUNING, SURVIVAL, SURVIVAL_REWARD, stageRamp, SWITCH, TRAINER, arenaSize } from '../config/balance';
 import { makeFrame } from '../art/chapters';
 import { arenaLayout, generateArena } from '../art/arenaArt';
 import { METRONOME_POOL, MOVES, MoveDef, slotScaledMove, STATUS_COLOR, upgradeMove } from '../data/moves';
@@ -43,7 +43,7 @@ import type { GymIntroScene } from './GymIntroScene';
 import type { HudScene } from './HudScene';
 import { evoStatus, EvoState } from '../game/evolution';
 import {
-  addMastery, addToBox, battleTeam, evolutionReady, gainXp, GameState, getGame, healTeam, levelCap, makeMember, memberSkills, PartyMember, saveGame, skillMastery,
+  addMastery, addToBox, battleTeam, evolutionReady, gainXp, GameState, getGame, healTeam, levelCap, makeMember, memberSkills, PartyMember, saveGame, skillMastery, teamMembers,
 } from '../game/state';
 import { submitRun, Records } from '../systems/records';
 import { playSfx, resetSfxThrottle } from '../systems/sfx';
@@ -178,6 +178,8 @@ export interface GameOverInfo {
   newBest: string[];
   saved: boolean;
   records: Records;
+  /** thưởng cộng vào cuộc phiêu lưu đang có (null = không có bản lưu để cộng) */
+  reward: { money: number; xp: number } | null;
 }
 
 export interface StageEndInfo {
@@ -3236,6 +3238,29 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.reticle.setVisible(false);
   }
 
+  /** Sinh tồn: cộng tiền + ít EXP vào bản lưu (nếu có). Không đụng tới máu / tình trạng bị thương của đội → không tốn phí chăm sóc. */
+  private survivalReward(won: boolean): { money: number; xp: number } | null {
+    const game = getGame();
+    if (!game) return null;
+    const R = SURVIVAL_REWARD;
+    const team = teamMembers(game).filter((m) => !m.injured);
+    const top = Math.max(1, ...team.map((m) => m.level));
+    const secs = this.clock / 1000;
+    let money = (this.kills * R.perKill + secs * R.perSecond) * (1 + top / R.levelDiv) + (won ? R.bossBonus : 0);
+    money = Math.round(Math.min(R.maxMoney, won ? money : money * R.lossMult));
+    game.money += money;
+    let xp = 0;
+    const cap = levelCap(game);
+    for (const m of team) {
+      if (m.level >= cap) continue; // đã chạm giới hạn cấp theo huy hiệu: không nhận EXP
+      const amount = Math.round(Math.min(R.maxXp, (this.kills * R.xpPerKill + secs * R.xpPerSecond) * (0.6 + 0.03 * m.level)) * (won ? 1 : 0.6));
+      gainXp(m, amount, cap);
+      xp = Math.max(xp, amount);
+    }
+    saveGame();
+    return { money, xp };
+  }
+
   private endSurvival(won: boolean) {
     if (this.over) return;
     this.stopBattle();
@@ -3243,7 +3268,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     playSfx(won ? 'win' : 'lose');
     const level = this.fighters[0].level;
     const { records, newBest, saved } = submitRun({ timeMs: this.clock, kills: this.kills, level, won });
-    const info: GameOverInfo = { won, timeMs: this.clock, kills: this.kills, level, newBest, saved, records };
+    const info: GameOverInfo = { won, timeMs: this.clock, kills: this.kills, level, newBest, saved, records, reward: this.survivalReward(won) };
     this.events.emit('gameover', info);
   }
 
