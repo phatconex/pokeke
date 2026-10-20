@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { scatter } from '../fx/TypeFx';
 import { leafBurst } from '../fx/GrassFx';
-import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, PLAYER, POTION, SKILL_UNLOCK, SPAWN, STAGE_REWARD, STAGE_RAMP, STAGE_TUNING, SURVIVAL, SURVIVAL_REWARD, stageRamp, SWITCH, TRAINER, arenaSize } from '../config/balance';
+import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, GYM_RULES, PLAYER, POTION, SKILL_UNLOCK, SPAWN, STAGE_REWARD, STAGE_RAMP, STAGE_TUNING, SURVIVAL, SURVIVAL_REWARD, stageRamp, SWITCH, TRAINER, arenaSize } from '../config/balance';
 import { makeFrame } from '../art/chapters';
 import { arenaLayout, generateArena } from '../art/arenaArt';
 import { METRONOME_POOL, MOVES, MoveDef, slotScaledMove, STATUS_COLOR, upgradeMove } from '../data/moves';
@@ -783,7 +783,14 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   }
 
   private clearFrameTasks() {
-    for (const t of this.frameTasks) t.done?.();
+    // done() có thể vẽ hiệu ứng cuối (nổ, bụi): khi cảnh đang đóng (thoát trận giữa chừng) các bộ phát hạt đã bị hủy → không được làm sập
+    for (const t of this.frameTasks) {
+      try {
+        t.done?.();
+      } catch {
+        // cảnh đã đóng
+      }
+    }
     this.frameTasks = [];
     this.hitStopMs = 0;
     this.slowMoMs = 0;
@@ -1085,7 +1092,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     f.faceTo(old.facing.x, old.facing.y);
     f.invulnUntil = this.clock + 2600;
     // ván đấu tạm dừng chút xíu để người chơi định thần
-    this.swapFreezeUntil = this.clock + 1700;
+    this.swapFreezeUntil = this.clock + GYM_RULES.swapFreezeMs;
     for (const e of this.enemies) {
       this.fx.clearTelegraphsOf(e);
       // địch cần thời gian nhắm lại: chưa ra chiêu ngay sau khi người chơi vào sân
@@ -2683,7 +2690,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       amount *= 0.12;
     }
     // hội quán: một đòn không bao giờ lấy quá 30% máu tối đa (người chơi cấp thấp không bị hạ trong 1–2 đòn)
-    if (this.gym && f === this.player) amount = Math.min(amount, f.maxHp * 0.25);
+    if (this.gym && f === this.player) amount = Math.min(amount, f.maxHp * GYM_RULES.maxHitPct);
     if (!f.isInvulnerable(this.clock) && f.tryEvade(this.clock)) {
       // Thu Nhỏ: né hoàn toàn
       f.invulnUntil = this.clock + 250;
@@ -3051,14 +3058,20 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.gymRecalls = 0;
     this.gymLastRecalled = -1;
     if (!g) return;
-    if (g.pool?.length && g.ace) {
-      const bag = [...g.pool].sort(() => Math.random() - 0.5);
+    // mọi hội quán dùng chung luật: có kho (pool) thì bốc ngẫu nhiên; không có thì lấy chính đội hình (trừ át chủ bài) làm kho
+    const ace = g.ace ?? [...g.team].reverse().find((p) => p.boss);
+    const pool = g.pool?.length ? g.pool : g.team.filter((p) => p !== ace);
+    if (ace && pool.length) {
+      const pick = g.pick ?? Math.max(1, g.team.length - 1);
+      const bag = [...pool].sort(() => Math.random() - 0.5);
       const picks: GymPokemon[] = [];
       for (const c of bag) {
-        if (picks.length >= (g.pick ?? 2)) break;
+        if (picks.length >= pick) break;
         if (!picks.some((x) => x.species === c.species)) picks.push(c);
       }
-      this.gymRoster = [...picks, g.ace].map((spec) => ({ spec, hpRatio: 1, state: 'wait', recalls: 0 }));
+      // kho ít loài hơn số cần bốc: bù bằng con trùng loài (vẫn xếp không đứng cạnh nhau ở nextGymIndex)
+      for (const c of bag) if (picks.length < pick && !picks.includes(c)) picks.push(c);
+      this.gymRoster = [...picks, ace].map((spec) => ({ spec, hpRatio: 1, state: 'wait', recalls: 0 }));
       this.gymShuffled = true;
     } else {
       this.gymRoster = g.team.map((spec) => ({ spec, hpRatio: 1, state: 'wait', recalls: 0 }));
@@ -3087,24 +3100,24 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   /** thủ lĩnh: Pokémon đang nghỉ hồi máu CHẬM (1,2%/s, tối đa 70%); con đang đánh xuống ≤40% máu → 60% thu hồi, ném con khác (tối đa 2 lần mỗi trận, mỗi con 1 lần) */
   private updateGymRoster(dt: number) {
     if (!this.gym || !this.gymShuffled || this.introActive || this.over || !this.gymRoster.length) return;
-    for (const r of this.gymRoster) if (r.state === 'rest') r.hpRatio = Math.min(0.7, r.hpRatio + (dt * 0.012) / 1000);
-    for (const x of this.enemies) if (x.trainer && !x.isBoss && !x.dead && !x.rageOn && x.hp / x.maxHp <= 0.3) this.gymEnrage(x);
-    if (this.gymRecallBusy || this.gymRecalls >= 2) return;
+    for (const r of this.gymRoster) if (r.state === 'rest') r.hpRatio = Math.min(GYM_RULES.rest.cap, r.hpRatio + (dt * GYM_RULES.rest.regenPerSec) / 1000);
+    for (const x of this.enemies) if (x.trainer && !x.isBoss && !x.dead && !x.rageOn && x.hp / x.maxHp <= GYM_RULES.rage.hpRatio) this.gymEnrage(x);
+    if (this.gymRecallBusy || this.gymRecalls >= GYM_RULES.recall.maxPerBattle) return;
     const e = this.enemies.find((x) => x.gymIdx !== undefined && !x.dead && !x.isBoss);
     if (!e || e.gymIdx === undefined) return;
     const r = this.gymRoster[e.gymIdx];
-    if (!r || r.recalls >= 1 || e.hp / e.maxHp > 0.4 || e.recallChecked) return;
+    if (!r || r.recalls >= 1 || e.hp / e.maxHp > GYM_RULES.recall.hpRatio || e.recallChecked) return;
     e.recallChecked = true;
     const aceIdx = this.gymRoster.length - 1;
     const others = this.gymRoster.some((x, i) => i !== e.gymIdx && i !== aceIdx && (x.state === 'wait' || x.state === 'rest'));
-    if (others && Math.random() < 0.6) this.gymRecallEnemy(e);
+    if (others && Math.random() < GYM_RULES.recall.chance) this.gymRecallEnemy(e);
   }
 
   /** dưới 30% máu: nổi cuồng nộ (hào quang đỏ, nhanh hơn, mạnh hơn, ra đòn dồn dập); hệ Đá thì mưa đá dày hơn */
   private gymEnrage(e: Enemy) {
     e.rageOn = true;
-    e.speedMult *= 1.25;
-    e.dmgMult *= 1.2;
+    e.speedMult *= GYM_RULES.rage.speedMult;
+    e.dmgMult *= GYM_RULES.rage.dmgMult;
     e.nextSkillAt = Math.min(e.nextSkillAt, this.clock + 500);
     this.events.emit('banner', t('gym.rage', { name: e.species.name }));
     playSfx('warn');
@@ -3832,7 +3845,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       const sk = e.species.skills.find((x) => x.slot === rot.slot);
       const move = sk ? MOVES[sk.move] : undefined;
       // dưới 35% máu: nổi giận, ra chiêu dồn dập hơn
-      st.next = this.clock + rot.gap * (ratio < 0.35 || e.rageOn ? 0.7 : 1) * (0.9 + Math.random() * 0.2);
+      st.next = this.clock + rot.gap * (ratio < 0.35 || e.rageOn ? GYM_RULES.rage.gapMult : 1) * (0.9 + Math.random() * 0.2);
       if (!move) continue;
       const spec = resolveSkill(e.species.id, e.level, rot.slot, move);
       if (!spec.archetype) continue;
@@ -3936,7 +3949,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       const p = b.player;
       if (!p || p.dead || !p.onField) return;
       const lv = Phaser.Math.Clamp(Math.pow(e.level / Math.max(1, p.level), 1.2), 0.6, 2);
-      b.damageFighter(p, power * p.maxHp * LEGEND_FOE_DMG * lv * (e.trainer && !e.isBoss ? 0.5 : 1) * (e.rageOn ? 1.2 : 1), x, y, type);
+      b.damageFighter(p, power * p.maxHp * LEGEND_FOE_DMG * lv * (e.trainer && !e.isBoss ? GYM_RULES.kitDamageMult : 1) * (e.rageOn ? GYM_RULES.rage.dmgMult : 1), x, y, type);
     };
     const host: SkillHost = {
       scene: this,
@@ -3966,7 +3979,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         }, () => g.destroy());
       },
       spawnShot: (tex, x, y, vx, vy, r, dmg, life, spin) => {
-        const sh = b.enemyShots.spawn(tex, x, y, vx, vy, r, dmg * b.player.maxHp * LEGEND_FOE_DMG * (e.trainer && !e.isBoss ? 0.5 : 1), life, spin);
+        const sh = b.enemyShots.spawn(tex, x, y, vx, vy, r, dmg * b.player.maxHp * LEGEND_FOE_DMG * (e.trainer && !e.isBoss ? GYM_RULES.kitDamageMult : 1), life, spin);
         sh.type = e.species.types[0];
         return sh;
       },

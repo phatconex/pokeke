@@ -144,6 +144,25 @@ export const TRAINER = {
 } as const;
 
 /**
+ * LUẬT CHUNG CỦA MỌI HỘI QUÁN (một chỗ duy nhất để chỉnh: đổi ở đây là tất cả hội quán đổi theo).
+ * Dữ liệu riêng từng hội quán (đội hình, kho Pokémon, địa hình) nằm ở data/trainers.ts và art/arenaArt.ts. Xem docs/GYMS.md.
+ */
+export const GYM_RULES = {
+  /** thủ lĩnh thu hồi con đang yếu: khi máu ≤ ngưỡng, xác suất, số lần tối đa mỗi trận */
+  recall: { hpRatio: 0.4, chance: 0.6, maxPerBattle: 2 },
+  /** con bị thu hồi nghỉ hồi máu chậm: tỉ lệ máu hồi mỗi giây, trần hồi */
+  rest: { regenPerSec: 0.012, cap: 0.7 },
+  /** nổi cuồng nộ khi máu ≤ ngưỡng: nhanh / mạnh hơn, ra đòn dồn dập */
+  rage: { hpRatio: 0.3, speedMult: 1.25, dmgMult: 1.2, gapMult: 0.7 },
+  /** một đòn không lấy quá tỉ lệ máu tối đa này của Pokémon người chơi */
+  maxHitPct: 0.25,
+  /** Pokémon hội quán dùng bộ chiêu riêng của loài: sát thương so với huyền thoại */
+  kitDamageMult: 0.5,
+  /** nghỉ ngắn sau khi người chơi đổi Pokémon (ms) */
+  swapFreezeMs: 1700,
+} as const;
+
+/**
  * Chống "giữ J rồi chạy vòng tròn" (người chơi chỉ thả diều + spam J vẫn thắng dễ):
  * J tốn năng lượng (như PP), ra chiêu thì đi chậm lại, J yếu hơn còn K/L/U + liên hoàn mạnh hơn
  * → xoay vòng chiêu và đứng lại bắn / lướt mới là lối chơi mạnh nhất. Chỉ áp cho người chơi.
