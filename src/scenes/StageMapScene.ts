@@ -237,9 +237,8 @@ export class StageMapScene extends Phaser.Scene {
     for (let i = 0; i < STAGES.length - 1; i++) {
       const A = STAGES[i];
       const B = STAGES[i + 1];
-      const aDone = A.kind === 'start' || stageCleared(this.game_, A.id);
       const bDone = stageCleared(this.game_, B.id);
-      const st = aDone && bDone ? 2 : this.unlocked(i + 1) ? 1 : 0;
+      const st = bDone ? 2 : this.unlocked(i + 1) ? 1 : 0;
       const path = route(A.id, B.id);
       for (let k = 0; k < path.length - 1; k++) {
         const key = [path[k], path[k + 1]].sort().join('|');
@@ -266,8 +265,8 @@ export class StageMapScene extends Phaser.Scene {
         for (let d = 14; d < len - 14; d += 16) {
           const x = a.x + ((b.x - a.x) * d) / len;
           const y = a.y + ((b.y - a.y) * d) / len;
-          g.fillStyle(0x1a2a18, 0.35).fillRect(x - 2, y - 1, 5, 5);
-          g.fillStyle(0xd8e0d4, 0.55).fillRect(x - 2, y - 2, 3, 3);
+          g.fillStyle(0x10200f, 0.7).fillRect(x - 3, y - 2, 6, 6);
+          g.fillStyle(0xf4f1e6, 0.9).fillRect(x - 2, y - 3, 4, 4);
         }
       }
     }

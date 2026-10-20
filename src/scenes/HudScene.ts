@@ -932,7 +932,7 @@ export class HudScene extends Phaser.Scene {
       '',
       info.reward ? t(info.reward.xp > 0 ? 'hud.survivalReward' : 'hud.survivalRewardCapped', { money: info.reward.money, xp: info.reward.xp }) : t('hud.survivalNoSave'),
     ];
-    const body = text(this, width / 2, height / 2 - 30, lines.join('\n'), 12, '#ffffff', { align: 'center', lineSpacing: 6 }).setOrigin(0.5);
+    const body = text(this, width / 2, height / 2 - 30, lines.join('\n'), 12, '#ffffff', { align: 'center', lineSpacing: 6, wordWrap: { width: 520 } }).setOrigin(0.5);
     const b1 = button(this, width / 2 - 130, height / 2 + 130, t('hud.again'), () => this.onEnter(), 240);
     const b2 = button(this, width / 2 + 130, height / 2 + 130, t('hud.menu'), () => this.quit(), 200);
     const layer = this.add.container(0, 0, [dim, box, ...title.all, body, b1.bg, b1.t, b2.bg, b2.t]).setDepth(1000).setAlpha(0);

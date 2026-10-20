@@ -491,8 +491,9 @@ export const SURVIVAL = {
  * tiền = (hạ × perKill + giây × perSecond) × (1 + cấp cao nhất đội / levelDiv) (+ thưởng hạ boss), tối đa maxMoney; thua nhận lossMult.
  */
 export const SURVIVAL_REWARD = {
-  perKill: 2,
-  perSecond: 1.2,
+  /** tiền mỗi đồng xu rơi khi hạ 1 địch (nhân hệ số cấp); rơi ra thì phải lượm */
+  perKill: 3,
+  perSecond: 0,
   levelDiv: 50,
   bossBonus: 150,
   maxMoney: 450,

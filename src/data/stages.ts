@@ -235,5 +235,8 @@ export function isUnlocked(index: number, cleared: (id: string) => boolean): boo
   const st = STAGES[index];
   if (!st.playable) return false;
   if (index === 0) return true;
-  return cleared(STAGES[index - 1].id);
+  if (cleared(STAGES[index - 1].id)) return true;
+  // đã thắng ải này hoặc ải phía sau (bản lưu cũ trước khi đổi thứ tự ải / mở khóa lệch): vẫn coi là đã mở, tránh đường bị đứt
+  for (let j = index; j < STAGES.length; j++) if (STAGES[j].kind !== 'start' && cleared(STAGES[j].id)) return true;
+  return false;
 }

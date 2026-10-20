@@ -126,6 +126,8 @@ interface MoveZone {
 }
 
 interface XpOrb {
+  /** đồng xu (Sinh tồn): lượm được cộng tiền thay vì EXP */
+  coin?: boolean;
   img: Phaser.GameObjects.Image;
   x: number;
   y: number;
@@ -442,6 +444,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.enemies = [];
     this.zoneToEnemy = new Map();
     this.orbs = [];
+    this.coinsDropped = 0;
+    this.runMoney = 0;
     this.fighters = [];
     this.buffered = { J: 0, K: 0, L: 0, U: 0, dash: 0 };
     this.nextSpawnAt = 800;
@@ -2447,6 +2451,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         const r = pieces > 1 ? 6 + Math.random() * 14 : 0;
         this.dropOrb(e.x + Math.cos(a) * r, e.y + Math.sin(a) * r, xp / pieces);
       }
+      // Sinh tồn (có cuộc phiêu lưu): hạ địch rơi đồng xu, phải lượm mới được tiền (boss rơi cả đống)
+      if (this.config.kind === 'survival' && getGame() && !byCatch) this.dropCoins(e);
     }
     if (this.aimTarget === e) this.aimTarget = null;
     this.zoneToEnemy.delete(e.zone);
@@ -2803,13 +2809,36 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
 
   // ======================================================================= kinh nghiệm
 
+  /** tiền Sinh tồn đã rơi (tính cả chưa lượm) – chặn ở SURVIVAL_REWARD.maxMoney mỗi lượt */
+  private coinsDropped = 0;
+  private runMoney = 0;
+
+  private dropCoins(e: Enemy) {
+    const R = SURVIVAL_REWARD;
+    const top = Math.max(1, ...teamMembers(getGame()!).map((m) => m.level));
+    const unit = Math.max(1, Math.round(R.perKill * (1 + top / R.levelDiv)));
+    const pieces = e.isBoss ? 6 : 1;
+    const each = e.isBoss ? Math.round(R.bossBonus / pieces) : unit;
+    for (let i = 0; i < pieces; i++) {
+      if (this.coinsDropped + each > R.maxMoney) return;
+      this.coinsDropped += each;
+      const a = Math.random() * Math.PI * 2;
+      const r = pieces > 1 ? 8 + Math.random() * 18 : Math.random() * 6;
+      const x = e.x + Math.cos(a) * r;
+      const y = e.y + Math.sin(a) * r;
+      const c: XpOrb = { coin: true, img: this.add.image(x, y, 'icons', 'coin').setScale(0.75).setDepth(y - 2), x, y, value: each, active: true, bornAt: this.clock };
+      this.orbs.push(c);
+      this.tweens.add({ targets: c.img, scale: { from: 0.3, to: 0.75 }, duration: 160, ease: 'Back.out' });
+    }
+  }
+
   private dropOrb(x: number, y: number, value: number) {
-    const live = this.orbs.filter((o) => o.active);
+    const live = this.orbs.filter((o) => o.active && !o.coin);
     if (live.length >= CAPS.xpOrbs) {
       live[Math.floor(Math.random() * live.length)].value += value;
       return;
     }
-    let o = this.orbs.find((x) => !x.active);
+    let o = this.orbs.find((x) => !x.active && !x.coin);
     if (!o) {
       o = { img: this.add.image(x, y, 'xp'), x, y, value, active: true, bornAt: this.clock };
       this.orbs.push(o);
@@ -2834,6 +2863,16 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         o.active = false;
         o.img.setVisible(false);
         playSfx('pickup');
+        if (o.coin) {
+          const g = getGame();
+          if (g) {
+            g.money += o.value;
+            this.runMoney += o.value;
+            this.fx.floatingLabel(f.x, f.chestY - 18, `+${o.value}₽`, '#ffd34a');
+          }
+          o.img.destroy();
+          continue;
+        }
         this.awardXp(o.value);
         continue;
       }
@@ -3263,11 +3302,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (!game) return null;
     const R = SURVIVAL_REWARD;
     const team = teamMembers(game).filter((m) => !m.injured);
-    const top = Math.max(1, ...team.map((m) => m.level));
+    // tiền đã được cộng ngay lúc lượm đồng xu (dropCoins / updateOrbs); ở đây chỉ báo tổng
+    const money = this.runMoney;
     const secs = this.clock / 1000;
-    let money = (this.kills * R.perKill + secs * R.perSecond) * (1 + top / R.levelDiv) + (won ? R.bossBonus : 0);
-    money = Math.round(Math.min(R.maxMoney, won ? money : money * R.lossMult));
-    game.money += money;
     let xp = 0;
     const cap = levelCap(game);
     const ownRun = !!this.survivalOwn;
