@@ -27,14 +27,14 @@ export interface Settings {
   lang: Lang;
 }
 
-const DEFAULTS: Settings = { muted: false, reducedShake: false, aimMode: 'auto', musicVolume: 0.6, sfxVolume: 0.8, lang: 'en' };
+const DEFAULTS: Settings = { muted: false, reducedShake: true, aimMode: 'auto', musicVolume: 0.6, sfxVolume: 0.8, lang: 'en' };
 
 const vol = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : d);
 
 function sanitize(s: Partial<Settings>): Settings {
   const clean: Settings = {
     muted: !!s.muted,
-    reducedShake: !!s.reducedShake,
+    reducedShake: s.reducedShake === undefined ? DEFAULTS.reducedShake : !!s.reducedShake,
     aimMode: s.aimMode as AimMode,
     musicVolume: vol(s.musicVolume, DEFAULTS.musicVolume),
     sfxVolume: vol(s.sfxVolume, DEFAULTS.sfxVolume),
