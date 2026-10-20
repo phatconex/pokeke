@@ -7,6 +7,9 @@
 //  • Hệ mới: TYPE_KITS.electric = { bolt: { params: { dialect: 'generic', trail: 'thick' }, tiers: [{ minLevel: 20, split: 3 }] } }
 //  • Bậc mới: thêm { minLevel: 40, scale: 1.6, cost: 7 } vào tiers của mục tương ứng.
 import { FAMILY_KITS } from './familyKits';
+import { moveVisual } from './moveVisuals';
+import { MOVES } from '../data/moves';
+import { POKEMON } from '../data/pokemon';
 import { combatProfile } from '../config/balance';
 import type { MoveDef } from '../data/moveKit';
 import type { SkillSlot } from '../data/pokemon';
@@ -1092,6 +1095,39 @@ export const KIT_TEMPLATES: Record<string, SpeciesKit> = {
 
 /** Bộ chiêu của loài sau khi gộp mẫu (nếu có) với phần ghi đè riêng */
 export function kitFor(speciesId: string): SpeciesKit | undefined {
+  const merged = mergedKit(speciesId);
+  if (!merged || !FAMILY_KITS[speciesId] || SPECIES_KITS[speciesId] !== FAMILY_KITS[speciesId]) return merged;
+  // loài ở familyKits.ts: hình chiêu theo TÊN chiêu (khớp tên và hiệu ứng); chiêu tự cường giữ xử lý gốc
+  const cached = familySlotCache.get(speciesId);
+  if (cached) return { ...merged, slots: cached };
+  const sp = POKEMON[speciesId];
+  const size = evoDepth(speciesId);
+  const slots: NonNullable<SpeciesKit['slots']> = {};
+  for (const s of sp?.skills ?? []) {
+    const m = MOVES[s.move];
+    const v = m ? moveVisual(m, size) : null;
+    if (v) slots[s.slot] = v;
+  }
+  familySlotCache.set(speciesId, slots);
+  return { ...merged, slots };
+}
+
+const familySlotCache = new Map<string, NonNullable<SpeciesKit['slots']>>();
+
+/** dạng tiến hóa: 1 = gốc, 2 = giữa, 3 = cuối */
+function evoDepth(id: string): number {
+  let d = 1;
+  let cur = id;
+  for (let guard = 0; guard < 3; guard++) {
+    const parent = Object.values(POKEMON).find((p) => p.evolution?.into === cur || p.evolutions?.some((e) => e.into === cur));
+    if (!parent) break;
+    d++;
+    cur = parent.id;
+  }
+  return d;
+}
+
+function mergedKit(speciesId: string): SpeciesKit | undefined {
   const own = SPECIES_KITS[speciesId];
   const tpl = own?.template ? KIT_TEMPLATES[own.template] : undefined;
   if (!tpl) return own;
