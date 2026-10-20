@@ -40,6 +40,11 @@ export function finalizeSpecies(scene: Phaser.Scene, ids: Iterable<string>) {
   for (const sid of new Set(ids)) {
     if (!POKEMON[sid]) continue;
     const sheets = SPRITE_SHEETS[sid] ?? {};
+    // loài từng phải dùng hình dự phòng nhưng sheet vừa tải được (tải lại) → đo lại
+    if (SPRITE_METRICS[sid] && !SPRITE_METRICS[sid].animated && scene.textures.exists(`${sid}-walk`)) {
+      delete SPRITE_METRICS[sid];
+      assetStatus.failed = assetStatus.failed.filter((x) => x !== sid);
+    }
     if (!SPRITE_METRICS[sid]) {
       const metrics = scene.textures.exists(`${sid}-walk`) ? measure(scene, `${sid}-walk`) : null;
       if (metrics) {
@@ -56,6 +61,27 @@ export function finalizeSpecies(scene: Phaser.Scene, ids: Iterable<string>) {
       if (def && !scene.anims.exists(animKey(sid, name as AnimName, 0))) buildAnims(scene, sid, name as AnimName, def.durations);
     }
   }
+}
+
+/** Tải lại các sheet Đi/Đứng bị lỗi lúc khởi động (mạng/máy chủ chập chờn): thử tối đa `tries` lần, xong thì gọi done() */
+export function retryFailedSheets(scene: Phaser.Scene, done: () => void, tries = 3, gapMs = 900) {
+  if (!assetStatus.failed.length || tries <= 0 || simulateFail()) {
+    done();
+    return;
+  }
+  scene.time.delayedCall(gapMs, () => {
+    const ids = [...assetStatus.failed];
+    if (!queueSheets(scene, ids, BOOT_ANIMS)) {
+      finalizeSpecies(scene, ids);
+      retryFailedSheets(scene, done, tries - 1, gapMs);
+      return;
+    }
+    scene.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      finalizeSpecies(scene, ids);
+      retryFailedSheets(scene, done, tries - 1, gapMs);
+    });
+    scene.load.start();
+  });
 }
 
 /** Đảm bảo đủ sheet của các loài (dùng ngoài preload, vd. khi bắt / tiến hóa giữa trận) */

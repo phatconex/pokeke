@@ -3,7 +3,7 @@ import { POKEMON } from '../data/pokemon';
 import { pixelFont } from '../ui/style';
 import { t } from '../i18n';
 import { SPRITE_SHEETS } from '../data/spriteSheets';
-import { assetStatus, BOOT_ANIMS, finalizeSpecies, queueSheets } from '../systems/spriteLoader';
+import { assetStatus, BOOT_ANIMS, finalizeSpecies, queueSheets, retryFailedSheets } from '../systems/spriteLoader';
 import { generateFxTextures, generateWorldTextures } from '../art/textures';
 import { generateGrassTextures } from '../art/grassArt';
 import { generateIceTextures } from '../art/iceArt';
@@ -46,7 +46,8 @@ export class BootScene extends Phaser.Scene {
     if (assetStatus.failed.length) {
       console.warn('[Pokeke] Dùng hình dự phòng cho:', assetStatus.failed.join(', '));
     }
-    this.scene.start('Menu');
+    // sprite lỗi: thử tải lại vài lần trước khi vào menu (chỉ còn lỗi thật thì mới dùng hình dự phòng)
+    retryFailedSheets(this, () => this.scene.start('Menu'));
   }
 
 }
