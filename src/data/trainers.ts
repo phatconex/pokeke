@@ -59,20 +59,20 @@ const CORE_GYMS: Record<string, GymDef> = {
     badgeId: 'boulder',
     team: [
       // thành viên ≈ giới hạn cấp (15), át chủ bài cao hơn 3 cấp
-      { species: 'geodude', level: 14 },
-      { species: 'geodude', level: 15 },
-      { species: 'onix', level: 18, boss: true },
+      { species: 'geodude', level: 12 },
+      { species: 'geodude', level: 13 },
+      { species: 'onix', level: 16, boss: true },
     ],
     // hội quán động: 2 con bốc từ kho (khác loài), rồi Onix
     pool: [
-      { species: 'geodude', level: 14 },
-      { species: 'graveler', level: 15 },
-      { species: 'sandshrew', level: 14 },
-      { species: 'kabuto', level: 15 },
-      { species: 'omanyte', level: 15 },
+      { species: 'geodude', level: 12 },
+      { species: 'graveler', level: 13 },
+      { species: 'sandshrew', level: 12 },
+      { species: 'kabuto', level: 13 },
+      { species: 'omanyte', level: 13 },
     ],
     pick: 2,
-    ace: { species: 'onix', level: 18, boss: true },
+    ace: { species: 'onix', level: 16, boss: true },
     intro: [
       'Takeshi: Ta là Takeshi, thủ lĩnh Hội quán Pewter!',
       'Takeshi: Ý chí của ta cứng như đá. Pokémon hệ Đá của ta sẽ cho cậu thấy điều đó!',

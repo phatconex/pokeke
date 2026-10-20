@@ -627,6 +627,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         for (const slot of learnReady(m)) learnedAtStart.push(t('unlock.learnedToast', { name: POKEMON[m.speciesId].name, move: this.unlockMoveName(m, slot) }));
       }
     }
+    this.spawnPos = { x: spawn.x, y: spawn.y };
     for (const m of team) {
       const f = new Fighter(this, m, spawn.x, spawn.y, lockMode);
       f.onStep = (x, y) => this.fx.dustPuff(x, y, 2);
@@ -908,6 +909,10 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
 
     for (const e of this.enemies) {
       if (this.slowZones.length && !e.species.types.some((t) => this.slowImmune.includes(t)) && this.inSlowZone(e.x, e.feetY)) e.applySlow(0.55, 150, clock);
+      if (clock < this.swapFreezeUntil && !e.beingCaught) {
+        e.body.setVelocity(0, 0);
+        continue;
+      }
       e.update(this, dt);
     }
     // con tự gục trong lượt của nó (Voltorb tự nổ)
@@ -916,7 +921,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.updateLegend();
     this.updateTypeMechanics();
     this.updateSwarm();
-    this.updateLegendFoes();
+    if (clock >= this.swapFreezeUntil) this.updateLegendFoes();
     this.updateGymRoster(dt);
     this.updateCollisions();
     this.updateProjectiles(dt);
@@ -1067,16 +1072,19 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       return;
     }
     const old = this.player;
-    const x = old.x;
-    const y = old.y;
     const wasDead = old.dead;
+    // con mới được thả về vị trí xuất phát (không rơi giữa đám địch đang ra chiêu); con cũ thu hồi ngay chỗ đang đứng
+    const x = this.spawnPos.x || old.x;
+    const y = this.spawnPos.y || old.y;
     // hiệu ứng thu về bóng (con cũ) – chỉ là hình ảnh, KHÔNG chặn điều khiển: tạo bản sao của con cũ trước khi nó rời sân
     const ghostSpec = wasDead ? null : this.snapshotSprite(old);
     old.setOnField(false);
     this.activeIdx = index;
     f.setOnField(true, x, y);
     f.faceTo(old.facing.x, old.facing.y);
-    f.invulnUntil = this.clock + 700;
+    f.invulnUntil = this.clock + 1500;
+    this.swapFreezeUntil = this.clock + 900;
+    for (const e of this.enemies) this.fx.clearTelegraphsOf(e);
     this.switchReadyAt = this.clock + SWITCH.cooldownMs;
     this.cameras.main.startFollow(f.zone, true, 0.12, 0.12);
     this.aimTarget = null;
@@ -1113,7 +1121,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.time.delayedCall(600, () => {
       nf.summoning = false;
     });
-    const ball = this.add.image(x, y - (ghost ? ghost.h + 8 : 30), 'icons', 'pokeball').setScale(0.9).setDepth(100001);
+    const ball = this.add.image(ghost ? ghost.x : x, ghost ? ghost.y - ghost.h - 8 : y - 30, 'icons', 'pokeball').setScale(0.9).setDepth(100001);
     const dropBall = () => {
       this.tweens.add({
         targets: ball, y: nf.feetY - 6, angle: 360, duration: 140, ease: 'Quad.in',
@@ -1142,7 +1150,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       onComplete: () => {
         g.destroy();
         beam.destroy();
-        dropBall();
+        // bóng bay về vị trí xuất phát rồi mới rơi xuống mở ra
+        this.tweens.add({ targets: ball, x, y: y - 30, duration: 260, ease: 'Sine.inOut', onComplete: dropBall });
       },
     });
   }
@@ -2659,7 +2668,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       amount *= 0.12;
     }
     // hội quán: một đòn không bao giờ lấy quá 30% máu tối đa (người chơi cấp thấp không bị hạ trong 1–2 đòn)
-    if (this.gym && f === this.player) amount = Math.min(amount, f.maxHp * 0.3);
+    if (this.gym && f === this.player) amount = Math.min(amount, f.maxHp * 0.25);
     if (!f.isInvulnerable(this.clock) && f.tryEvade(this.clock)) {
       // Thu Nhỏ: né hoàn toàn
       f.invulnUntil = this.clock + 250;
@@ -2863,7 +2872,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       }
     });
 
-    this.enemyShots.update(dt, (s) => {
+    this.enemyShots.update(this.clock < this.swapFreezeUntil ? 0 : dt, (s) => {
       if (circleHitsRects(rects, s.x, s.y + 6, 2)) {
         this.fx.dustPuff(s.x, s.y, 3);
         this.enemyShots.kill(s);
@@ -3055,6 +3064,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     return R[aceIdx].state === 'wait' ? aceIdx : -1;
   }
 
+  private spawnPos = { x: 0, y: 0 };
+  /** đổi Pokémon: địch đứng yên tới mốc này (khoảng dừng ngắn của ván đấu) */
+  private swapFreezeUntil = 0;
   private gymRecallBusy = false;
 
   /** thủ lĩnh: Pokémon đang nghỉ hồi máu CHẬM (1,2%/s, tối đa 70%); con đang đánh xuống ≤40% máu → 60% thu hồi, ném con khác (tối đa 2 lần mỗi trận, mỗi con 1 lần) */

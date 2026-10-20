@@ -124,14 +124,14 @@ export const STAGE_REWARD = {
  */
 export const TRAINER = {
   /** sát thương của Pokémon huấn luyện viên (nhân thêm sau STAGE_TUNING.dmgMult) */
-  dmgMult: 1.35,
+  dmgMult: 0.95,
   /** càng về sau càng khó (đội người chơi đã tiến hóa / mạnh hơn): mỗi huy hiệu đang có +hp máu, +dmg sát thương
    *  → Tứ Thiên Vương (8 huy hiệu): máu ×1.4, sát thương ×1.24 */
   perBadge: { hp: 0.05, dmg: 0.03 },
   /** hồi chiêu / nghỉ giữa các đòn (đánh xa, vồ, đào đất, Ma) – nhỏ hơn = dồn dập hơn */
   attackGapMult: 0.75,
   /** tốc độ chạy */
-  speedMult: 1.1,
+  speedMult: 1.0,
   /** boss: nghỉ giữa các đòn lớn (× BOSS.attackGapMs) khi chưa nổi giận */
   bossGapMult: 0.8,
   /** boss nổi giận khi máu ≤ ngưỡng: đòn dồn dập hơn, cảnh báo ngắn hơn, chạy nhanh hơn, thêm đá rơi + 2 vòng đạn */
@@ -378,7 +378,7 @@ export const STAGE_TUNING = {
   /** đợt sau ập tới khi đợt trước còn ≤ số con này */
   nextWaveAtLeft: 2,
   /** hội quán: máu nhân thêm hệ số này (thay cho hpMult); dmgMult vẫn áp, thêm TRAINER.dmgMult */
-  gymHpMult: 3,
+  gymHpMult: 2.4,
   /** địch đánh xa ra đòn nhanh hơn */
   rangedCooldownMult: 0.75,
   /** con "đầu đàn" ở đợt cuối mỗi ải */
