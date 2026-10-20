@@ -8,7 +8,7 @@ import { METRONOME_POOL, MOVES, MoveDef, slotScaledMove, STATUS_COLOR, upgradeMo
 import { hasUltimate, POKEMON, SKILL_SLOTS, SkillSlot } from '../data/pokemon';
 import { STAGES, STAGE_BY_ID, StageDef, TUTORIAL_STAGE_ID } from '../data/stages';
 import { CRIT_MULT } from '../data/stats';
-import { BADGES, GYMS, GymDef } from '../data/trainers';
+import { BADGES, GYMS, GymDef, GymPokemon } from '../data/trainers';
 import { effectiveness, PokemonType, TYPE_COLOR } from '../data/types';
 import { pickWeighted, waveAt, WAVES } from '../data/waves';
 import { buildRivalGym, rivalSpeciesPool } from '../data/rival';
@@ -270,8 +270,13 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   stage: StageDef | null = null;
   private gym: GymDef | null = null;
   private gymIndex = 0;
+  /** danh sách Pokémon của thủ lĩnh trong trận này (bốc ngẫu nhiên nếu hội quán có kho): wait = chờ · out = đang đánh · rest = đã thu hồi, đang nghỉ hồi máu chậm · dead */
+  private gymRoster: { spec: GymPokemon; hpRatio: number; state: 'wait' | 'out' | 'rest' | 'dead'; recalls: number }[] = [];
+  private gymShuffled = false;
+  private gymRecalls = 0;
+  private gymLastRecalled = -1;
   private waveIndex = 0;
-  private pending: { species: string; level: number; boss?: boolean; alpha?: boolean; at: number; line?: string; thrown?: boolean; flank?: number }[] = [];
+  private pending: { species: string; level: number; boss?: boolean; alpha?: boolean; at: number; line?: string; thrown?: boolean; flank?: number; ridx?: number; hpRatio?: number }[] = [];
   /** đoạn mở màn hội quán đang chạy (GymIntroScene): dừng AI, điều khiển và đồng hồ trận */
   introActive = false;
   /** gọi bỏ qua mở màn trước khi GymIntroScene kịp tạo */
@@ -467,6 +472,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.leaderSprite = null;
     this.trainerSprite = null;
     this.gymIndex = 0;
+    this.gymRecallBusy = false;
     this.waveIndex = 0;
     this.pending = [];
     this.nextWaveAt = 0;
@@ -530,6 +536,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         return;
       }
       this.gym = this.stage.gymId ? gymText(GYMS[this.stage.gymId]) : this.stage.rival ? buildRivalGym(game, this.stage) : null;
+      this.buildGymRoster();
       this.tutorial = this.stage.id === TUTORIAL_STAGE_ID;
       this.tutReplay = this.tutorial && !!cfg.replay;
       this.tut = { moved: 0, dashes: 0, kills: 0, throws: 0, caught: 0, potions: 0, casts: {} };
@@ -910,6 +917,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.updateTypeMechanics();
     this.updateSwarm();
     this.updateLegendFoes();
+    this.updateGymRoster(dt);
     this.updateCollisions();
     this.updateProjectiles(dt);
     this.updateOrbs(dt);
@@ -2517,6 +2525,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       // Sinh tồn (có cuộc phiêu lưu): hạ địch rơi đồng xu, phải lượm mới được tiền (boss rơi cả đống)
       if (this.config.kind === 'survival' && getGame() && !byCatch) this.dropCoins(e);
     }
+    if (e.gymIdx !== undefined && this.gymRoster[e.gymIdx]) this.gymRoster[e.gymIdx].state = 'dead';
     if (this.aimTarget === e) this.aimTarget = null;
     this.zoneToEnemy.delete(e.zone);
     this.enemyGroup.remove(e.zone);
@@ -3008,11 +3017,113 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (index > 0) this.events.emit('banner', this.waveName);
   }
 
+  /** dựng danh sách Pokémon của thủ lĩnh: có kho (pool) → bốc ngẫu nhiên; không thì đúng thứ tự cố định như cũ */
+  private buildGymRoster() {
+    const g = this.gym;
+    this.gymRoster = [];
+    this.gymShuffled = false;
+    this.gymRecalls = 0;
+    this.gymLastRecalled = -1;
+    if (!g) return;
+    if (g.pool?.length && g.ace) {
+      const bag = [...g.pool].sort(() => Math.random() - 0.5);
+      const picks: GymPokemon[] = [];
+      for (const c of bag) {
+        if (picks.length >= (g.pick ?? 2)) break;
+        if (!picks.some((x) => x.species === c.species)) picks.push(c);
+      }
+      this.gymRoster = [...picks, g.ace].map((spec) => ({ spec, hpRatio: 1, state: 'wait', recalls: 0 }));
+      this.gymShuffled = true;
+    } else {
+      this.gymRoster = g.team.map((spec) => ({ spec, hpRatio: 1, state: 'wait', recalls: 0 }));
+    }
+  }
+
+  /** con kế tiếp của thủ lĩnh: danh sách cố định → theo thứ tự; danh sách động → ngẫu nhiên trong số chưa gục (ưu tiên con khác con vừa thu hồi), át chủ bài ra cuối */
+  private nextGymIndex(): number {
+    const R = this.gymRoster;
+    if (!this.gymShuffled) return R.findIndex((r) => r.state === 'wait');
+    const aceIdx = R.length - 1;
+    const cands = Array.from(R.keys()).filter((i) => i !== aceIdx && (R[i].state === 'wait' || R[i].state === 'rest'));
+    if (cands.length) {
+      const fresh = cands.filter((i) => i !== this.gymLastRecalled);
+      const list = fresh.length ? fresh : cands;
+      return list[Math.floor(Math.random() * list.length)];
+    }
+    return R[aceIdx].state === 'wait' ? aceIdx : -1;
+  }
+
+  private gymRecallBusy = false;
+
+  /** thủ lĩnh: Pokémon đang nghỉ hồi máu CHẬM (1,2%/s, tối đa 70%); con đang đánh xuống ≤40% máu → 60% thu hồi, ném con khác (tối đa 2 lần mỗi trận, mỗi con 1 lần) */
+  private updateGymRoster(dt: number) {
+    if (!this.gym || !this.gymShuffled || this.introActive || this.over || !this.gymRoster.length) return;
+    for (const r of this.gymRoster) if (r.state === 'rest') r.hpRatio = Math.min(0.7, r.hpRatio + (dt * 0.012) / 1000);
+    if (this.gymRecallBusy || this.gymRecalls >= 2) return;
+    const e = this.enemies.find((x) => x.gymIdx !== undefined && !x.dead && !x.isBoss);
+    if (!e || e.gymIdx === undefined) return;
+    const r = this.gymRoster[e.gymIdx];
+    if (!r || r.recalls >= 1 || e.hp / e.maxHp > 0.4 || e.recallChecked) return;
+    e.recallChecked = true;
+    const aceIdx = this.gymRoster.length - 1;
+    const others = this.gymRoster.some((x, i) => i !== e.gymIdx && i !== aceIdx && (x.state === 'wait' || x.state === 'rest'));
+    if (others && Math.random() < 0.6) this.gymRecallEnemy(e);
+  }
+
+  /** thủ lĩnh thu hồi con đang đánh (tia đỏ vào bóng), cho nghỉ hồi máu chậm rồi ném con khác */
+  private gymRecallEnemy(e: Enemy) {
+    const r = this.gymRoster[e.gymIdx!];
+    this.gymRecallBusy = true;
+    r.hpRatio = Math.max(0.05, e.hp / e.maxHp);
+    r.state = 'rest';
+    r.recalls++;
+    this.gymRecalls++;
+    this.gymLastRecalled = e.gymIdx!;
+    this.events.emit('banner', t('gym.recall', { leader: this.gym!.leader }));
+    const tr = this.leaderSprite;
+    if (tr) trainerThrowPose(this, tr, -1);
+    const from = tr ? { x: tr.x - 7 * TRAINER_SCALE, y: tr.y - 17 * TRAINER_SCALE } : { x: this.worldW + 12, y: e.y - 40 };
+    const beam = this.add.graphics().setDepth(99990);
+    const spr = e.anim.sprite;
+    const sx0 = spr.scaleX;
+    const sy0 = spr.scaleY;
+    e.stunnedUntil = this.clock + 600;
+    playSfx('swap');
+    this.tweens.addCounter({
+      from: 0, to: 1, duration: 420,
+      onUpdate: (tw) => {
+        const k = tw.getValue() ?? 0;
+        beam.clear();
+        beam.lineStyle(6, 0xff3040, 0.5 * (1 - k * 0.4)).lineBetween(from.x, from.y, e.x, e.centerY);
+        beam.lineStyle(2, 0xffffff, 0.9).lineBetween(from.x, from.y, e.x, e.centerY);
+        spr.setTintFill(0xff4050).setScale(sx0 * (1 - 0.85 * k), sy0 * (1 - 0.85 * k)).setAlpha(1 - k * 0.85);
+      },
+      onComplete: () => {
+        beam.destroy();
+        this.fx.clearTelegraphsOf(e);
+        if (this.aimTarget === e) this.aimTarget = null;
+        this.zoneToEnemy.delete(e.zone);
+        this.enemyGroup.remove(e.zone);
+        const i = this.enemies.indexOf(e);
+        if (i >= 0) this.enemies.splice(i, 1);
+        e.destroy();
+        this.gymRecallBusy = false;
+        if (!this.over) this.queueGymPokemon(700);
+      },
+    });
+  }
+
   private queueGymPokemon(delay: number) {
-    if (!this.gym || this.gymIndex >= this.gym.team.length) return;
-    const p = this.gym.team[this.gymIndex];
-    this.pending.push({ species: p.species, level: p.level, boss: p.boss, at: this.clock + delay, line: this.gym.sendOut[this.gymIndex] });
+    if (!this.gym) return;
+    const i = this.nextGymIndex();
+    if (i < 0) return;
+    const r = this.gymRoster[i];
+    r.state = 'out';
     this.gymIndex++;
+    this.pending.push({
+      species: r.spec.species, level: r.spec.level, boss: r.spec.boss, at: this.clock + delay, ridx: i, hpRatio: r.hpRatio,
+      line: this.gymShuffled ? undefined : this.gym.sendOut[i],
+    });
   }
 
   private updatePending() {
@@ -3031,6 +3142,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       const e = p.boss ? new Boss(this, pos.x, pos.y, this.clock, p.level, trainer, p.species) : new Enemy(this, p.species, pos.x, pos.y, this.clock, p.level, trainer, p.alpha);
       markSeen(getGame(), p.species);
       e.catchable = !trainer && !!this.stage?.catchable?.includes(p.species);
+      if (trainer && p.ridx !== undefined) e.gymIdx = p.ridx;
       applyStageTuning(e, trainer ? STAGE_TUNING.gymHpMult : STAGE_TUNING.hpMult, STAGE_TUNING.dmgMult, STAGE_TUNING.rangedCooldownMult);
       // độ khó tăng dần theo thứ tự ải (ải đầu nhẹ hơn)
       if (this.stage) {
@@ -3061,6 +3173,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
           e.attackGapMult *= 1 / es;
         }
       }
+      if (trainer && p.hpRatio !== undefined && p.hpRatio < 1) e.hp = Math.max(1, Math.round(e.maxHp * p.hpRatio));
       this.addEnemy(e);
       if (trainer) {
         this.boss = e;
@@ -3340,7 +3453,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     }
     if (this.catching || this.enemies.length || this.pending.length) return;
     const waves = this.stage?.waves ?? [];
-    const allWaves = this.gym ? this.gymIndex >= this.gym.team.length : this.waveIndex >= waves.length - 1;
+    const allWaves = this.gym ? this.gymRoster.every((r) => r.state === 'dead') : this.waveIndex >= waves.length - 1;
     if (allWaves) this.endStage('win');
   }
 
@@ -3573,7 +3686,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       timeMs: this.clock,
       waveName,
       boss: boss ? { hp: Math.max(0, boss.hp), maxHp: boss.maxHp, name: boss.species.name, level: boss.level, id: boss.species.id, types: boss.species.types } : null,
-      leaderTeam: this.gym ? this.gym.team.map((t, i) => ({ id: t.species, dead: i < this.gymIndex - ((boss && !boss.dead) || this.pending.length ? 1 : 0), active: i === this.gymIndex - 1 && !!boss && !boss.dead })) : [],
+      leaderTeam: this.gym ? this.gymRoster.map((r) => ({ id: r.spec.species, dead: r.state === 'dead', active: r.state === 'out' })) : [],
       bossInMs: mode === 'survival' ? Math.max(0, BOSS.spawnAtMs - this.clock) : 0,
       balls: (game?.items.pokeball ?? 0) + (game?.items.greatball ?? 0),
       // trận có thủ lĩnh: chỉ còn số lọ được phép dùng

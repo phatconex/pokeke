@@ -10,6 +10,8 @@ export interface GymPokemon {
   boss?: boolean;
 }
 
+/** Hội quán "động": mỗi lần đấu bốc ngẫu nhiên `pick` con từ `pool` (khác loài nhau, không trùng liền kề) rồi tới `ace` (át chủ bài, luôn ra cuối).
+ *  Thủ lĩnh có thể thu hồi con đang yếu để nghỉ (hồi máu chậm) và ném con khác ra. Không khai báo thì dùng `team` cố định như cũ. */
 export interface GymDef {
   id: string;
   city: string;
@@ -20,6 +22,9 @@ export interface GymDef {
   /** huy hiệu khi thắng ('' = không có, vd. Tứ Thiên Vương) */
   badgeId: string;
   team: GymPokemon[];
+  pool?: GymPokemon[];
+  pick?: number;
+  ace?: GymPokemon;
   /** lời thoại trước trận */
   intro: string[];
   /** câu khi tung từng Pokémon ra (theo thứ tự đội hình) */
@@ -58,6 +63,16 @@ const CORE_GYMS: Record<string, GymDef> = {
       { species: 'geodude', level: 15 },
       { species: 'onix', level: 18, boss: true },
     ],
+    // hội quán động: 2 con bốc từ kho (khác loài), rồi Onix
+    pool: [
+      { species: 'geodude', level: 14 },
+      { species: 'graveler', level: 15 },
+      { species: 'sandshrew', level: 14 },
+      { species: 'kabuto', level: 15 },
+      { species: 'omanyte', level: 15 },
+    ],
+    pick: 2,
+    ace: { species: 'onix', level: 18, boss: true },
     intro: [
       'Takeshi: Ta là Takeshi, thủ lĩnh Hội quán Pewter!',
       'Takeshi: Ý chí của ta cứng như đá. Pokémon hệ Đá của ta sẽ cho cậu thấy điều đó!',

@@ -34,6 +34,10 @@ export class Enemy {
   /** chiêu đặc trưng theo hệ (EnemySkills): lần tới + chỉ số luân phiên */
   nextSkillAt = 0;
   skillIdx = 0;
+  /** vị trí trong danh sách Pokémon của thủ lĩnh (hội quán) */
+  gymIdx: number | undefined = undefined;
+  /** đã xét thu hồi (một lần khi máu ≤ 40%) */
+  recallChecked = false;
   /** tắt chiêu đặc trưng (ải đầu) */
   skillsOff = false;
   /** hệ số nghỉ giữa các đòn vồ / đào đất (Pokémon thủ lĩnh < 1: dồn dập hơn) */
