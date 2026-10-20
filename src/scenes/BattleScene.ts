@@ -874,6 +874,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         this.registerCombo(slot);
         this.tut.casts[slot] = (this.tut.casts[slot] ?? 0) + 1;
         if (slot === 'L' || slot === 'U') this.skillFlair(p, sk.move);
+        else if (slot === 'K') this.events.emit('callout', moveName(sk.move), TYPE_COLOR[sk.move.type]);
         this.castMove(p, slot, sk.move, this.aimDirection(p, sk.move.speed ?? 340), sk.spec);
         this.castRecoil(p, slot, sk.base);
         if (this.staticReady && slot !== 'J') {
@@ -1131,40 +1132,41 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       playSfx('swap');
     };
     // an toàn: dù hiệu ứng bị ngắt (đổi tiếp, hết trận) con mới vẫn hiện
-    this.time.delayedCall(600, () => {
+    this.time.delayedCall(1300, () => {
       nf.summoning = false;
     });
-    const ball = this.add.image(ghost ? ghost.x : x, ghost ? ghost.y - ghost.h - 8 : y - 30, 'icons', 'pokeball').setScale(0.9).setDepth(100001);
-    const dropBall = () => {
-      this.tweens.add({
-        targets: ball, y: nf.feetY - 6, angle: 360, duration: 140, ease: 'Quad.in',
-        onComplete: () => {
-          reveal();
-          this.tweens.add({ targets: ball, scale: 1.5, alpha: 0, duration: 160, onComplete: () => ball.destroy() });
-        },
-      });
+    // huấn luyện viên (hội quán: người chơi đứng sẵn; ải thường: ngoài mép màn hình, phía dưới): tia đỏ thu con cũ → ném bóng vòng cung tới chỗ thả
+    const tr = this.trainerSprite;
+    const cam = this.cameras.main;
+    const anchor = tr
+      ? { x: tr.x + 7 * TRAINER_SCALE, y: tr.y - 17 * TRAINER_SCALE }
+      : { x: cam.worldView.centerX, y: cam.worldView.bottom + 26 };
+    if (tr) trainerThrowPose(this, tr, 1);
+    const throwBall = () => {
+      this.fx.floatingLabel(Phaser.Math.Clamp(anchor.x, cam.worldView.x + 60, cam.worldView.right - 60), Math.min(anchor.y, cam.worldView.bottom - 22), t('battle.goOut', { name: nf.species.name }), '#ff8a7a');
+      throwPokeball(this, this.fx, anchor, { x, y: nf.feetY }, reveal, { height: 90, duration: 560 });
     };
     if (!ghost) {
-      dropBall();
+      throwBall();
       return;
     }
     const g = this.add.sprite(ghost.x, ghost.y, ghost.key, ghost.frame).setOrigin(ghost.ox, ghost.oy).setScale(ghost.sx, ghost.sy).setFlipX(ghost.flip).setDepth(100000).setTintFill(0xff4050);
     const beam = this.add.graphics().setDepth(100000);
     playSfx('swap');
     this.tweens.addCounter({
-      from: 0, to: 1, duration: 170,
+      from: 0, to: 1, duration: 260,
       onUpdate: (tw) => {
         const k = tw.getValue() ?? 0;
         g.setScale(ghost.sx * (1 - 0.9 * k), ghost.sy * (1 - 0.9 * k)).setAlpha(1 - k * 0.8);
+        const ty = g.y - ghost.h * 0.4 * (1 - k);
         beam.clear();
-        beam.lineStyle(5, 0xff3040, 0.55).lineBetween(ball.x, ball.y, g.x, g.y - ghost.h * 0.4 * (1 - k));
-        beam.lineStyle(2, 0xffffff, 0.95).lineBetween(ball.x, ball.y, g.x, g.y - ghost.h * 0.4 * (1 - k));
+        beam.lineStyle(5, 0xff3040, 0.55).lineBetween(anchor.x, anchor.y, g.x, ty);
+        beam.lineStyle(2, 0xffffff, 0.95).lineBetween(anchor.x, anchor.y, g.x, ty);
       },
       onComplete: () => {
         g.destroy();
         beam.destroy();
-        // bóng bay về vị trí xuất phát rồi mới rơi xuống mở ra
-        this.tweens.add({ targets: ball, x, y: y - 30, duration: 260, ease: 'Sine.inOut', onComplete: dropBall });
+        throwBall();
       },
     });
   }
