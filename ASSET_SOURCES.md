@@ -2,7 +2,7 @@
 
 Tài liệu này ghi lại nguồn gốc, tình trạng quyền sử dụng và nơi dùng của mọi asset trong demo.
 
-## 1. Sprite Pokémon có animation: CHƯA ĐƯỢC PHÉP PHÁT HÀNH, chỉ dùng cho demo nội bộ
+## 1. Sprite Pokémon có animation: fan-game MIỄN PHÍ, PHI THƯƠNG MẠI (không bán, không kiếm tiền)
 
 Mỗi loài nằm trong một thư mục `public/assets/pokemon/<loài>/`, gồm các sheet Walk, Idle, Attack, Charge/Shoot, Hurt, Faint và `credits.txt` gốc. Nguồn: `https://github.com/PMDCollab/SpriteCollab/tree/master/sprite/<số dex>`.
 
@@ -29,7 +29,7 @@ Mỗi loài nằm trong một thư mục `public/assets/pokemon/<loài>/`, gồm
 - **Định dạng:** mỗi `*-Anim.png` gồm 8 hàng hướng (Xuống, Xuống-phải, Phải, Lên-phải, Lên, Lên-trái, Trái, Xuống-trái) × N khung hình. Thời lượng tính theo tick 1/60 giây.
 - **Tác giả:** theo `credits.txt`, các sprite này ghi nhận **CHUNSOFT**, nghĩa là được trích từ game Pokémon Mystery Dungeon chính thức.
 - **Tình trạng quyền:** README của SpriteCollab áp dụng CC BY-NC 4.0 cho các bài đóng góp (phi thương mại, phải ghi công). Tuy vậy, sprite trích từ game gốc và nhân vật Pokémon vẫn là **IP của Nintendo / The Pokémon Company / Spike Chunsoft**, và giấy phép của kho không cấp quyền dùng thương hiệu Pokémon.
-- **Kết luận:** chỉ dùng để thử cảm giác chơi trong nội bộ; không phát hành công khai, không dùng thương mại. Trước khi phát hành phải thay bằng nhân vật và hình gốc tự sáng tác.
+- **Kết luận (cập nhật 2026-10-20):** dự án được phát hành như **fan-game miễn phí, phi thương mại**, ghi rõ nguồn (màn hình Giới thiệu & Ghi công trong game, README, file này). Không bán, không quảng cáo, không thu phí. Nếu sau này muốn thương mại phải thay toàn bộ bằng nhân vật và hình gốc tự sáng tác. Chủ sở hữu quyền muốn gỡ nội dung nào chỉ cần mở issue trên trang dự án.
 - **Không hotlink:** mọi file đã lưu trong project; game không tải gì từ Internet khi chơi.
 - **Tên nhân vật:** Satoshi, Takeshi, Kasumi, Matis, Bill, Joy, Giáo sư Okido, Shigeru cùng các địa danh (Pallet, Viridian, Pewter, Núi Moon, Cerulean, Vermilion, Indigo) là tên trong anime/game Pokémon, tức IP của bên thứ ba. Hình người trong game do dự án tự vẽ bằng code (xem mục 3), không lấy từ game gốc.
 - **Thay thế bản trước:** các ảnh tĩnh từ PokeAPI/sprites (`charmander.png`, `geodude.png`…, ghi chú "Copyright The Pokémon Company") đã bị xóa khỏi project và không còn được dùng.

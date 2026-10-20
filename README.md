@@ -2,7 +2,9 @@
 
 Game Pokémon pixel nhìn từ trên xuống, chạy trên trình duyệt, chơi theo kiểu **bản đồ ải**: vượt từng ải để cày cấp và thu phục Pokémon, cứ vài ải lại đấu một Hội quán để lấy huy hiệu, đủ huy hiệu thì vào Liên đoàn. Trận đấu diễn ra theo thời gian thực: dùng WASD để di chuyển, chiêu tự khóa vào đối thủ.
 
-> ⚠️ Sprite Pokémon lấy từ PMDCollab SpriteCollab (trích từ game Pokémon Mystery Dungeon). Hình và tên nhân vật/Pokémon là **IP của Nintendo / The Pokémon Company / Game Freak / Spike Chunsoft**. Chỉ dùng cho bản thử nghiệm nội bộ, không phát hành. Xem [ASSET_SOURCES.md](ASSET_SOURCES.md).
+> **Fan-game miễn phí, phi thương mại.** Pokeke không chính thức, không liên kết với Nintendo / Game Freak / Creatures / The Pokémon Company / Spike Chunsoft; Pokémon và các tên, nhân vật liên quan là (C) chủ sở hữu tương ứng.
+> Sprite Pokémon lấy từ [PMDCollab SpriteCollab](https://github.com/PMDCollab/SpriteCollab) (trích từ Pokémon Mystery Dungeon, CC BY-NC 4.0, ghi công theo `credits.txt` từng loài). Phông chữ theo SIL OFL 1.1. Phần còn lại (bản đồ, hiệu ứng, UI, nhạc, âm thanh) tự làm bằng code. Chi tiết nguồn: [ASSET_SOURCES.md](ASSET_SOURCES.md); trong game: nút ✦ ở góc phải màn hình chính ("Giới thiệu & Ghi công").
+> Vui lòng **không bán, không kiếm tiền, không phân phối lại**. Nếu bạn là chủ sở hữu quyền và muốn gỡ nội dung nào, hãy mở issue.
 
 ## Cài đặt và chạy
 

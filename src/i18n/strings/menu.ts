@@ -15,7 +15,7 @@ export default {
     'menu.accountGuest': 'Sign in to save progress to the cloud',
     'menu.settings': 'Settings',
     'menu.settingsSub': 'Sound, aiming, screen shake',
-    'menu.footer': 'v0.5 · prototype · Sprites: PMD SpriteCollab (CC BY-NC) · Pokémon © Nintendo/GAME FREAK',
+    'menu.footer': 'v0.5 · prototype · Sprites: PMD SpriteCollab (CC BY-NC) · Pokémon (C) Nintendo/GAME FREAK',
     'menu.missingAssets': 'Missing assets, using fallback art: {list}',
   } as Record<string, string>,
   vi: {
@@ -33,7 +33,7 @@ export default {
     'menu.accountGuest': 'Đăng nhập để lưu tiến trình lên mây',
     'menu.settings': 'Cài đặt',
     'menu.settingsSub': 'Âm thanh, cách ngắm, rung màn hình',
-    'menu.footer': 'v0.5 · bản thử nghiệm · Sprite: PMD SpriteCollab (CC BY-NC) · Pokémon © Nintendo/GAME FREAK',
+    'menu.footer': 'v0.5 · bản thử nghiệm · Sprite: PMD SpriteCollab (CC BY-NC) · Pokémon (C) Nintendo/GAME FREAK',
     'menu.missingAssets': 'Thiếu asset, đang dùng hình dự phòng: {list}',
   } as Record<string, string>,
 };

@@ -124,6 +124,7 @@ export class MenuScene extends Phaser.Scene {
       this.pill(196, 14, 132, `${g.badges.length} / 8`, 'medal');
     }
     this.soundBtn = this.roundButton(width - 196, 14, getSettings().muted ? 'mute' : 'sound', () => this.toggleSound());
+    this.roundButton(width - 256, 14, 'sparkle', () => this.go('Credits'));
     this.roundButton(width - 136, 14, 'fullscreen', () => this.scale.toggleFullscreen());
     this.roundButton(width - 76, 14, 'gear', () => this.openSettings());
     // Skill Lab (bản dev): xem trước chiêu mọi loài / mọi cấp
