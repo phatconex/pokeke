@@ -299,8 +299,20 @@ export function upgradeMove(base: MoveDef, lv: number): MoveDef {
  *  (chiêu sát thương cố định theo cấp như Sóng Âm không đổi) */
 export function slotScaledMove(m: MoveDef, slot: string): MoveDef {
   const k = COMBAT.slotPower[slot] ?? 1;
-  if (k === 1 || !m.power) return m;
-  return { ...m, power: m.power * k };
+  const g = COMBAT.slotReach[slot] ?? 1;
+  let out = m;
+  if (k !== 1 && m.power) out = { ...out, power: m.power * k };
+  if (g !== 1) {
+    // K/L/U tầm rộng hơn: phạm vi, bán kính, vệt và quãng lao đều nở ra
+    const sc = (v: number | undefined) => (v === undefined ? v : Math.round(v * g));
+    out = {
+      ...out,
+      range: sc(m.range), burstRadius: sc(m.burstRadius), explode: sc(m.explode), line: sc(m.line), lineWidth: sc(m.lineWidth),
+      lunge: slot === 'K' && m.lunge ? Math.round(m.lunge * COMBAT.kLungeMult) : m.lunge,
+      zone: m.zone ? { ...m.zone, radius: Math.round(m.zone.radius * g) } : m.zone,
+    };
+  }
+  return out;
 }
 
 /** Mô tả hai mốc đặc biệt của một chiêu (Lv 3, Lv 5) */

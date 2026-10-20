@@ -6,6 +6,7 @@
 //      SPECIES_KITS.vulpix = { slots: { J: { archetype: 'bolt' } } }   // Đốm Lửa thường của Vulpix → đạn lửa có bậc
 //  • Hệ mới: TYPE_KITS.electric = { bolt: { params: { dialect: 'generic', trail: 'thick' }, tiers: [{ minLevel: 20, split: 3 }] } }
 //  • Bậc mới: thêm { minLevel: 40, scale: 1.6, cost: 7 } vào tiers của mục tương ứng.
+import { FAMILY_KITS } from './familyKits';
 import { combatProfile } from '../config/balance';
 import type { MoveDef } from '../data/moveKit';
 import type { SkillSlot } from '../data/pokemon';
@@ -1017,6 +1018,15 @@ export function slotCost(slot: SkillSlot): number {
   return combatProfile().slotCost[slot];
 }
 
+/** Tầm khuôn chiêu theo ô: K/L/U rộng hơn (cộng với slotReach của move). Chỉ các tham số hình học; không đụng số lượng/thời gian. */
+const REACH_KEYS = ['r', 'range', 'len', 'reach', 'width', 'w', 'hgt', 'height', 'hitR', 'radius', 'rangeMult', 'spread'];
+function widenParams(arch: string, slot: SkillSlot, params: Record<string, unknown>) {
+  if (slot === 'J') return;
+  const g = slot === 'K' ? 1.12 : slot === 'L' ? 1.25 : 1.35;
+  for (const k of REACH_KEYS) if (typeof params[k] === 'number') params[k] = (params[k] as number) * g;
+  if (arch === 'dashStrike' && slot === 'K') params.lungeMult = ((params.lungeMult as number | undefined) ?? 1) * 1.3;
+}
+
 /** (loài, cấp, ô, chiêu) → chiêu đã phân giải */
 export function resolveSkill(speciesId: string, level: number, slot: SkillSlot, move: MoveDef): SkillSpec {
   const sk = kitFor(speciesId);
@@ -1040,10 +1050,14 @@ export function resolveSkill(speciesId: string, level: number, slot: SkillSlot, 
     if (c !== undefined) cost = c;
     tier++;
   }
+  widenParams(arch, slot, params);
   return {
     archetype: arch, params, cost, tier, tierCount: tiers.length, nextTierAt: tiers[tier]?.minLevel ?? null, source: own ? 'species' : 'move',
   } as unknown as SkillSpec;
 }
+
+// Các dòng còn lại (familyKits.ts): chỉ điền loài chưa có bộ riêng ở trên
+for (const [id, kit] of Object.entries(FAMILY_KITS)) if (!SPECIES_KITS[id]) SPECIES_KITS[id] = kit;
 
 // ===== Mẫu bộ chiêu có tên: gọi lại bằng 1 dòng cho loài mới =====
 //   SPECIES_KITS.vulpix  = { template: 'fire.small' };                       // dùng nguyên mẫu

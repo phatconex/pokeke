@@ -158,7 +158,11 @@ export const COMBAT = {
    *  Lướt (Space) xóa hiệu ứng chậm này. */
   castSlow: { jMult: 0.85, jMs: 220, skillMult: 0.3, skillBaseMs: 110, skillMsPerPower: 2.2, skillMinMs: 150, skillMaxMs: 250 },
   /** hệ số sức mạnh theo ô chiêu (trước: tất cả = 1) – J yếu đi, K/L/U mạnh lên */
-  slotPower: { J: 0.8, K: 1.15, L: 1.15, U: 1.15 } as Record<string, number>,
+  slotPower: { J: 0.8, K: 1.4, L: 1.2, U: 1.2 } as Record<string, number>,
+  /** tầm / bán kính theo ô chiêu: K/L/U rộng hơn (L/U cần phủ được nhiều địch hơn) */
+  slotReach: { J: 1, K: 1.15, L: 1.3, U: 1.4 } as Record<string, number>,
+  /** K: quãng lao dài hơn (trước ×1) – K phải thực sự áp sát được địch */
+  kLungeMult: 1.5,
   /** liên hoàn: đổi ô chiêu trong windowMs → +perStep sát thương mỗi bậc (tối đa +max).
    *  J lặp lại không làm đứt chuỗi (nhưng không cộng bậc) – J là chiêu "đệm" giữa K/L/U. (trước: +10%/bậc, tối đa +40%, J lặp lại thì đứt) */
   combo: { windowMs: 1500, perStep: 0.12, max: 0.6 },
