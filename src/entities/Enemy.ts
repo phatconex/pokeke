@@ -5,6 +5,8 @@ import type { StatusKind } from '../data/moves';
 import type { BattleCtx } from './types';
 import { PokemonSprite } from './PokemonSprite';
 import { playSfx } from '../systems/sfx';
+import { text } from '../ui/style';
+import { t } from '../i18n';
 import { legendOf } from '../data/legendary';
 import { tickEnemySkill } from './EnemySkills';
 
@@ -63,6 +65,8 @@ export class Enemy {
   /** số lần ném bóng hỏng (huyền thoại được thử lại vài lần) */
   catchTries = 0;
   private stars: Phaser.GameObjects.Image[] = [];
+  /** hiệu ứng "có thể bắt": vòng đáy chân, biểu tượng bóng + phím E, chữ gợi ý */
+  private catchFx: { ground: Phaser.GameObjects.Graphics; ball: Phaser.GameObjects.Image; key: Phaser.GameObjects.Text; hint: Phaser.GameObjects.Text; at: number } | null = null;
   /** đang nằm trong bóng (chờ kết quả bắt) */
   beingCaught = false;
   /** hình nộm Skill Lab: không tấn công, đứng yên hoặc trôi chậm theo dummyVel */
@@ -187,7 +191,16 @@ export class Enemy {
     this.state = 'move';
     this.kb.set(0, 0);
     this.clearStars();
-    for (let i = 0; i < 3; i++) this.stars.push(this.scene.add.image(this.x, this.topY, 'dizzy').setDepth(100005));
+    // 4 ngôi sao to, vàng sáng, quay quanh đầu
+    for (let i = 0; i < 4; i++) this.stars.push(this.scene.add.image(this.x, this.topY, 'star5').setScale(1.7).setTint(i % 2 ? 0xffffff : 0xffe14a).setDepth(100005));
+    // vạch dưới chân + biểu tượng "E · ném bóng" nhấp nháy phía trên + chữ gợi ý
+    const ground = this.scene.add.graphics().setDepth(this.y - 1);
+    const ball = this.scene.add.image(this.x, this.topY - 24, 'icons', 'pokeball').setScale(1.6).setDepth(100006);
+    const key = text(this.scene, this.x, this.topY - 24, '', 12, '#1a1a2a').setOrigin(0.5).setDepth(100007);
+    const hint = text(this.scene, this.x, this.topY - 44, t('battle.catchNow'), 12, '#ffe14a').setOrigin(0.5).setDepth(100007);
+    hint.setStroke('#1a0a00', 4);
+    this.catchFx = { ground, ball, key, hint, at: 0 };
+    this.scene.cameras.main.flash(120, 255, 240, 160, false);
     this.status = {};
   }
 
@@ -235,6 +248,13 @@ export class Enemy {
   private clearStars() {
     for (const st of this.stars) st.destroy();
     this.stars = [];
+    if (this.catchFx) {
+      this.catchFx.ground.destroy();
+      this.catchFx.ball.destroy();
+      this.catchFx.key.destroy();
+      this.catchFx.hint.destroy();
+      this.catchFx = null;
+    }
   }
 
   /** Gọi khi con này vừa gây sát thương va chạm cho người chơi */
@@ -258,7 +278,21 @@ export class Enemy {
       this.anim.loop('idle');
       this.syncVisual(ctx.clock, dtMs);
       const t = ctx.clock / 160;
-      this.stars.forEach((st, i) => st.setPosition(this.x + Math.cos(t + i * 2.1) * 9, this.topY - 3 + Math.sin(t + i * 2.1) * 3));
+      this.stars.forEach((st, i) => st.setPosition(this.x + Math.cos(t + i * 1.57) * 17, this.topY - 4 + Math.sin(t + i * 1.57) * 5).setRotation(t * 2 + i).setDepth(Math.sin(t + i * 1.57) > 0 ? 100005 : this.y - 2));
+      const c = this.catchFx;
+      if (c) {
+        const k = 0.5 + 0.5 * Math.sin(ctx.clock / 120);
+        const r = Math.max(18, this.zone.width * 0.7 + 8);
+        c.ground.clear().setDepth(this.y - 1);
+        c.ground.fillStyle(0xffe14a, 0.18 + 0.14 * k).fillEllipse(this.x, this.feetY, r * 2.2, r * 0.9);
+        c.ground.lineStyle(3, k > 0.5 ? 0xffffff : 0xffe14a, 0.95).strokeEllipse(this.x, this.feetY, r * 2.2, r * 0.9);
+        const bob = Math.sin(ctx.clock / 140) * 3;
+        c.ball.setPosition(this.x - 9, this.topY - 26 + bob).setScale(1.2 + 0.15 * k);
+        c.key.setText('E').setPosition(this.x + 9, this.topY - 26 + bob);
+        c.hint.setPosition(this.x, this.topY - 50 + bob).setAlpha(0.75 + 0.25 * k);
+        // sắp hết choáng: nhấp nháy nhanh
+        if (this.stunnedUntil - ctx.clock < 1200) c.hint.setVisible(Math.floor(ctx.clock / 90) % 2 === 0);
+      }
       return;
     }
     if (this.stars.length) this.clearStars();
