@@ -38,7 +38,7 @@ export class StageMapScene extends Phaser.Scene {
   /** lớp thế giới (bản đồ + ải + nhân vật) – dịch chuyển để "cuộn camera", giao diện đứng yên */
   private world!: Phaser.GameObjects.Container;
   private mini: Phaser.GameObjects.GameObject[] = [];
-  private miniView!: Phaser.GameObjects.Rectangle;
+  private miniView: Phaser.GameObjects.Rectangle | null = null;
   private fromData: { from?: string; intro?: boolean } = {};
 
   constructor() {
@@ -59,6 +59,9 @@ export class StageMapScene extends Phaser.Scene {
     this.game_ = g0;
     this.moving = false;
     this.topRight = [];
+    // phiên bản scene được dùng lại: bỏ tham chiếu tới đối tượng cũ đã bị hủy (bản đồ nhỏ) trước khi dựng lại
+    this.mini = [];
+    this.miniView = null;
     const { width } = this.scale;
     this.input.setDefaultCursor('default');
 
@@ -343,7 +346,7 @@ export class StageMapScene extends Phaser.Scene {
   }
 
   private syncMini() {
-    if (!this.miniView || !this.world) return;
+    if (!this.miniView || !this.miniView.active || !this.world || !this.mini.length) return;
     const { width, height } = this.scale;
     const w = 192;
     const k = w / (KMAP_W * S);
