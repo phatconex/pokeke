@@ -1073,9 +1073,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     }
     const old = this.player;
     const wasDead = old.dead;
-    // con mới được thả về vị trí xuất phát (không rơi giữa đám địch đang ra chiêu); con cũ thu hồi ngay chỗ đang đứng
-    const x = this.spawnPos.x || old.x;
-    const y = this.spawnPos.y || old.y;
+    // con mới được thả ở chỗ an toàn nhất sân (xa địch nhất), không phải chỗ địch đang nhắm / chờ sẵn
+    const { x, y } = this.safeDropSpot();
     // hiệu ứng thu về bóng (con cũ) – chỉ là hình ảnh, KHÔNG chặn điều khiển: tạo bản sao của con cũ trước khi nó rời sân
     const ghostSpec = wasDead ? null : this.snapshotSprite(old);
     old.setOnField(false);
@@ -1083,8 +1082,15 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     f.setOnField(true, x, y);
     f.faceTo(old.facing.x, old.facing.y);
     f.invulnUntil = this.clock + 1500;
-    this.swapFreezeUntil = this.clock + 900;
-    for (const e of this.enemies) this.fx.clearTelegraphsOf(e);
+    this.swapFreezeUntil = this.clock + 1000;
+    for (const e of this.enemies) {
+      this.fx.clearTelegraphsOf(e);
+      // địch cần thời gian nhắm lại: chưa ra chiêu ngay sau khi người chơi vào sân
+      e.nextSkillAt = Math.max(e.nextSkillAt, this.clock + 2200);
+      const st = this.legendFoes.get(e);
+      if (st) st.next = Math.max(st.next, this.clock + 2200);
+    }
+    for (const sh of this.enemyShots.items) if (sh.active) this.enemyShots.kill(sh);
     this.switchReadyAt = this.clock + SWITCH.cooldownMs;
     this.cameras.main.startFollow(f.zone, true, 0.12, 0.12);
     this.aimTarget = null;
@@ -1093,6 +1099,26 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.switchFx(f, x, y, ghostSpec);
     this.fx.floatingLabel(f.x, f.chestY - 22, t('battle.goOut', { name: f.species.name }), '#9fe08a');
     this.events.emit('swap', f.species.name);
+  }
+
+  /** chỗ thả Pokémon mới: trong vài điểm gợi ý (xuất phát, 4 góc, giữa cạnh), chọn điểm xa mọi địch nhất và không dính vật cản */
+  private safeDropSpot(): { x: number; y: number } {
+    const W = this.worldW;
+    const H = this.worldH;
+    const cands = [this.spawnPos, { x: W * 0.18, y: H * 0.2 }, { x: W * 0.82, y: H * 0.2 }, { x: W * 0.18, y: H * 0.8 }, { x: W * 0.82, y: H * 0.8 }, { x: W * 0.5, y: H * 0.18 }, { x: W * 0.5, y: H * 0.82 }, { x: W * 0.12, y: H * 0.5 }, { x: W * 0.88, y: H * 0.5 }];
+    let best = this.spawnPos.x ? this.spawnPos : { x: this.player.x, y: this.player.y };
+    let bestD = -1;
+    for (const c of cands) {
+      if (!c.x || circleHitsRects(this.solidRects, c.x, c.y, 16)) continue;
+      const d = this.enemies.reduce((m, e) => (e.dead ? m : Math.min(m, Math.hypot(e.x - c.x, e.y - c.y))), 9999);
+      // thích điểm xa địch; điểm xuất phát được cộng nhẹ để quen mắt
+      const score = d + (c === this.spawnPos ? 40 : 0);
+      if (score > bestD) {
+        bestD = score;
+        best = c;
+      }
+    }
+    return { x: best.x, y: best.y };
   }
 
   /** chụp lại hình con đang ra sân (để vẽ hiệu ứng thu hồi sau khi nó đã rời sân) */
