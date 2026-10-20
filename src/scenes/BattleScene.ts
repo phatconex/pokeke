@@ -3327,12 +3327,10 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       }
     }
 
-    // Hội quán: con nào gục thì bị thương (tốn tiền chăm sóc). Ải thường: hồi đầy cả đội.
-    if (this.gym) {
-      for (const m of this.fainted) {
-        m.injured = true;
-        info.notes.push(t('battle.note.injured', { name: POKEMON[m.speciesId].name }));
-      }
+    // Mọi ải (hội quán lẫn ải thường): con nào gục thì bị thương – phải chữa ở Trung tâm Pokémon (tốn tiền chăm sóc); con còn lại hồi đầy
+    for (const m of this.fainted) {
+      m.injured = true;
+      info.notes.push(t('battle.note.injured', { name: POKEMON[m.speciesId].name }));
     }
     // thắng thủ lĩnh / Tứ Thiên Vương / Shigeru: tính cho điều kiện Tuyệt chiêu của mọi con trong đội
     if (result === 'win' && this.gym) for (const f of this.fighters) addBigWin(f.member);
