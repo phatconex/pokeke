@@ -477,6 +477,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.pending = [];
     this.nextWaveAt = 0;
     this.fainted = new Set();
+    this.lowHpHinted = false;
     this.xpLog = new Map();
     this.caught = [];
     this.catching = false;
@@ -906,6 +907,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.updateZones();
     this.updateHazards();
     this.tickStatuses();
+    this.benchRegen(dt);
 
     if (this.config.kind === 'survival') {
       this.updateSpawning();
@@ -2151,6 +2153,20 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   }
 
   /** Bỏng / Độc / Hạt: mất máu theo nhịp 0,5 giây */
+  /** Con đang nghỉ ngoài sân (chưa gục) hồi máu chậm; đổi con luân phiên là cách bơm máu lại */
+  private benchRegen(dt: number) {
+    if (this.over || this.introActive) return;
+    const p = this.player;
+    if (p && p.onField && !p.dead && !this.lowHpHinted && this.fighters.length > 1 && p.hp / p.maxHp < 0.3) {
+      this.lowHpHinted = true;
+      this.events.emit('toast', t('hud.lowHp'));
+    }
+    for (const f of this.fighters) {
+      if (f === this.player || f.onField || f.dead || f.member.hp >= f.maxHp) continue;
+      f.member.hp = Math.min(f.maxHp, f.member.hp + (f.maxHp * SWITCH.benchRegenPerSec * dt) / 1000);
+    }
+  }
+
   private tickStatuses() {
     const clock = this.clock;
     for (const e of [...this.enemies]) {
@@ -3093,6 +3109,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   }
 
   private spawnPos = { x: 0, y: 0 };
+  private lowHpHinted = false;
   /** đổi Pokémon: địch đứng yên tới mốc này (khoảng dừng ngắn của ván đấu) */
   private swapFreezeUntil = 0;
   private gymRecallBusy = false;

@@ -57,6 +57,8 @@ export const levelCapFor = (badges: number) => LEVEL_CAP[Math.min(badges, LEVEL_
 /** Đổi Pokémon trong trận */
 export const SWITCH = {
   cooldownMs: 3000,
+  /** Pokémon ngồi ngoài (chưa gục) tự hồi máu chậm khi nghỉ: tỉ lệ máu tối đa mỗi giây → đổi con luân phiên để cứu con yếu */
+  benchRegenPerSec: 0.02,
   /** chờ một chút sau khi con đang ra sân gục rồi mới tự đổi */
   faintDelayMs: 700,
 } as const;
