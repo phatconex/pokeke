@@ -1061,19 +1061,82 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     const old = this.player;
     const x = old.x;
     const y = old.y;
+    const wasDead = old.dead;
+    // hiệu ứng thu về bóng (con cũ) – chỉ là hình ảnh, KHÔNG chặn điều khiển: tạo bản sao của con cũ trước khi nó rời sân
+    const ghostSpec = wasDead ? null : this.snapshotSprite(old);
     old.setOnField(false);
     this.activeIdx = index;
     f.setOnField(true, x, y);
     f.faceTo(old.facing.x, old.facing.y);
-    f.invulnUntil = this.clock + 500;
+    f.invulnUntil = this.clock + 700;
     this.switchReadyAt = this.clock + SWITCH.cooldownMs;
     this.cameras.main.startFollow(f.zone, true, 0.12, 0.12);
     this.aimTarget = null;
-    this.resetInput();
-    playSfx('swap');
-    this.fx.puff('zappuff', f.x, f.chestY, 8);
+    // chỉ xóa lệnh chiêu đang chờ; KHÔNG resetKeys → đang giữ phím chạy thì con mới chạy tiếp ngay, không bị khựng
+    this.buffered = { J: 0, K: 0, L: 0, U: 0, dash: 0 };
+    this.switchFx(f, x, y, ghostSpec);
     this.fx.floatingLabel(f.x, f.chestY - 22, t('battle.goOut', { name: f.species.name }), '#9fe08a');
     this.events.emit('swap', f.species.name);
+  }
+
+  /** chụp lại hình con đang ra sân (để vẽ hiệu ứng thu hồi sau khi nó đã rời sân) */
+  private snapshotSprite(f: Fighter) {
+    const spr = f.anim.sprite;
+    return { key: spr.texture.key, frame: String(spr.frame.name), x: spr.x, y: spr.y, ox: spr.originX, oy: spr.originY, sx: spr.scaleX, sy: spr.scaleY, flip: spr.flipX, h: spr.displayHeight };
+  }
+
+  /**
+   * Đổi Pokémon: tia đỏ thu con cũ vào bóng (~0,17s) → bóng rơi xuống, bật mở, con mới hiện ra (~0,3s tổng).
+   * Con mới điều khiển được và bất tử ngay từ đầu; hiệu ứng không dừng trận.
+   */
+  private switchFx(nf: Fighter, x: number, y: number, ghost: ReturnType<typeof this.snapshotSprite> | null) {
+    const spr = nf.anim.sprite;
+    nf.summoning = true;
+    spr.setVisible(false);
+    const reveal = () => {
+      nf.summoning = false;
+      if (!spr.active) return;
+      spr.setVisible(nf.onField).setAlpha(1);
+      materialize(this, spr);
+      this.fx.sparkBurst(x, y - 4, 8);
+      playSfx('swap');
+    };
+    // an toàn: dù hiệu ứng bị ngắt (đổi tiếp, hết trận) con mới vẫn hiện
+    this.time.delayedCall(600, () => {
+      nf.summoning = false;
+    });
+    const ball = this.add.image(x, y - (ghost ? ghost.h + 8 : 30), 'icons', 'pokeball').setScale(0.9).setDepth(100001);
+    const dropBall = () => {
+      this.tweens.add({
+        targets: ball, y: nf.feetY - 6, angle: 360, duration: 140, ease: 'Quad.in',
+        onComplete: () => {
+          reveal();
+          this.tweens.add({ targets: ball, scale: 1.5, alpha: 0, duration: 160, onComplete: () => ball.destroy() });
+        },
+      });
+    };
+    if (!ghost) {
+      dropBall();
+      return;
+    }
+    const g = this.add.sprite(ghost.x, ghost.y, ghost.key, ghost.frame).setOrigin(ghost.ox, ghost.oy).setScale(ghost.sx, ghost.sy).setFlipX(ghost.flip).setDepth(100000).setTintFill(0xff4050);
+    const beam = this.add.graphics().setDepth(100000);
+    playSfx('swap');
+    this.tweens.addCounter({
+      from: 0, to: 1, duration: 170,
+      onUpdate: (tw) => {
+        const k = tw.getValue() ?? 0;
+        g.setScale(ghost.sx * (1 - 0.9 * k), ghost.sy * (1 - 0.9 * k)).setAlpha(1 - k * 0.8);
+        beam.clear();
+        beam.lineStyle(5, 0xff3040, 0.55).lineBetween(ball.x, ball.y, g.x, g.y - ghost.h * 0.4 * (1 - k));
+        beam.lineStyle(2, 0xffffff, 0.95).lineBetween(ball.x, ball.y, g.x, g.y - ghost.h * 0.4 * (1 - k));
+      },
+      onComplete: () => {
+        g.destroy();
+        beam.destroy();
+        dropBall();
+      },
+    });
   }
 
   private cycleSwitch() {

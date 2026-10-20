@@ -105,6 +105,8 @@ export class Fighter {
   sprayMove: MoveDef | null = null;
   invulnUntil = 0;
   /** chiêu tự cường hóa: nhận sát thương × guardMult tới guardUntil */
+  /** đang chờ bóng bật mở (đổi Pokémon): ẩn hình tới lúc con xuất hiện */
+  summoning = false;
   guardUntil = 0;
   guardMult = 1;
   private lastGhostAt = 0;
@@ -411,7 +413,7 @@ export class Fighter {
   private syncVisual(clock: number, dtMs: number, moving: boolean) {
     const a = this.anim;
     const burrowed = this.isBurrowed(clock) && !this.dead;
-    a.sprite.setVisible(this.onField && !burrowed);
+    a.sprite.setVisible(this.onField && !burrowed && !this.summoning);
     if (!this.dead && this.isSpinning(clock)) {
       // xoay vòng qua 8 hướng
       const t = clock / 45;
