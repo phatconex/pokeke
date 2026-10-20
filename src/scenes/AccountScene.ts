@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { formatTime } from '../systems/records';
 import {
-  CloudSaveInfo, cloudEnabled, currentUser, deleteAccount, fetchCloudSave, pushCloudSave, signIn, signOut, signUp, syncStatus,
+  CloudSaveInfo, cloudEnabled, currentUser, deleteAccount, fetchCloudSave, gate, pushCloudSave, signIn, signOut, signUp, syncStatus,
 } from '../systems/cloud';
 import { getGame, importSave, peekLocalSave, GameState } from '../game/state';
 import { playMusic } from '../systems/music';
@@ -53,8 +53,21 @@ export class AccountScene extends Phaser.Scene {
     this.msg = text(this, width / 2, height - 96, '', 12, '#ffd0a0', { align: 'center', wordWrap: { width: 700 } }).setOrigin(0.5).setDepth(10);
     this.input.keyboard?.on('keydown-ESC', () => this.leave());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.removeAllListeners());
+    // cổng "Cuộc phiêu lưu mới": đã đăng nhập xong → quay lại Menu để tiếp tục tạo nhân vật
+    if (gate.newGame && currentUser()?.setupDone) {
+      void this.finishGate();
+      return;
+    }
     this.render();
+    if (gate.newGame && !currentUser()) this.say(t('account.gateNew'), '#ffd34a');
     if (currentUser()) void this.refreshCloud();
+  }
+
+  /** Vừa đăng nhập từ cổng: đồng bộ save (nếu có) rồi về Menu và tự bấm "Cuộc phiêu lưu mới" */
+  private async finishGate() {
+    gate.newGame = false;
+    await this.afterLogin();
+    this.scene.start('Menu', { autoNew: true });
   }
 
   private say(msg: string, color = '#ffd0a0') {
@@ -167,7 +180,8 @@ export class AccountScene extends Phaser.Scene {
       add(down.bg);
       add(down.t);
     }
-    const back = button(this, width / 2, 676, u || !cloudEnabled ? t('account.back') : t('account.guest'), () => this.leave(), u || !cloudEnabled ? 240 : 380);
+    const plainBack = !!u || !cloudEnabled || gate.newGame;
+    const back = button(this, width / 2, 676, plainBack ? t('account.back') : t('account.guest'), () => this.leave(), plainBack ? 240 : 380);
     smallLabel(back);
     add(back.bg);
     add(back.t);
@@ -217,9 +231,13 @@ export class AccountScene extends Phaser.Scene {
       return this.say(t('account.created'), '#9fe08a');
     }
     playSfx('badge');
-    await this.afterLogin();
     // tài khoản mới (hoặc chưa thiết lập): chọn nhân vật + đặt tên trước
-    if (!currentUser()?.setupDone) this.scene.start('Character', { next: 'Account' });
+    if (!currentUser()?.setupDone) {
+      await this.afterLogin();
+      this.scene.start('Character', { next: 'Account' });
+    } else if (gate.newGame) {
+      void this.finishGate();
+    } else await this.afterLogin();
   }
 
   /** Vừa đăng nhập: tự đồng bộ nếu chỉ có một bên có save; có cả hai thì để người chơi chọn */
@@ -308,6 +326,7 @@ export class AccountScene extends Phaser.Scene {
   }
 
   private leave() {
+    gate.newGame = false;
     this.clear();
     playSfx('select');
     this.scene.start(this.from);

@@ -13,7 +13,7 @@ import { COLORS, icon, outlinedText, text } from '../ui/style';
 import { animKey, SPRITE_METRICS } from '../entities/PokemonSprite';
 import { assetStatus } from './BootScene';
 import { playMusic } from '../systems/music';
-import { cloudEnabled, currentUser } from '../systems/cloud';
+import { cloudEnabled, currentUser, gate } from '../systems/cloud';
 import { trainerAvatar } from '../game/state';
 import { openSettingsPanel, SettingsTab } from '../ui/settingsPanel';
 import { fmtNum, t } from '../i18n';
@@ -67,9 +67,11 @@ export class MenuScene extends Phaser.Scene {
 
   /** mở lại bảng Cài đặt ở thẻ này sau khi vẽ lại menu (đổi ngôn ngữ...) */
   private reopenTab: SettingsTab | null = null;
+  private autoNew = false;
 
-  init(data: { settingsTab?: SettingsTab } | undefined) {
+  init(data: { settingsTab?: SettingsTab; autoNew?: boolean } | undefined) {
     this.reopenTab = data?.settingsTab ?? null;
+    this.autoNew = !!data?.autoNew;
   }
 
   create() {
@@ -209,6 +211,8 @@ export class MenuScene extends Phaser.Scene {
     kb.on('keydown-M', () => this.toggleSound());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => kb.removeAllListeners());
     if (this.reopenTab) this.openSettings(this.reopenTab);
+    // vừa đăng nhập từ cổng "Cuộc phiêu lưu mới": tiếp tục luôn vào tạo nhân vật
+    if (this.autoNew) this.time.delayedCall(350, () => this.newGame());
   }
 
   private pill(x: number, y: number, w: number, label: string, iconName: string) {
@@ -309,6 +313,12 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private newGame() {
+    // chưa đăng nhập: phải đăng nhập / đăng ký trước để tiến trình được lưu trên mây (không áp dụng nếu máy chủ chưa cấu hình)
+    if (cloudEnabled && !currentUser()) {
+      gate.newGame = true;
+      this.go('Account', { from: 'Menu' });
+      return;
+    }
     if (hasSave() && !this.confirmNew) {
       this.confirmNew = true;
       this.select(1);

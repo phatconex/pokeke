@@ -9,6 +9,9 @@ import { t } from '../i18n';
 const URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
+/** Cổng "Cuộc phiêu lưu mới": cần đăng nhập mới được bắt đầu (để tiến trình luôn được lưu trên mây). Menu bật cờ, màn Tài khoản xử lý rồi trả người chơi về. */
+export const gate = { newGame: false };
+
 export const cloudEnabled = !!URL && !!KEY;
 
 export interface CloudUser {
