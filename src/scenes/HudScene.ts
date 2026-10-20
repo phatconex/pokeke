@@ -904,6 +904,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private quit() {
+    this.battle.abandonStage();
     this.scene.stop('Tutorial');
     this.scene.stop('Battle');
     if (this.battle.config.kind === 'lab') this.scene.stop('SkillLab');

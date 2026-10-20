@@ -3576,6 +3576,15 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     return { money, xp };
   }
 
+  /** Thoát ải giữa chừng (Esc → Menu/Bản đồ): con đã gục vẫn bị thương để được chữa ở Trung tâm; con còn lại hồi đầy (giống bỏ chạy) */
+  abandonStage() {
+    const game = getGame();
+    if (!game || !this.stage || this.over) return;
+    for (const m of this.fainted) m.injured = true;
+    healTeam(game);
+    saveGame();
+  }
+
   private endSurvival(won: boolean) {
     if (this.over) return;
     this.stopBattle();

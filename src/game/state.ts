@@ -461,6 +461,8 @@ function parse(raw: unknown): GameState | null {
     // mở khóa chiêu: bản lưu cũ → giữ mọi chiêu đã dùng được theo luật cũ (game/unlocks.ts)
     migrateUnlocks(m);
     m.hp = Math.min(Math.max(0, m.hp), memberStats(m).maxHp);
+    // bản lưu cũ: con hết máu mà chưa bị đánh dấu thương → coi là bị thương để được chữa ở Trung tâm Pokémon
+    if (m.hp <= 0) m.injured = true;
   }
   return g;
 }
