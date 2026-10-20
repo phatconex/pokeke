@@ -493,6 +493,25 @@ export function importSave(raw: unknown): GameState | null {
   return current;
 }
 
+/** Xuất bản lưu thành văn bản JSON (sao lưu ra file); null nếu chưa có save */
+export function exportSaveText(): string | null {
+  const g = current ?? parse(loadJson<unknown>(SAVE_KEY, null as unknown));
+  return g ? JSON.stringify(g) : null;
+}
+
+/** Nhập bản lưu từ văn bản JSON (khôi phục từ file sao lưu); trả về false nếu không hợp lệ */
+export function importSaveText(raw: string): boolean {
+  if (raw.length > 400_000) return false;
+  try {
+    const g = importSave(JSON.parse(raw));
+    if (!g) return false;
+    saveGame();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Đọc bản lưu trên máy (không đổi bản hiện tại) – để so với bản trên mây */
 export function peekLocalSave(): GameState | null {
   return parse(loadJson<unknown>(SAVE_KEY, null as unknown));

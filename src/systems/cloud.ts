@@ -154,6 +154,34 @@ export async function updateProfile(name: string, avatar = user?.avatar ?? 'sato
   return null;
 }
 
+/**
+ * Xóa dữ liệu của tài khoản: ưu tiên hàm máy chủ `delete_my_account` (xóa hẳn tài khoản + save + hồ sơ).
+ * Nếu máy chủ chưa có hàm này thì xóa save trên mây (chính sách RLS cho phép) rồi đăng xuất; `full` = đã xóa hẳn tài khoản.
+ */
+export async function deleteAccount(): Promise<{ ok: boolean; full: boolean; error?: string }> {
+  const c = sb();
+  if (!c || !user) return { ok: false, full: false, error: t('account.err.notConfigured') };
+  try {
+    const rpc = await c.rpc('delete_my_account');
+    if (!rpc.error) {
+      user = null;
+      try {
+        await c.auth.signOut();
+      } catch {
+        // bỏ qua
+      }
+      for (const fn of listeners) fn(null);
+      return { ok: true, full: true };
+    }
+    const del = await c.from('game_saves').delete().eq('user_id', user.id);
+    if (del.error) return { ok: false, full: false, error: friendlyError(del.error.message) };
+    await signOut();
+    return { ok: true, full: false };
+  } catch (e) {
+    return { ok: false, full: false, error: friendlyError(String((e as Error).message ?? e)) };
+  }
+}
+
 /** Đọc save trên mây của tài khoản đang đăng nhập (null = chưa có) */
 export async function fetchCloudSave(): Promise<CloudSaveInfo | null> {
   const c = sb();

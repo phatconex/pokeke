@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { formatTime } from '../systems/records';
 import {
-  CloudSaveInfo, cloudEnabled, currentUser, fetchCloudSave, pushCloudSave, signIn, signOut, signUp, syncStatus,
+  CloudSaveInfo, cloudEnabled, currentUser, deleteAccount, fetchCloudSave, pushCloudSave, signIn, signOut, signUp, syncStatus,
 } from '../systems/cloud';
 import { getGame, importSave, peekLocalSave, GameState } from '../game/state';
 import { playMusic } from '../systems/music';
@@ -146,6 +146,10 @@ export class AccountScene extends Phaser.Scene {
       smallLabel(out);
       add(out.bg);
       add(out.t);
+      const del = button(this, 1110, 214, this.confirmDelete ? t('account.deleteSure') : t('account.delete'), () => void this.removeAccount(), 150);
+      smallLabel(del);
+      add(del.bg);
+      add(del.t);
 
       // hai thẻ save: trên máy / trên mây
       const local = getGame() ?? peekLocalSave();
@@ -265,6 +269,32 @@ export class AccountScene extends Phaser.Scene {
     this.render();
     if (g) playSfx('pickup');
     this.say(g ? t('account.downloaded') : t('account.badCloud'), g ? '#9fe08a' : '#ff9a9a');
+  }
+
+  private confirmDelete = false;
+
+  /** Xóa tài khoản: bấm lần 1 để hỏi lại, lần 2 (trong 6 giây) để xóa thật */
+  private async removeAccount() {
+    if (this.busy) return;
+    if (!this.confirmDelete) {
+      this.confirmDelete = true;
+      this.say(t('account.deleteWarn'), '#ffb070');
+      this.render();
+      this.time.delayedCall(6000, () => {
+        if (this.confirmDelete) {
+          this.confirmDelete = false;
+          this.render();
+        }
+      });
+      return;
+    }
+    this.confirmDelete = false;
+    this.busy = true;
+    const r = await deleteAccount();
+    this.busy = false;
+    this.cloud = null;
+    this.render();
+    this.say(r.ok ? t(r.full ? 'account.deletedFull' : 'account.deletedPartial') : t('account.deleteFail', { err: r.error ?? '' }), r.ok ? '#9fe08a' : '#ff9a9a');
   }
 
   private async logout() {
