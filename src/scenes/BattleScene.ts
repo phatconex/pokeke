@@ -3126,9 +3126,42 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         this.events.emit('levelup', f.species.name, m.level, undefined);
         if (this.tracksUnlocks()) this.checkUnlockReady(m);
         // vừa đủ cấp tiến hóa giữa trận → băng rôn + quầng sáng tới hết trận
-        if (!wasReady && evolutionReady(m)) this.events.emit('evo-ready', f.species.name);
+        if (!wasReady && evolutionReady(m)) {
+          this.events.emit('evo-ready', f.species.name);
+          // đủ cấp tiến hóa: dừng trận và tiến hóa luôn (sau khi băng rôn lên cấp hiện một nhịp)
+          if (this.stage || this.survivalOwn) this.time.delayedCall(900, () => this.beginMidEvolution(m));
+        }
       }
     });
+  }
+
+  private evoActive = false;
+
+  /** Dừng trận, mở màn tiến hóa phủ lên; xong thì EvolutionScene gọi onMidEvolved */
+  private beginMidEvolution(m: PartyMember) {
+    if (this.over || this.evoActive || !this.scene.isActive()) return;
+    const into = evolutionReady(m);
+    if (!into) return;
+    this.evoActive = true;
+    this.resetInput();
+    this.scene.pause('Battle');
+    this.scene.pause('Hud');
+    this.scene.launch('Evolution', { queue: [{ uid: m.uid, from: m.speciesId, into }], returnTo: 'Battle' });
+  }
+
+  /** EvolutionScene đã đóng (tiến hóa xong hoặc hủy): đổi loài tại chỗ rồi tiếp tục trận */
+  onMidEvolved(uid: string) {
+    this.evoActive = false;
+    const f = this.fighters.find((x) => x.member.uid === uid);
+    if (f && f.species.id !== f.member.speciesId) {
+      f.evolveTo(f.member.speciesId);
+      this.fx.puff('zappuff', f.x, f.chestY, 14);
+      this.fx.floatingLabel(f.x, f.chestY - 24, f.species.name, '#fff0a0');
+      if (this.tracksUnlocks()) this.checkUnlockReady(f.member);
+    }
+    this.resetInput();
+    const kind = this.stage?.kind;
+    playMusic(kind === 'champion' ? 'champion' : kind === 'league' ? 'league' : this.gym ? 'gym' : 'battle');
   }
 
   private collectAllOrbs() {

@@ -21,6 +21,9 @@ interface EvoItem {
 
 export class EvolutionScene extends Phaser.Scene {
   private queue: EvoItem[] = [];
+  /** mở giữa trận: xong thì trả về trận đang tạm dừng thay vì sang bản đồ */
+  private returnTo: string | null = null;
+  private lastUid = '';
   private phase: 'anim' | 'done' = 'anim';
   private cancelled = false;
   private layer: Phaser.GameObjects.Container | null = null;
@@ -29,8 +32,10 @@ export class EvolutionScene extends Phaser.Scene {
     super('Evolution');
   }
 
-  init(data: { queue?: EvoItem[] } | undefined) {
+  init(data: { queue?: EvoItem[]; returnTo?: string } | undefined) {
     this.queue = [...(data?.queue ?? [])];
+    this.returnTo = data?.returnTo ?? null;
+    this.lastUid = this.queue[0]?.uid ?? '';
   }
 
   create() {
@@ -57,7 +62,7 @@ export class EvolutionScene extends Phaser.Scene {
     if (!item || !m || m.speciesId !== item.from) {
       this.queue.shift();
       if (this.queue.length) this.play();
-      else this.scene.start('StageMap', {});
+      else this.leave();
       return;
     }
     this.phase = 'anim';
@@ -194,6 +199,19 @@ export class EvolutionScene extends Phaser.Scene {
     if (this.phase !== 'done') return;
     this.queue.shift();
     if (this.queue.length) this.play();
-    else this.scene.start('StageMap', {});
+    else this.leave();
+  }
+
+  private leave() {
+    if (!this.returnTo) {
+      this.scene.start('StageMap', {});
+      return;
+    }
+    const back = this.returnTo;
+    const uid = this.lastUid;
+    this.scene.stop();
+    this.scene.resume(back);
+    this.scene.resume('Hud');
+    (this.scene.get(back) as unknown as { onMidEvolved(uid: string): void }).onMidEvolved(uid);
   }
 }

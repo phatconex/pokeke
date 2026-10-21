@@ -129,6 +129,12 @@ export class Fighter {
     this.setOnField(false);
   }
 
+  /** Tiến hóa ngay giữa trận: đổi loài tại chỗ (máu nằm ở member nên giữ nguyên) */
+  evolveTo(id: string) {
+    this.setSpecies(id);
+    this.anim.sprite.setVisible(this.onField);
+  }
+
   /** Đổi loài (dùng khi khởi tạo; tiến hóa diễn ra ngoài trận) */
   private setSpecies(id: string) {
     this.species = POKEMON[id];
