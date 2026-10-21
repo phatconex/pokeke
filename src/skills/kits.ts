@@ -135,8 +135,6 @@ const INFERNO_DEFAULTS: InfernoParams = {
   rings: [{ r: 52, n: 9 }, { r: 104, n: 14 }, { r: 156, n: 20 }], ringStaggerMs: 200, ringPower: 0.35,
   meteor: { flyMs: 260, fromDx: 70, fromDy: -150, scale: 2.4, haloScale: 3, haloTint: 0xe8501a, scorchR: 22, scorchMs: 3000, firstMs: 520, perTargetMs: 90, perHitMs: 300 },
   extraMeteors: 7,
-  // thiên thạch dạng ảnh (public/assets/fx/fire/meteor_shower.png): khung 1–4 rơi, khung 5–8 nổ
-  sheet: { key: 'fx-meteor_shower', fly: [0, 1, 2, 3], hit: [4, 5, 6, 7], scale: 0.55, hitScale: 0.6 },
 };
 
 const TSUNAMI_DEFAULTS: TsunamiParams = {
@@ -385,17 +383,15 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
   charmander: {
     kitType: 'fire',
     slots: {
-      // thử nghiệm: hình cầu lửa lấy từ ảnh (public/assets/fx/fire/fireball.png): khung 1–5 bay, khung 6 nổ
-      J: { archetype: 'bolt', params: { scale: 0.62, trail: 'none', trailPuffChance: 0, speedMult: 1.05, sheet: { key: 'fx-fireball', fly: [0, 1, 2, 3, 4], hit: 5, scale: 0.34, fps: 16 } }, tiers: [] },
+      J: { archetype: 'bolt', params: { scale: 0.62, trail: 'thin', trailPuffChance: 0.04, speedMult: 1.05 }, tiers: [] },
       K: {
         archetype: 'dashStrike',
-        params: { dashMs: 105, lungeMult: 1, iframeExtraMs: 100, trailCount: 0, streaks: false, impactShake: [0.002, 70], impactSfx: null, startSfx: 'dash', scratch: { n: 3, len: 12, color: 0xdfe4ee, core: 0xffffff }, sheet: { key: 'fx-fire_claw', scale: 0.5, ms: 360 } },
+        params: { dashMs: 105, lungeMult: 1, iframeExtraMs: 100, trailCount: 0, streaks: false, impactShake: [0.002, 70], impactSfx: null, startSfx: 'dash', scratch: { n: 3, len: 12, color: 0xdfe4ee, core: 0xffffff } },
         tiers: [],
       },
       L: {
         archetype: 'stream',
         params: {
-          sheet: { key: 'fx-flamethrower', frames: [2, 3, 4, 5], fps: 14, lenMult: 1, widthMult: 1.7 },
           telegraphMs: 170, tickMs: 120, turnRate: 1.8, totalPowerMult: 1, tickKnockback: 18, sprayMult: 0.45, shake: [0, 0],
           telegraphColor: 0xffc070, telegraphRing: 0xff8a30,
           layers: [{ len: 0.9, w0: 1.5, w1: 0.8, color: 0xe8501a, alpha: 0.5 }, { len: 0.7, w0: 1, w1: 0.4, color: 0xffd060, alpha: 0.85 }],
@@ -404,7 +400,7 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
       },
       U: {
         archetype: 'blast',
-        params: { sheet: { key: 'fx-fire_ring', scale: 1, ms: 520 }, telegraphMs: 230, speed: 580, hitStopMs: 25, arcHeight: 12, ballScale: 1.3, haloScale: 1.5, linger: null, shake: [0.006, 200] },
+        params: { telegraphMs: 230, speed: 580, hitStopMs: 25, arcHeight: 12, ballScale: 1.3, haloScale: 1.5, linger: null, shake: [0.006, 200] },
         tiers: [],
       },
     },

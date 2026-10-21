@@ -28,8 +28,6 @@ export class BootScene extends Phaser.Scene {
 
     // chỉ nạp sheet Đi + Đứng; sheet hành động nạp khi vào trận (systems/spriteLoader)
     queueSheets(this, Object.keys(SPRITE_SHEETS), BOOT_ANIMS);
-    // hiệu ứng chiêu dạng ảnh (sprite sheet 8 khung 256×256)
-    for (const n of ['fireball', 'fire_claw', 'flamethrower', 'fire_ring', 'meteor_shower']) this.load.spritesheet(`fx-${n}`, `assets/fx/fire/${n}.png`, { frameWidth: 256, frameHeight: 256 });
   }
 
   create() {
