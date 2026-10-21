@@ -5,14 +5,16 @@ import type { MoveDef } from '../data/moveKit';
 import { TYPE_COLOR } from '../data/types';
 import { impactRays, powBurst } from '../fx/FightFx';
 
-export type MeleeStyle = 'claw' | 'bite' | 'jab' | 'impact';
+export type MeleeStyle = 'claw' | 'bite' | 'jab' | 'twin' | 'impact';
 
 const CLAW = /(scratch|slash|cutter|claw|wingAttack|karateChop|crossChop|xScissor|viceGrip|guillotine|vineWhip|bonemerang|boneClub|trảm|cào|chém)/i;
+const TWIN = /(twineedle|kim đôi)/i;
 const JAB = /(furyAttack|doublePeck|triPeck|needle|twineedle|jab|đâm loạn|mổ đôi|mổ ba)/i;
 const BITE = /(bite|fang|crunch|hyperFang|peck|drill|horn|cắn|nanh|mổ|sừng)/i;
 
 export function meleeStyleOf(m: MoveDef): MeleeStyle {
   const key = `${m.id} ${m.name}`;
+  if (TWIN.test(key)) return 'twin';
   if (JAB.test(key)) return 'jab';
   if (CLAW.test(key)) return 'claw';
   if (BITE.test(key)) return 'bite';
@@ -60,6 +62,28 @@ export function meleeSignature(sc: Phaser.Scene, m: MoveDef, x: number, y: numbe
       });
     }
     impactRays(sc, x + aim.x * 26 * scale, y + aim.y * 18 * scale, 7, 8 * scale, 24 * scale, shade(col, 0.45), 200);
+  } else if (style === 'twin') {
+    // hai ngòi kim to song song đâm thẳng tới một lượt, nhỏ độc
+    for (const side of [-1, 1]) {
+      const g = sc.add.graphics().setDepth(depth).setPosition(x, y).setRotation(ang);
+      const t0 = { k: 0 };
+      sc.tweens.add({
+        targets: t0, k: 1, duration: 130, ease: 'Cubic.out',
+        onUpdate: () => {
+          g.clear();
+          const tip = 20 + 62 * scale * t0.k;
+          const tail = Math.max(0, tip - 46 * scale);
+          const yy = side * 8 * scale;
+          g.fillStyle(col, 0.35).fillTriangle(tail, yy - 6, tail, yy + 6, tip + 4, yy);
+          g.fillStyle(0xffffff, 0.98).fillTriangle(tail, yy - 3.2, tail, yy + 3.2, tip, yy);
+          g.lineStyle(1.6, col, 1).lineBetween(tail, yy, tip, yy);
+        },
+        onComplete: () => {
+          impactRays(sc, x + Math.cos(ang) * 80 * scale, y + Math.sin(ang) * 80 * scale * 0.8 + side * 4, 5, 4 * scale, 14 * scale, shade(col, 0.5), 160);
+          sc.tweens.add({ targets: g, alpha: 0, duration: 120, onComplete: () => g.destroy() });
+        },
+      });
+    }
   } else if (style === 'jab') {
     // chọc liên hoàn: nhiều mũi kim / mỏ đâm nhanh vào điểm trúng từ các hướng lệch nhau
     for (let i = 0; i < 7; i++) {

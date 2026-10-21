@@ -14,7 +14,7 @@ import type {
 import type { Enemy } from '../entities/Enemy';
 import { bulbCharge, crackBetween, flattenedGrass, groundCracks, leafBurst, windStreak } from '../fx/GrassFx';
 import { meleeSignature } from './meleeFx';
-import { castBodySlam, castClones, castSonic, castThrow, castWingSlash } from './airArchetypes';
+import { castBodySlam, castClones, castShellSpin, castSonic, castThrow, castWingSlash } from './airArchetypes';
 import { castNightfall, castRockfall } from './ultArchetypes';
 import { castCloud, castTether, castWhip } from './grassArchetypes';
 import { castTelekinesis, castTimeStop } from './psyArchetypes';
@@ -55,6 +55,7 @@ export function castArchetype(h: SkillHost, f: Fighter, m: MoveDef, spec: SkillS
     case 'clones': return castClones(h, f, m, spec.params, dir);
     case 'bodyslam': return castBodySlam(h, f, m, spec.params, dir);
     case 'throw': return castThrow(h, f, m, spec.params, dir);
+    case 'shellspin': return castShellSpin(h, f, m, spec.params, dir);
     case 'serpent': return TA.castSerpent(h, f, m, spec.params, dir);
     case 'dive': return TA.castDive(h, f, m, spec.params);
     case 'lob': return TA.castLob(h, f, m, spec.params);

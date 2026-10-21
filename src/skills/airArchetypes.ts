@@ -330,3 +330,75 @@ export function castThrow(h: SkillHost, f: Fighter, m: MoveDef, P: LooseParams, 
     });
   });
 }
+
+/**
+ * Xoay Tốc Độ (Rapid Spin): thu người vào mai rồi xoay tít, các tia nước bắn xoáy ra xung quanh; vừa xoay vừa di chuyển được,
+ * mọi địch trong vòng xoáy bị sát thương liên tục. Dạng tiến hóa càng cao thì vòng xoáy càng rộng, kéo dài hơn.
+ */
+export function castShellSpin(h: SkillHost, f: Fighter, m: MoveDef, P: LooseParams, _dir: Phaser.Math.Vector2) {
+  const sc = h.scene;
+  const mult = h.stackMult(f, m);
+  const R: number = P.r ?? 40;
+  const ms: number = P.ms ?? 1600;
+  const tickMs: number = P.tickMs ?? 150;
+  const col: number = P.color ?? 0x4aa8f0;
+  const ticks = Math.max(1, Math.round(ms / tickMs));
+  const tickAmount = (m.power * f.power * mult * (P.totalPowerMult ?? 1.6)) / ticks;
+  const spr = f.anim.sprite;
+  f.playMove(m);
+  playSfx('waterLo');
+  f.invulnUntil = Math.max(f.invulnUntil, h.clock + 600);
+  // ẩn dáng thường, thay bằng bản sao co lại xoay tít (thu mình vào mai)
+  const shell = sc.add.sprite(f.x, f.y, spr.texture.key, String(spr.frame.name)).setOrigin(spr.originX, spr.originY).setScale(spr.scaleX * 0.82, spr.scaleY * 0.72);
+  f.summoning = true;
+  const g = sc.add.graphics().setDepth(99991);
+  const t0 = h.clock;
+  let nextTick = t0 + 180;
+  h.fx.ringBurst(f.x, f.y, R * 0.8, col, 0xffffff, 300);
+  h.addFrameTask(ms, (now) => {
+    if (f.dead || !f.onField) return;
+    const k = (now - t0) / ms;
+    const spin = (now - t0) / 55;
+    shell.setPosition(f.x + (spr.x - f.x), f.y + (spr.y - f.y)).setRotation(spin).setDepth(spr.depth + 1).setAlpha(k > 0.9 ? (1 - k) / 0.1 : 1).setTint(0xdcecff);
+    g.clear();
+    // các tia nước xoáy ra từ mai: 4 cánh cong quay cùng chiều với mai
+    const cx = f.x;
+    const cy = f.chestY + 4;
+    const fade = k > 0.85 ? (1 - k) / 0.15 : 1;
+    for (let arm = 0; arm < 4; arm++) {
+      const base = spin * 0.9 + (arm / 4) * Math.PI * 2;
+      const pts: Phaser.Math.Vector2[] = [];
+      for (let q = 0; q <= 12; q++) {
+        const u = q / 12;
+        const a = base - u * 1.5;
+        const r = 8 + u * R;
+        pts.push(V(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.62));
+      }
+      g.lineStyle(7, col, 0.35 * fade).strokePoints(pts, false);
+      g.lineStyle(3.2, 0xffffff, 0.9 * fade).strokePoints(pts, false);
+    }
+    g.lineStyle(2, col, 0.7 * fade).strokeEllipse(cx, cy, R * 2, R * 1.24);
+    // giọt nước bắn ra tứ phía
+    if (Math.floor(now / 40) % 1 === 0) {
+      const a = Math.random() * Math.PI * 2;
+      h.fx.puff('bubblepuff', cx + Math.cos(a) * R * 0.9, cy + Math.sin(a) * R * 0.55, 1);
+    }
+    if (now >= nextTick) {
+      nextTick = now + tickMs;
+      for (const e of h.enemies()) {
+        if (!e.targetable) continue;
+        const dx = e.x - f.x;
+        const dy = (e.y - f.y) / 0.62;
+        const dd = Math.hypot(dx, dy);
+        if (dd > R + e.radius) continue;
+        h.damageEnemy(e, { ...m, knockback: 110 }, tickAmount, dx / (dd || 1), dy / (dd || 1), true);
+      }
+      h.fx.shake(0.002, 60);
+    }
+  }, () => {
+    f.summoning = false;
+    shell.destroy();
+    g.destroy();
+    if (!h.over) h.fx.puff('bubblepuff', f.x, f.chestY, 6);
+  });
+}

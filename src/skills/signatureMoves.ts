@@ -50,7 +50,8 @@ reg(['flamethrower', 'hydroPump', 'bubbleBeam', 'auroraBeam', 'iceBeam', 'psybea
 reg(['fireBlast', 'eggBomb', 'spikeCannon', 'thunder', 'nineFlames', 'sludgeBomb'], ({ d }) => S('blast', { dialect: d }));
 reg(['selfDestruct', 'explosion'], ({ d }) => S('nova', { dialect: d, pulses: 2, pulseGapMs: 200, pulseGrowth: 1.25 }));
 reg(['fireSpin', 'thunderWave', 'discharge', 'confuseRay', 'hypnosis', 'yawn', 'confusion', 'dreamEater', 'lovelyKiss', 'sludgeWave', 'toxicSpikes', 'surf', 'clamp', 'thunderbolt'], ({ d, sz }) => S('nova', { dialect: d, pulses: sz >= 2 ? 2 : 1, pulseGapMs: 260, pulseGrowth: 1.15 }));
-reg(['rollout', 'flameWheel', 'rapidSpin'], ({ d, sz }) => S('roll', { dialect: d, size: 1.4 + sz * 0.5, ms: 440 + sz * 60, speed: 220 + sz * 15, hitR: 16 + sz * 4 }));
+reg(['rapidSpin'], ({ d, sz }) => S('shellspin', { dialect: d, r: 26 + sz * 8, ms: 1100 + sz * 250, color: 0x4aa8f0 }));
+reg(['rollout', 'flameWheel'], ({ d, sz }) => S('roll', { dialect: d, size: 1.4 + sz * 0.5, ms: 440 + sz * 60, speed: 220 + sz * 15, hitR: 16 + sz * 4 }));
 reg(['poisonPowder', 'stunSpore', 'sleepPowder', 'spore', 'smog', 'smokescreen', 'toxicFog'], ({ d }) => S('cloud', { dialect: d }));
 reg(['earthquake', 'earthPower', 'rockWrecker', 'rockSlide', 'boneRush', 'rockCharge'], ({ d, sz }) => S('fallers', { dialect: d, tex: d === 'rock' ? 'slabR' : 'boulderA', count: 4 + sz * 2, spread: 60 + sz * 15, offset: { x: 0, y: -140 }, rotate: true, r: 20 + sz * 3, scorch: true }));
 reg(['aerialDive', 'skyAttack', 'jumpKick', 'hiJumpKick', 'drillPeck', 'waterfall'], ({ d, col, sz }) => S('dive', { dialect: d, airMs: 520 + sz * 60, hitR: 34 + sz * 6, trailColor: col }));

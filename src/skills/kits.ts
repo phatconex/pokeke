@@ -46,6 +46,7 @@ export const ARCHETYPE_DEFAULTS: { [A in ArchetypeId]: (m: MoveDef) => Archetype
   clones: () => ({ dialect: 'generic' }),
   bodyslam: () => ({ dialect: 'generic' }),
   throw: () => ({ dialect: 'generic' }),
+  shellspin: () => ({ dialect: 'water' }),
   serpent: () => ({ dialect: 'generic' }),
   dive: () => ({ dialect: 'generic' }),
   lob: () => ({ dialect: 'generic' }),
@@ -749,8 +750,8 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
     slots: {
       J: { archetype: 'bolt', params: { scale: 0.75, trail: 'thin', trailPuffChance: 0.08, speedMult: 1.1, fireSfx: 'waterHi' }, tiers: [{ minLevel: 12, scale: 0.9 }] },
       K: {
-        archetype: 'dashStrike',
-        params: { dashMs: 110, lungeMult: 0.7, iframeExtraMs: 120, trailCount: 1, streaks: false, impactShake: [0.003, 90], bubbleRing: { n: 8, r: 16 }, startSfx: 'waterHi' },
+        archetype: 'shellspin',
+        params: { dialect: 'water', r: 34, ms: 1400, totalPowerMult: 1.5, color: 0x4aa8f0 },
         tiers: [],
       },
       L: {
@@ -789,11 +790,8 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
         tiers: [{ minLevel: 25, burst: { n: 4, gapMs: 70, side: 8, powerMult: 0.34 } }],
       },
       K: {
-        archetype: 'dashStrike',
-        params: {
-          dashMs: 160, lungeMult: 1.3, iframeExtraMs: 200, trailCount: 3, streaks: true, impactShake: [0.005, 120], afterimages: 5, afterimageTint: 0x9ad8ff, afterimageMs: 380,
-          arc: { r: 40, color: 0x5ab0f0, core: 0xffffff }, startSfx: 'dash',
-        },
+        archetype: 'shellspin',
+        params: { dialect: 'water', r: 42, ms: 1700, totalPowerMult: 1.6, color: 0x3a90e8 },
         tiers: [],
       },
       L: {
@@ -837,11 +835,8 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
         tiers: [],
       },
       K: {
-        archetype: 'dashStrike',
-        params: {
-          dashMs: 190, lungeMult: 0.32, iframeExtraMs: 260, trailCount: 1, streaks: false, impactShake: [0.016, 260], impactSfx: 'boom', startSfx: 'waterLo',
-          shockwave: { r: 74, power: 0.9, push: 420, color: 0x2a6ac8, color2: 0xe8fbff, stopMs: 90 },
-        },
+        archetype: 'shellspin',
+        params: { dialect: 'water', r: 54, ms: 2000, totalPowerMult: 1.8, color: 0x2a6ac8 },
         tiers: [],
       },
       L: {
@@ -1000,7 +995,7 @@ const TK: Record<string, SpeciesKit> = {
   caterpie: { kitType: 'bug', slots: { J: S('web', { dialect: 'bug', r: 36, ms: 1600, bugs: 2, n: 6, rings: 3 }) } },
   butterfree: { kitType: 'bug', ult: 'wavefront', slots: { K: S('web', { dialect: 'bug', r: 52, ms: 2200, bugs: 4, pull: true }), U: S('swarm', { dialect: 'bug', n: 22, ms: 4500 }) }, ultParams: { dialect: 'bug', shape: 'swarm', ms: 1800 } },
   weedle: { kitType: 'bug', slots: { J: S('bolt', { dialect: 'bug', scale: 0.9, texPick: ['needle'], trail: 'thin', trailPuffChance: 0.05, split: 1 }), K: S('web', { dialect: 'bug', r: 34, ms: 1500, bugs: 2, n: 6, rings: 3 }) } },
-  beedrill: { kitType: 'bug', ult: 'wavefront', slots: { J: S('bolt', { dialect: 'bug', scale: 1.1, texPick: ['needle'], split: 2, splitSpreadDeg: 8, splitPowerMult: 0.8 }), K: S('bolt', { dialect: 'bug', scale: 1.1, texPick: ['needle'], split: 2, splitSpreadDeg: 6, splitPowerMult: 0.9, speedMult: 1.3 }), L: S('dashStrike', { dialect: 'bug', dashMs: 100, trailCount: 1, streaks: true, impactSfx: null }), U: S('fallers', { dialect: 'bug', tex: 'needle', count: 14, spread: 90, offset: { x: 0, y: -170 }, fallMs: 160, r: 18 }) }, ultParams: { dialect: 'bug', shape: 'swarm', ms: 1800 } },
+  beedrill: { kitType: 'bug', ult: 'wavefront', slots: { J: S('bolt', { dialect: 'poison', scale: 0.8, texPick: ['needle'], split: 1, trail: 'thin', trailPuffChance: 0.15, speedMult: 1.5 }), K: S('dashStrike', { dialect: 'bug', dashMs: 105, trailCount: 1, streaks: false, lungeMult: 1.6, iframeExtraMs: 100, impactSfx: null }), L: S('dashStrike', { dialect: 'bug', dashMs: 100, trailCount: 1, streaks: true, impactSfx: null }), U: S('fallers', { dialect: 'bug', tex: 'needle', count: 14, spread: 90, offset: { x: 0, y: -170 }, fallMs: 160, r: 18 }) }, ultParams: { dialect: 'bug', shape: 'swarm', ms: 1800 } },
   // --- Thường: tròn, mềm, sao trắng — không vòng tròn ma thuật; Thích nghi (Tri-Attack)
   rattata: { kitType: 'normal', slots: { J: S('dashStrike', { dialect: 'normal', dashMs: 100, trailCount: 0, streaks: false, impactSfx: null }), K: S('dashStrike', { dialect: 'normal', dashMs: 120, trailCount: 1, streaks: true, impactSfx: null }) } },
   raticate: { kitType: 'normal', slots: { J: S('dashStrike', { dialect: 'normal', dashMs: 90, trailCount: 0, streaks: false, impactSfx: null }), K: S('dashStrike', { dialect: 'normal', dashMs: 110, trailCount: 1, streaks: true, impactSfx: null }), L: S('dashStrike', { dialect: 'normal', dashMs: 130, trailCount: 1, streaks: true, impactSfx: null }), U: S('dashStrike', { dialect: 'normal', dashMs: 140, trailCount: 2, streaks: true, impactSfx: null }) } },
