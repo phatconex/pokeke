@@ -564,7 +564,8 @@ const saffron: ArenaDef = (f) => {
       p.disc(x, y, i % 3 === 0 ? 2 : 1, [255, 200, 250], 0.8);
     }
     // ---- tấm sàn siêu linh: đá hồng có hoa văn con mắt
-    for (const pl of plates) {
+    // (tấm sàn không còn phóng sóng — chỉ giữ cổng dịch chuyển)
+    for (const pl of plates.slice(0, 0)) {
       const accent: RGB = pl.group === 0 ? [236, 110, 190] : pl.group === 1 ? [200, 120, 240] : [250, 150, 170];
       for (let y = pl.y; y < pl.y + pl.h; y++) for (let x = pl.x; x < pl.x + pl.w; x++) {
         const e = Math.min(x - pl.x, y - pl.y, pl.x + pl.w - 1 - x, pl.y + pl.h - 1 - y);
@@ -651,11 +652,8 @@ const saffron: ArenaDef = (f) => {
       inset: 24,
       solids: solids(walls, orb),
       hazards: [
-        { kind: 'teleport', pads },
-        {
-          kind: 'pulse', areas: plates, periodMs: 3000, warnMs: 1000, fx: 'psychic', color: 0xf85888,
-          damagePct: 0.06, type: 'psychic', slowMs: 600,
-        },
+        // cổng dịch chuyển: bước vào ô này ra ô kia (cả người chơi lẫn địch), không sát thương
+        { kind: 'teleport', pads, cooldownMs: 2000, enemies: true },
       ],
     },
   };

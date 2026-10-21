@@ -424,7 +424,7 @@ function drawPillar(p: ArenaPainter, r: Rect) {
   p.set(cx - 1, cy - 1, [200, 255, 220]);
 }
 
-function drawViridianGym(p: ArenaPainter, f: ArenaFrame, rocks: Solid[], pillars: Solid[], sand: Rect[]) {
+function drawViridianGym(p: ArenaPainter, f: ArenaFrame, rocks: Solid[], pillars: Solid[], sand: Rect[], cracks: Rect[]) {
   const { W, H } = p;
   const areaK = (W * H) / (640 * 360);
   const CX = W / 2;
@@ -525,6 +525,20 @@ function drawViridianGym(p: ArenaPainter, f: ArenaFrame, rocks: Solid[], pillars
   for (let k = -3; k <= 3; k++) p.disc(CX + k * 6, 12, 1.8, k === 0 ? [60, 180, 110] : [70, 62, 54]);
 
   for (const r of pillars) drawPillar(p, r);
+  // ---- vết nứt báo hiệu (gai đá trồi lên dọc các vết này)
+  for (const r of cracks) {
+    const horiz = r.w > r.h;
+    const len = horiz ? r.w : r.h;
+    const mid = horiz ? r.y + r.h / 2 : r.x + r.w / 2;
+    let off = 0;
+    for (let t = 0; t < len; t += 3) {
+      if (t % 12 === 0) off = Math.round((p.rng() - 0.5) * 7);
+      const x = horiz ? r.x + t : mid + off;
+      const y = horiz ? mid + off : r.y + t;
+      p.rect(x - 1, y - 1, horiz ? 4 : 3, horiz ? 3 : 4, [58, 22, 14]);
+      p.rect(x, y, horiz ? 2 : 1, horiz ? 1 : 2, [190, 70, 40], 0.7);
+    }
+  }
 }
 
 const GYM_VIRIDIAN: ArenaDef = (f) => {
@@ -532,16 +546,23 @@ const GYM_VIRIDIAN: ArenaDef = (f) => {
   const pillars = vrPillars(f.W, f.H);
   // hố giữa giữ nguyên cỡ (nằm gọn trong vòng đá khảm r=52), hai hố bên giãn theo sân
   const sand = VR_SAND.map((r, i) => (i === 0 ? f.obj(r) : f.area(r)));
+  // vết nứt: 2 nhóm luân phiên báo trước (vạch đỏ) rồi gai đá trồi lên dọc vết
+  const cracks: (Rect & { group: number })[] = [
+    { x: 54, y: Math.round(f.H * 0.36), w: f.W - 108, h: 22, group: 0 },
+    { x: 54, y: Math.round(f.H * 0.74), w: Math.round(f.W * 0.5), h: 22, group: 0 },
+    { x: Math.round(f.W * 0.64), y: 54, w: 22, h: f.H - 108, group: 1 },
+    { x: Math.round(f.W * 0.27), y: 54, w: 22, h: Math.round(f.H * 0.5), group: 1 },
+  ];
   return {
-    draw: (p) => drawViridianGym(p, f, rocks, pillars, sand),
+    draw: (p) => drawViridianGym(p, f, rocks, pillars, sand, cracks),
     layout: {
       inset: 24,
       solids: [...rocks, ...pillars],
       slowZones: sand,
       slowImmuneTypes: ['ground'],
       hazards: [{
-        kind: 'rain', count: 3, radius: 22, periodMs: 3000, warnMs: 900, fx: 'rock', color: 0xc8a060,
-        damagePct: 0.06, type: 'rock',
+        kind: 'pulse', areas: cracks, periodMs: 2800, warnMs: 1000, fx: 'rock', color: 0xd04a2a,
+        damagePct: 0.06, type: 'rock', immuneTypes: ['flying'],
       }],
     },
   };

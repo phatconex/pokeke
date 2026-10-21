@@ -333,6 +333,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private hazardState: { nextAt: number; warned: boolean; group: number; spots: { x: number; y: number }[]; dir: number }[] = [];
   private hiddenWalls = new Map<Phaser.GameObjects.GameObject, { rect: Solid; flashUntil: number }>();
   private hazardGfx: Phaser.GameObjects.Graphics | null = null;
+  private enemyTeleportAt = new Map<Enemy, number>();
+  private puddles: { x: number; y: number; r: number; until: number; nextAt: number; color: number; h: HazardHit }[] = [];
   private darkMask: Phaser.GameObjects.Image | null = null;
   private teleportReadyAt = 0;
   /** vật phẩm nhận được khi thắng (để hiện ở màn kết quả) */
@@ -532,6 +534,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.slowZones = [];
     this.hazards = [];
     this.hazardState = [];
+    this.puddles = [];
+    this.enemyTeleportAt = new Map();
     this.hiddenWalls = new Map();
     this.darkMask = null;
     this.hazardGfx = null;
@@ -2043,6 +2047,17 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       g.lineStyle(2, 0xd0a0ff, a).strokeRect(w.rect.x, w.rect.y, w.rect.w, w.rect.h);
     }
     f.onIce = false;
+    this.puddles = this.puddles.filter((pd) => pd.until > this.clock);
+    for (const pd of this.puddles) {
+      const a = Math.min(1, (pd.until - this.clock) / 600);
+      g.fillStyle(pd.color, 0.38 * a).fillEllipse(pd.x, pd.y, pd.r * 2, pd.r * 1.3);
+      g.lineStyle(2, pd.color, 0.8 * a).strokeEllipse(pd.x, pd.y, pd.r * 2, pd.r * 1.3);
+      if (Math.random() < 0.08) this.fx.puff('poisonpuff', pd.x + (Math.random() - 0.5) * pd.r, pd.y + (Math.random() - 0.5) * pd.r * 0.6, 1);
+      if (this.clock >= pd.nextAt) {
+        pd.nextAt = this.clock + 1000;
+        if (Math.hypot(f.x - pd.x, (f.feetY - pd.y) / 0.65) <= pd.r) this.hazardHit(f, pd.h, pd.x, pd.y);
+      }
+    }
     this.hazards.forEach((h, i) => {
       const st = this.hazardState[i];
       switch (h.kind) {
@@ -2101,6 +2116,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
           this.fx.shake(0.004, 120);
           const hit = st.spots.find((p) => Math.hypot(f.x - p.x, f.y - p.y) <= h.radius + 4);
           if (hit) this.hazardHit(f, h, hit.x, hit.y);
+          if (h.puddleMs) for (const p of st.spots) this.puddles.push({ x: p.x, y: p.y, r: h.radius, until: this.clock + h.puddleMs, nextAt: this.clock + 1000, color: h.color, h: { ...h, damagePct: h.damagePct * 0.7, slowMs: 1200 } });
           st.nextAt = this.clock + h.periodMs;
           st.warned = false;
           break;
@@ -2108,6 +2124,20 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         case 'teleport': {
           for (const pad of h.pads) {
             g.lineStyle(2, 0xf878f0, 0.5 + Math.sin(this.clock / 150) * 0.3).strokeCircle(pad.x, pad.y, pad.r);
+          }
+          if (h.enemies) {
+            for (const e of this.enemies) {
+              if (!e.targetable || e.isStunned(this.clock)) continue;
+              const ready = this.enemyTeleportAt.get(e) ?? 0;
+              if (this.clock < ready) continue;
+              const ef = h.pads.findIndex((p) => Math.hypot(e.x - p.x, e.feetY - p.y) < p.r * 0.7);
+              const eto = ef >= 0 ? h.pads[h.pads[ef].to] : undefined;
+              if (!eto) continue;
+              this.fx.puff('psypuff', e.x, e.centerY, 10);
+              e.body.reset(eto.x, eto.y - 4);
+              this.fx.puff('psypuff', eto.x, eto.y - 10, 10);
+              this.enemyTeleportAt.set(e, this.clock + (h.cooldownMs ?? 1100));
+            }
           }
           if (this.clock < this.teleportReadyAt || f.dead || f.isBurrowed(this.clock)) break;
           const from = h.pads.findIndex((p) => Math.hypot(f.x - p.x, f.feetY - p.y) < p.r * 0.7);
@@ -2119,7 +2149,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
               f.invulnUntil = Math.max(f.invulnUntil, this.clock + 300);
               this.fx.puff('psypuff', to.x, to.y - 10, 10);
               playSfx('swap');
-              this.teleportReadyAt = this.clock + 1100;
+              this.teleportReadyAt = this.clock + (h.cooldownMs ?? 1100);
             }
           }
           break;

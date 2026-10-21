@@ -26,11 +26,11 @@ export type HazardDef =
   /** các vùng cố định chia nhóm, lần lượt từng nhóm sáng báo hiệu (warnMs) rồi kích hoạt; mỗi periodMs đổi nhóm */
   | ({ kind: 'pulse'; areas: (Rect & { group: number })[]; periodMs: number; warnMs: number; fx: HazardFx; color: number } & HazardHit)
   /** mưa đòn: count vòng tròn ngẫu nhiên quanh người chơi, báo hiệu rồi nổ */
-  | ({ kind: 'rain'; count: number; radius: number; periodMs: number; warnMs: number; fx: HazardFx; color: number } & HazardHit)
+  | ({ kind: 'rain'; count: number; radius: number; periodMs: number; warnMs: number; fx: HazardFx; color: number; /** vũng lưu lại sau khi rơi (ms): chậm + mất máu theo nhịp */ puddleMs?: number } & HazardHit)
   /** nắp phun cố định chia nhóm: mỗi chu kỳ một nhóm báo trước (vòng đỏ) rồi phun cột lên; đứng trong vòng thì dính */
   | ({ kind: 'vents'; spots: { x: number; y: number; group: number }[]; radius: number; periodMs: number; warnMs: number; fx: HazardFx; color: number } & HazardHit)
   /** ô dịch chuyển: đứng vào ô i sẽ bị đưa tới ô pads[i].to */
-  | { kind: 'teleport'; pads: { x: number; y: number; r: number; to: number }[] }
+  | { kind: 'teleport'; pads: { x: number; y: number; r: number; to: number }[]; /** hồi giữa hai lần dịch chuyển (ms, mặc định 1100) */ cooldownMs?: number; /** địch cũng bị dịch chuyển */ enemies?: boolean }
   /** sàn băng trơn trượt: người chơi trôi theo quán tính */
   | { kind: 'ice'; areas: Rect[] }
   /** bóng tối: chỉ thấy trong bán kính quanh người chơi */

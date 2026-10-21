@@ -926,8 +926,8 @@ const fuchsiaGym: ArenaDef = (f) => {
       inset: 24,
       solids: [...lanterns, ...hidden],
       hazards: [{
-        kind: 'rain', count: 3, radius: 26, periodMs: 3000, warnMs: 900, fx: 'poison', color: 0xa040a0,
-        damagePct: 0.06, type: 'poison', slowMs: 800,
+        kind: 'rain', count: 2, radius: 28, periodMs: 3200, warnMs: 800, fx: 'poison', color: 0xa040a0, puddleMs: 3000,
+        damagePct: 0.05, type: 'poison', slowMs: 800,
       }] as HazardDef[],
     },
   };

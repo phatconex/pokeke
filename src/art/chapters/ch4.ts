@@ -579,7 +579,7 @@ const GYM_CELADON: ArenaDef = (f) => {
       solids: [...topiaries, ...pots],
       hazards: [{
         kind: 'pulse', areas: beds, periodMs: 3000, warnMs: 1000, fx: 'spore', color: 0xd8f080,
-        damagePct: 0.04, type: 'grass', slowMs: 1800, immuneTypes: ['grass'],
+        damagePct: 0.05, type: 'grass', slowMs: 1800, immuneTypes: ['grass'],
       }],
     },
   };
