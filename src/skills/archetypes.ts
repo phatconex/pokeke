@@ -13,6 +13,7 @@ import type {
 } from './types';
 import type { Enemy } from '../entities/Enemy';
 import { bulbCharge, crackBetween, flattenedGrass, groundCracks, leafBurst, windStreak } from '../fx/GrassFx';
+import { meleeSignature } from './meleeFx';
 import { castCloud, castTether, castWhip } from './grassArchetypes';
 import { castTelekinesis, castTimeStop } from './psyArchetypes';
 import { castBarrier, castBoomerang, castMindBreak, castSingularity } from './legendArchetypes';
@@ -243,7 +244,8 @@ function castDashStrike(h: SkillHost, f: Fighter, m: MoveDef, P: DashStrikeParam
   const d = dialectFor(P.dialect, h.fx, m, h);
   const mult = h.stackMult(f, m);
   const aim = dir.clone();
-  const lunge = (m.lunge ?? 60) * (P.lungeMult ?? 1);
+  // đòn cận chiến lao tới xa hơn trước (tối thiểu 84px) để không phải dí sát mới trúng
+  const lunge = Math.max(m.lunge ?? 60, 84) * (P.lungeMult ?? 1);
   const t = h.aimTarget;
   const dist = t ? Phaser.Math.Clamp(Math.hypot(t.x - f.x, t.y - f.y) - t.radius - 8, 0, lunge) : lunge;
   const ms = P.dashMs;
@@ -334,7 +336,10 @@ function castDashStrike(h: SkillHost, f: Fighter, m: MoveDef, P: DashStrikeParam
         });
       }
     }
-    h.meleeSequence(f, m, aim, mult);
+    // đòn không có hình riêng: vẽ chữ ký theo kiểu đòn (chém/cào, cắn, húc/đấm)
+    if (!P.arc && !P.arc2 && !P.scratch && !P.vine && !P.roots && !P.shockwave && !P.bubbleRing) meleeSignature(h.scene, m, ex, ey, aim, 1.1);
+    // vùng trúng rộng hơn một chút (tầm ×1,25)
+    h.meleeSequence(f, { ...m, range: (m.range ?? 40) * 1.25 }, aim, mult);
   });
 }
 

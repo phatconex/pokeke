@@ -1096,7 +1096,28 @@ export const KIT_TEMPLATES: Record<string, SpeciesKit> = {
 /** Bộ chiêu của loài sau khi gộp mẫu (nếu có) với phần ghi đè riêng */
 export function kitFor(speciesId: string): SpeciesKit | undefined {
   const merged = mergedKit(speciesId);
-  if (!merged || !FAMILY_KITS[speciesId] || SPECIES_KITS[speciesId] !== FAMILY_KITS[speciesId]) return merged;
+  if (merged && !(FAMILY_KITS[speciesId] && SPECIES_KITS[speciesId] === FAMILY_KITS[speciesId])) {
+    // bộ chiêu làm tay: ô nào còn trống mà chiêu là chiêu đánh thì gán hình theo tên chiêu (chiêu tự cường giữ xử lý gốc)
+    const cachedFill = fillCache.get(speciesId);
+    if (cachedFill) return cachedFill;
+    const sp0 = POKEMON[speciesId];
+    const slots0: NonNullable<SpeciesKit['slots']> = { ...(merged.slots ?? {}) };
+    let changed = false;
+    for (const s of sp0?.skills ?? []) {
+      if (slots0[s.slot]) continue;
+      const m = MOVES[s.move];
+      if (!m || m.archetype) continue;
+      const v = moveVisual(m, evoDepth(speciesId));
+      if (v) {
+        slots0[s.slot] = v;
+        changed = true;
+      }
+    }
+    const out = changed ? { ...merged, slots: slots0 } : merged;
+    fillCache.set(speciesId, out);
+    return out;
+  }
+  if (!merged) return merged;
   // loài ở familyKits.ts: hình chiêu theo TÊN chiêu (khớp tên và hiệu ứng); chiêu tự cường giữ xử lý gốc
   const cached = familySlotCache.get(speciesId);
   if (cached) return { ...merged, slots: cached };
@@ -1112,6 +1133,7 @@ export function kitFor(speciesId: string): SpeciesKit | undefined {
   return { ...merged, slots };
 }
 
+const fillCache = new Map<string, SpeciesKit>();
 const familySlotCache = new Map<string, NonNullable<SpeciesKit['slots']>>();
 
 /** dạng tiến hóa: 1 = gốc, 2 = giữa, 3 = cuối */

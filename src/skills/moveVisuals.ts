@@ -24,7 +24,7 @@ const SLASH = new Set(['slash', 'furyCutter', 'viceGrip', 'hyperFang', 'guilloti
 const XSLASH = new Set(['xScissor']);
 const VINE = new Set(['vineWhip', 'powerWhip', 'bind', 'wrap', 'constrict', 'ingrain']);
 const RAPID = new Set(['quickAttack', 'extremeSpeed', 'aquaJet', 'flameCharge', 'flareBlitz', 'machPunch', 'peck', 'doublePeck', 'triPeck', 'furyAttack', 'rollingKick', 'lowKick']);
-const BUFF_LEGACY = new Set(['harden', 'withdraw', 'minimize', 'barrier', 'meditate', 'agility', 'doubleTeam', 'softBoiled', 'slackOff', 'transform', 'melt', 'counter', 'splash', 'metronome', 'aquaRing', 'rage', 'flail']);
+const BUFF_LEGACY = new Set(['harden', 'withdraw', 'minimize', 'barrier', 'meditate', 'agility', 'doubleTeam', 'softBoiled', 'slackOff', 'transform', 'melt', 'counter', 'splash', 'metronome', 'aquaRing']);
 
 /**
  * Ánh xạ một chiêu → khuôn hiển thị (null = giữ cách xử lý gốc của chiêu).
