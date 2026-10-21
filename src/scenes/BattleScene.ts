@@ -2575,7 +2575,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     }
     // tuyệt chiêu chỉ tích từ đòn K/L/U (J, tuyệt chiêu, phản đòn... không tích)
     this.lastDealtAt = this.clock;
-    if (m.castSlot && m.castSlot !== 'J') this.gainUlt(quiet ? ULT_GAIN.hit * 0.3 : ULT_GAIN.hit);
+    // chiêu J cũng tích tuyệt chiêu nhưng chỉ bằng nửa các ô khác
+    if (m.castSlot) this.gainUlt((quiet ? ULT_GAIN.hit * 0.3 : ULT_GAIN.hit) * (m.castSlot === 'J' ? 0.5 : 1));
     this.onCastHit(e, m);
     // đang Ngủ: đòn đầu tiên đánh thức và mạnh hơn
     // Đóng băng: đòn hệ Lửa làm tan băng
