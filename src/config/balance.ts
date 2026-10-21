@@ -158,6 +158,8 @@ export const GYM_RULES = {
   rage: { hpRatio: 0.3, speedMult: 1.25, dmgMult: 1.2, gapMult: 0.7 },
   /** Sức mạnh hội quán KHÔNG phụ thuộc cấp / máu người chơi (yếu thì cày thêm). Sát thương chiêu riêng của loài = power × hệ số này × dmgMult của Pokémon địch */
   kitDamagePerPower: 0.2,
+  /** sân vực nước: lướt hụt rơi xuống nước mất tỉ lệ máu tối đa này */
+  fallWaterPct: 0.06,
   /** nghỉ ngắn sau khi người chơi đổi Pokémon (ms) */
   swapFreezeMs: 1700,
 } as const;

@@ -3,7 +3,7 @@ import { scatter } from '../fx/TypeFx';
 import { leafBurst } from '../fx/GrassFx';
 import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, GYM_RULES, PLAYER, POTION, SKILL_UNLOCK, SPAWN, STAGE_REWARD, STAGE_RAMP, STAGE_TUNING, SURVIVAL, SURVIVAL_REWARD, stageRamp, SWITCH, TRAINER, arenaSize } from '../config/balance';
 import { makeFrame } from '../art/chapters';
-import { arenaLayout, CERULEAN_SIZE, ceruleanSpots, generateArena } from '../art/arenaArt';
+import { arenaLayout, generateArena } from '../art/arenaArt';
 import { METRONOME_POOL, MOVES, MoveDef, slotScaledMove, STATUS_COLOR, upgradeMove } from '../data/moves';
 import { hasUltimate, POKEMON, SKILL_SLOTS, SkillSlot } from '../data/pokemon';
 import { STAGES, STAGE_BY_ID, StageDef, TUTORIAL_STAGE_ID } from '../data/stages';
@@ -107,11 +107,7 @@ const LAB_DUMMY_HP = 1e9;
 export const TRAINER_SCALE = 1.5;
 /** vị trí đoạn mở màn hội quán theo kích thước sân: Pokémon đối thủ = makeFrame().startR, thủ lĩnh / người chơi đứng
  *  hai bên trong khung 640 px giữa sân (camera giữ tâm sân suốt đoạn mở màn nên cả hai đều trong hình) */
-export function gymPositions(W: number, H: number, biome?: string) {
-  if (biome === 'gym-cerulean') {
-    const c = ceruleanSpots(W, H);
-    return { leader: c.leader, foe: c.foe, trainer: c.trainer, player: c.player };
-  }
+export function gymPositions(W: number, H: number) {
   const f = makeFrame(W, H);
   return { leader: { x: Math.round(W / 2 + 280), y: Math.round(H / 2 + 22) }, foe: { ...f.startR }, trainer: { x: Math.round(W / 2 - 276), y: Math.round(H / 2 + 22) }, player: { ...f.startL } };
 }
@@ -296,6 +292,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   /** hệ không bị vùng làm chậm ảnh hưởng (mặc định hệ Nước) */
   private slowImmune: PokemonType[] = ['water'];
   private safeRects: { x: number; y: number; w: number; h: number }[] = [];
+  private voidWater = false;
+  private lastPlat: { x: number; y: number } | null = null;
+  private wasAirborne = false;
   /** bẫy sân đấu (sàn điện, bào tử, mưa đá, ô dịch chuyển, băng, bóng tối, gió) */
   private hazards: HazardDef[] = [];
   private hazardState: { nextAt: number; warned: boolean; group: number; spots: { x: number; y: number }[]; dir: number }[] = [];
@@ -499,6 +498,9 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.potionsUsed = 0;
     this.slowZones = [];
     this.safeRects = [];
+    this.voidWater = false;
+    this.lastPlat = null;
+    this.wasAirborne = false;
     this.hazards = [];
     this.hazardState = [];
     this.hiddenWalls = new Map();
@@ -581,10 +583,10 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     const solids = this.physics.add.staticGroup();
     if (this.stage || lab) {
       const biome = this.stage?.biome ?? 'forest';
-      const size = biome === 'gym-cerulean' ? { w: CERULEAN_SIZE.w, h: CERULEAN_SIZE.h } : arenaSize(lab ? 'lab' : this.gym ? 'trainer' : 'stage');
+      const size = arenaSize(lab ? 'lab' : this.gym ? 'trainer' : 'stage');
       this.worldW = size.w;
       this.worldH = size.h;
-      this.gymPos = gymPositions(size.w, size.h, biome);
+      this.gymPos = gymPositions(size.w, size.h);
       const key = `arena-${biome}-${size.w}x${size.h}`;
       if (!this.textures.exists(key)) generateArena(this, key, biome, size.w, size.h);
       this.add.image(0, 0, key).setOrigin(0).setDepth(-10000);
@@ -593,6 +595,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       this.solidRects = lay.solids;
       this.slowZones = lay.slowZones ?? [];
       this.safeRects = lay.safeRects ?? [];
+      this.voidWater = !!lay.voidWater;
       this.slowImmune = lay.slowImmuneTypes ?? ['water'];
       this.hazards = [...(lay.hazards ?? [])];
       if (this.trial) {
@@ -860,6 +863,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     }
     p.zoneSlow = this.inSlowZone(p.x, p.feetY) && !p.species.types.some((t) => this.slowImmune.includes(t)) ? 0.55 : 1;
     p.update(clock, dt, move, lookAt);
+    if (this.voidWater) this.enforceWater(p);
     this.updateEvoAura();
     // chơi bàn phím (chưa dùng chuột) thì tự khóa mục tiêu 360°, không bắn mù theo hướng quay
     this.updateAimTarget(useMouse ? 'mouse' : mode === 'mouse' ? 'auto' : mode);
@@ -976,6 +980,61 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     const p = this.player;
     if (p.onField) p.update(this.clock, dt, { x: 0, y: 0 });
   }
+
+  /**
+   * Sân vực nước (Cerulean): hệ khác Nước chỉ đứng được trên bệ. Đi bộ ra mép thì bị chặn lại; lướt (Space) qua khe nước sang bệ khác
+   * thì đứng vững; lướt hụt rơi xuống nước: mất một ít máu rồi được đưa về bệ cũ. Hệ Nước bơi tự do.
+   */
+  private enforceWater(p: Fighter) {
+    if (!p.onField || p.dead || this.over) return;
+    if (p.species.types.some((ty) => this.slowImmune.includes(ty))) return;
+    const onPlat = !this.inSlowZone(p.x, p.feetY);
+    const air = p.isDashing;
+    if (onPlat) {
+      this.lastPlat = { x: p.x, y: p.y };
+      this.wasAirborne = air;
+      return;
+    }
+    if (air) {
+      this.wasAirborne = true;
+      return;
+    }
+    const back = this.lastPlat ?? { x: this.gymPos.player.x, y: this.gymPos.player.y };
+    if (this.wasAirborne) {
+      this.wasAirborne = false;
+      // lướt xong: có bệ trong tầm thì bám lên bệ gần nhất (lướt không cần chính xác từng pixel)
+      let best: { x: number; y: number } | null = null;
+      let bestD = 52;
+      for (const r of this.safeRects) {
+        const cx = Phaser.Math.Clamp(p.x, r.x + 4, r.x + r.w - 4);
+        const cy = Phaser.Math.Clamp(p.feetY, r.y + 3, r.y + r.h - 3);
+        const d = Math.hypot(cx - p.x, cy - p.feetY);
+        if (d < bestD) {
+          bestD = d;
+          best = { x: cx, y: cy - (p.feetY - p.y) };
+        }
+      }
+      if (best) {
+        const body = p.zone.body as Phaser.Physics.Arcade.Body;
+        body.reset(best.x, best.y);
+        this.lastPlat = { x: best.x, y: best.y };
+        this.fx.dustPuff(best.x, best.y + 6, 4);
+        return;
+      }
+      // lướt hụt: rơi xuống nước
+      this.fx.splashExplosion(p.x, p.feetY, 22);
+      playSfx('water');
+      this.fx.floatingLabel(p.x, p.chestY - 22, t('battle.fellWater'), '#9ad8ff');
+      p.invulnUntil = 0;
+      this.damageFighter(p, p.maxHp * GYM_RULES.fallWaterPct, p.x, p.y, 'water');
+      p.invulnUntil = Math.max(p.invulnUntil, this.clock + 900);
+    }
+    // không đi bộ ra nước được: đưa về chỗ đứng gần nhất
+    const body = p.zone.body as Phaser.Physics.Arcade.Body;
+    body.reset(back.x, back.y);
+    body.setVelocity(0, 0);
+  }
+
 
   /** Thủ lĩnh ném bóng tới điểm ra sân; onOpen gọi khi bóng bật mở */
   leaderThrow(onOpen: () => void): BallThrow {
@@ -3236,6 +3295,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       markSeen(getGame(), p.species);
       e.catchable = !trainer && !!this.stage?.catchable?.includes(p.species);
       if (trainer && p.ridx !== undefined) e.gymIdx = p.ridx;
+      if (trainer && !p.boss && this.voidWater && e.species.types.includes('water')) e.diver = true;
       if (trainer && !p.boss) {
         const ok = (['J', 'K', 'L', 'U'] as SkillSlot[]).some((sl) => {
           const sk = e.species.skills.find((x) => x.slot === sl);
@@ -3851,7 +3911,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     for (const e of this.enemies) {
       const legend = !!legendOf(e.species.id);
       // Pokémon hội quán (không phải đầu lĩnh) cũng dùng bộ chiêu riêng của loài, nhẹ tay hơn huyền thoại
-      if (e.dead || e.dummy || e.beingCaught || (!legend && !(e.trainer && !e.isBoss && e.usesKit))) continue;
+      if (e.dead || e.dummy || e.beingCaught || (!legend && !(e.trainer && !e.isBoss && e.usesKit)) || e.hidden) continue;
       let st = this.legendFoes.get(e);
       if (!st) {
         st = { next: this.clock + 1200, idx: 0, ults: legend ? [0.75, 0.5, 0.25] : [], ...this.makeLegendFoe(e) };

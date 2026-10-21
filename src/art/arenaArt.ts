@@ -372,20 +372,6 @@ function pewterSlabs(f: ArenaFrame): Rect[] {
   ];
 }
 
-/** Kích thước sân Cerulean (lớn hơn sân hội quán thường: nhiều chỗ nhảy) */
-export const CERULEAN_SIZE = { w: 1280, h: 720 } as const;
-
-/** Chỗ xuất phát / đứng của hai bên ở sân Cerulean (đều nằm trên bệ) */
-export function ceruleanSpots(W: number, H: number) {
-  const cy = Math.round(H / 2);
-  return {
-    player: { x: 230, y: cy },
-    trainer: { x: 148, y: cy + 26 },
-    foe: { x: W - 230, y: cy },
-    leader: { x: W - 148, y: cy + 26 },
-  };
-}
-
 export interface WaterPlatform {
   kind: 'ball' | 'barrel';
   x: number;
@@ -394,34 +380,36 @@ export interface WaterPlatform {
   ry: number;
 }
 
-/** Bệ nổi của sân Cerulean: 7 bệ Poké Ball + thùng gỗ xếp so le (khe giữa các bệ vừa tầm lướt Space ≈ 80px) */
+/**
+ * Bệ nổi của sân Cerulean (cùng kích thước sân với mọi hội quán): bệ Poké Ball ở hai chỗ xuất phát, giữa sân và 4 bệ trung,
+ * thùng gỗ xếp so le (khe giữa các bệ vừa tầm lướt Space ≈ 80px). Huấn luyện viên / thủ lĩnh đứng trên thùng riêng.
+ */
 export function ceruleanPlatforms(W: number, H: number): WaterPlatform[] {
-  const sp = ceruleanSpots(W, H);
+  const f = makeFrame(W, H);
   const cy = Math.round(H / 2);
   const out: WaterPlatform[] = [
-    { kind: 'ball', x: sp.player.x, y: sp.player.y, rx: 62, ry: 28 },
-    { kind: 'ball', x: sp.foe.x, y: sp.foe.y, rx: 62, ry: 28 },
-    { kind: 'ball', x: W / 2, y: cy, rx: 78, ry: 35 },
-    { kind: 'ball', x: W / 2 - 205, y: cy - 165, rx: 46, ry: 21 },
-    { kind: 'ball', x: W / 2 + 205, y: cy - 165, rx: 46, ry: 21 },
-    { kind: 'ball', x: W / 2 - 205, y: cy + 165, rx: 46, ry: 21 },
-    { kind: 'ball', x: W / 2 + 205, y: cy + 165, rx: 46, ry: 21 },
-    // bệ nhỏ cho huấn luyện viên và thủ lĩnh
-    { kind: 'barrel', x: sp.trainer.x, y: sp.trainer.y, rx: 30, ry: 14 },
-    { kind: 'barrel', x: sp.leader.x, y: sp.leader.y, rx: 30, ry: 14 },
+    { kind: 'ball', x: f.startL.x, y: f.startL.y, rx: 46, ry: 21 },
+    { kind: 'ball', x: f.startR.x, y: f.startR.y, rx: 46, ry: 21 },
+    { kind: 'ball', x: W / 2, y: cy, rx: 58, ry: 26 },
+    { kind: 'ball', x: W / 2 - 108, y: cy - 108, rx: 36, ry: 16 },
+    { kind: 'ball', x: W / 2 + 108, y: cy - 108, rx: 36, ry: 16 },
+    { kind: 'ball', x: W / 2 - 108, y: cy + 108, rx: 36, ry: 16 },
+    { kind: 'ball', x: W / 2 + 108, y: cy + 108, rx: 36, ry: 16 },
+    // chỗ đứng của huấn luyện viên (người chơi) và thủ lĩnh (trùng gymPositions)
+    { kind: 'barrel', x: Math.round(W / 2 - 276), y: Math.round(H / 2 + 22), rx: 24, ry: 11 },
+    { kind: 'barrel', x: Math.round(W / 2 + 280), y: Math.round(H / 2 + 22), rx: 24, ry: 11 },
   ];
-  // thùng gỗ: lưới so le, bỏ chỗ đã có bệ lớn và một số ô theo mã băm để mỗi vùng có đường vòng khác nhau
-  const px = 106;
-  const py = 86;
+  const px = 88;
+  const py = 70;
   const hash = (a: number, b: number) => {
     const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
     return v - Math.floor(v);
   };
-  for (let r = 0, y = 70; y < H - 60; r++, y += py) {
-    for (let x = 92 + (r % 2 ? px / 2 : 0); x < W - 80; x += px) {
-      if (out.some((o) => Math.hypot((o.x - x) / (o.rx + 40), (o.y - y) / (o.ry + 34)) < 1)) continue;
-      if (hash(x, y) < 0.1) continue;
-      out.push({ kind: 'barrel', x: Math.round(x + (hash(y, x) - 0.5) * 14), y: Math.round(y + (hash(x, y) - 0.5) * 8), rx: 28, ry: 13 });
+  for (let r = 0, y = 56; y < H - 44; r++, y += py) {
+    for (let x = 62 + (r % 2 ? px / 2 : 0); x < W - 50; x += px) {
+      if (out.some((o) => Math.hypot((o.x - x) / (o.rx + 34), (o.y - y) / (o.ry + 28)) < 1)) continue;
+      if (hash(x, y) < 0.08) continue;
+      out.push({ kind: 'barrel', x: Math.round(x + (hash(y, x) - 0.5) * 10), y: Math.round(y + (hash(x, y) - 0.5) * 6), rx: 24, ry: 11 });
     }
   }
   return out;
@@ -612,6 +600,7 @@ export function arenaLayout(biome: ArenaBiome, W: number, H: number): ArenaLayou
       solids: [],
       slowZones: [ceruleanPool(W, H)],
       safeRects: ceruleanIslands(W, H),
+      voidWater: true,
       // cột nước phun từ đáy hồ: báo trước rồi bắn lên; Pokémon hệ Nước cuồng nộ thì phun dày hơn
       hazards: [{ kind: 'rain', count: 3, radius: 30, periodMs: 4200, warnMs: 800, fx: 'water', color: 0x4a90e8, damagePct: 0.05, type: 'water', immuneTypes: ['water'] }],
     };
