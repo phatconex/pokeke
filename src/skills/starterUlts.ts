@@ -72,7 +72,7 @@ export function castFrenzyPlant(h: SkillHost, f: Fighter, _P: LooseParams, _u: U
           continue;
         }
         gx.clear();
-        const hh = 56 * k;
+        const hh = 92 * k;
         for (const off of [-9, 0, 9]) {
           const bx = e.x + off;
           const by = e.y + 14;
@@ -81,8 +81,8 @@ export function castFrenzyPlant(h: SkillHost, f: Fighter, _P: LooseParams, _u: U
             const t = i / 10;
             pts.push(V(bx + Math.sin(t * 9 + now / 140 + off) * 5, by - hh * t));
           }
-          gx.lineStyle(9 - 5 * 0.5, 0x2a3a10, 1).strokePoints(pts, false);
-          gx.lineStyle(6, 0x6a8a30, 1).strokePoints(pts, false);
+          gx.lineStyle(11, 0x2a3a10, 1).strokePoints(pts, false);
+          gx.lineStyle(7.5, 0x6a8a30, 1).strokePoints(pts, false);
           for (let i = 1; i < 6; i++) {
             const p = pts[Math.min(10, i * 2)];
             gx.fillStyle(0xcaf070, 1).fillTriangle(p.x, p.y, p.x + 7, p.y - 3, p.x + 1, p.y - 5);
@@ -271,7 +271,7 @@ export function castBlastBurn(h: SkillHost, f: Fighter, _P: LooseParams, _u: Ult
       const dx = e.x - c.x;
       const dy = e.y - c.y;
       const dd = Math.hypot(dx, dy) || 1;
-      h.damageEnemy(e, { ...mv, knockback: 340 }, amount * 0.5, dx / dd, dy / dd, true);
+      h.damageEnemy(e, { ...mv, knockback: 340, status: { kind: 'burn', chance: 1, ms: 4000 } }, amount * 0.5, dx / dd, dy / dd, true);
     }
   });
 }
@@ -339,7 +339,7 @@ export function castFireDragon(h: SkillHost, f: Fighter, _P: LooseParams, _u: Ul
     playSfx('boom');
     for (const e of alive(h)) {
       if (Math.hypot(e.x - end.x, (e.y - end.y) / 0.8) > 70 + e.radius) continue;
-      h.damageEnemy(e, { ...mv, knockback: 280 }, amount * 0.3, e.x - end.x, e.y - end.y, true);
+      h.damageEnemy(e, { ...mv, knockback: 280, status: { kind: 'burn', chance: 1, ms: 3000 } }, amount * 0.3, e.x - end.x, e.y - end.y, true);
     }
   });
 }
@@ -580,7 +580,8 @@ export function castThunderfall(h: SkillHost, f: Fighter, _P: LooseParams, _u: U
         const b = list[(i + 1) % list.length];
         if (a === b) continue;
         zig(lg, a.x, a.centerY, b.x, b.centerY, 0xfff070, 3.5, 12);
-        h.damageEnemy(b, mv, amount * 0.18, 0, 0, true);
+        h.damageEnemy(b, { ...mv, status: { kind: 'paralyze', chance: 1, ms: 3000 } }, amount * 0.18, 0, 0, true);
+        scatter(sc, 'spark', b.x, b.centerY - 14, 5, 30);
       }
       for (const e of list) h.fx.ringBurst(e.x, e.y + 6, 30, 0xffb020, 0xffe040, 380);
       sc.tweens.add({ targets: lg, alpha: 0, duration: 260, onComplete: () => lg.destroy() });
