@@ -153,7 +153,7 @@ export const GYM_RULES = {
   /** thủ lĩnh thu hồi con đang yếu: khi máu ≤ ngưỡng, xác suất, số lần tối đa mỗi trận */
   recall: { hpRatio: 0.4, chance: 0.6, maxPerBattle: 2 },
   /** con bị thu hồi nghỉ hồi máu chậm: tỉ lệ máu hồi mỗi giây, trần hồi */
-  rest: { regenPerSec: 0.012, cap: 0.7 },
+  rest: { regenPerSec: 0.005, cap: 0.6 },
   /** nổi cuồng nộ khi máu ≤ ngưỡng: nhanh / mạnh hơn, ra đòn dồn dập */
   rage: { hpRatio: 0.3, speedMult: 1.25, dmgMult: 1.2, gapMult: 0.7 },
   /** Sức mạnh hội quán KHÔNG phụ thuộc cấp / máu người chơi (yếu thì cày thêm). Sát thương chiêu riêng của loài = power × hệ số này × dmgMult của Pokémon địch */
