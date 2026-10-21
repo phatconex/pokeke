@@ -138,6 +138,19 @@ const CORE_GYMS: Record<string, GymDef> = {
       { species: 'magnemite', level: 25 },
       { species: 'raichu', level: 28, boss: true },
     ],
+    // hội quán động: 2 con bốc từ kho (khác loài), rồi Raichu
+    pool: [
+      { species: 'voltorb', level: 25 },
+      { species: 'magnemite', level: 25 },
+      { species: 'pikachu', level: 26 },
+      { species: 'electrode', level: 27 },
+      { species: 'magneton', level: 27 },
+      { species: 'electabuzz', level: 27 },
+    ],
+    pick: 2,
+    ace: { species: 'raichu', level: 28, boss: true },
+    // con thường đánh nhanh hơn 1,2 lần như Cerulean; Raichu (át chủ bài) giảm độ trâu / đau
+    tuning: { attackSpeed: 1.2, aceHp: 0.45, aceDmg: 0.85 },
     intro: [
       'Matis: Ha! Một nhóc con muốn lấy Huy hiệu Sấm của Trung úy Matis à?',
       'Matis: Sàn đấu của ta có điện chạy qua. Ô nào sáng vàng là sắp phóng điện — né ra, trừ khi Pokémon của cậu là hệ Đất!',

@@ -565,7 +565,7 @@ export function arenaLayout(biome: ArenaBiome, W: number, H: number): ArenaLayou
       solids: vermilionGenerators(W, H),
       hazards: [{
         kind: 'pulse', areas: vermilionPanels(W, H), periodMs: 2600, warnMs: 900, fx: 'lightning', color: 0xf8d030,
-        damagePct: 0.1, type: 'electric', immuneTypes: ['ground'],
+        damagePct: 0.06, type: 'electric', immuneTypes: ['ground'],
       }],
     };
   }
