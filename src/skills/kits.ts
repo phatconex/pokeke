@@ -448,11 +448,11 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
         tiers: [],
       },
       U: {
-        archetype: 'dashStrike',
+        archetype: 'blast',
         params: {
-          dashMs: 230, lungeMult: 1.5, iframeExtraMs: 260, trailCount: 4, streaks: false, afterimages: 6, afterimageTint: 0xff7a30, afterimageMs: 320,
-          wrap: { color: 0xff6a20, core: 0xffe080 }, impactShake: [0.016, 240], impactSfx: 'flame', startSfx: 'roar',
-          shockwave: { r: 70, power: 1, push: 360, color: 0xe8501a, color2: 0xffe070, stopMs: 100 },
+          ballTexture: 'fireball', ballScale: 3.4, haloScale: 5, haloTint: 0xe8501a, speed: 380, arcHeight: 140, spin: 0.22, telegraphMs: 480,
+          star: { points: 5, color: 0xe8401a, core: 0xffe070 }, shockwave: { color: 0xff9a30, color2: 0xffe070 }, debris: 14, shake: [0.016, 320],
+          linger: { ms: 2800, tickMs: 400, powerMult: 0.25, radiusMult: 1.1, color: 0xff6a1a, status: true },
         },
         tiers: [],
       },

@@ -34,7 +34,7 @@ export const EN_MOVES: Record<string, { name: string; desc: string }> = {
   wingSlashF3: { name: 'Wing Slash', desc: 'Swoops forward (invulnerable while moving) carving two wide crescent slashes with an ember trail.' },
   flamethrowerF3: { name: 'Flamethrower', desc: 'Aims for 0.45s, then unleashes a huge double-layered flame column that sweeps slowly, piercing every foe. 60% Burn.' },
   seismicTossF3: { name: 'Seismic Toss', desc: 'Rushes in, grabs the foe, spins it high in the air and slams it down with a shockwave and a short stun.' },
-  flareBlitzF3: { name: 'Flare Blitz', desc: 'Wraps its whole body in flames and charges, exploding in a ring of fire on impact. 50% Burn.' },
+  fireMeteorF3: { name: 'Fire Meteor', desc: 'Hurls a giant flaming meteor that explodes over an area and leaves burning ground. 50% Burn.' },
   fireBlastF3: { name: 'Fire Blast', desc: 'Locks on and hurls a giant fireball that detonates as a 5-point star of fire with a wide shockwave and flying debris. 70% Burn.' },
   ember: { name: 'Ember', desc: 'A small fireball. 25% Burn (lose HP over time).' },
   thundershock: { name: 'Thunder Shock', desc: 'Electric bolt chains to 1 nearby foe. 15% Paralysis.' },
