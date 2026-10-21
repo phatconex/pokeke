@@ -59,7 +59,13 @@ const STRIKE_FX: Partial<Record<PokemonType, HazardFx>> = {
 /** tên tuyệt chiêu theo ngôn ngữ đang chọn */
 const ULT_NAME_BY_SPECIES: Record<string, { vi: string; en: string }> = {
   ivysaur: { vi: 'Vũ Điệu Cánh Hoa', en: 'Petal Dance' },
-  venusaur: { vi: 'Rừng Cây Phủ Sân', en: 'Overgrowth' },
+  venusaur: { vi: 'Frenzy Plant — Rừng Gai Hủy Diệt', en: 'Frenzy Plant' },
+  charmeleon: { vi: 'Hỏa Long Thức Tỉnh', en: 'Awakened Fire Dragon' },
+  charizard: { vi: 'Blast Burn — Hỏa Ngục Bùng Nổ', en: 'Blast Burn' },
+  wartortle: { vi: 'Xoáy Nước Thủy Lực', en: 'Hydro Vortex' },
+  blastoise: { vi: 'Hydro Cannon — Pháo Thủy Lực', en: 'Hydro Cannon' },
+  raichu: { vi: 'Thunder — Sét Thần Sấm', en: 'Thunder' },
+  pikachu: { vi: 'Volt Tackle — Lao Điện', en: 'Volt Tackle' },
   kadabra: { vi: 'Ngưng Đọng Thời Gian', en: 'Time Stop' },
   alakazam: { vi: 'Ngưng Đọng Thời Gian', en: 'Time Stop' },
   mewtwo: { vi: 'Phá Vỡ Tâm Trí', en: 'Mind Break' },

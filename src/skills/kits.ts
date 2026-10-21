@@ -171,7 +171,7 @@ const MINDBREAK_DEFAULTS: MindBreakParams = { dialect: 'psychic', windupMs: 800,
 
 const ULT_DEFAULTS: { [U in UltArchetypeId]: UltParamMap[U] } = {
   inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS, timestop: TIMESTOP_DEFAULTS, absolutezero: ABSZERO_DEFAULTS, komode: KOMODE_DEFAULTS, mindbreak: MINDBREAK_DEFAULTS,
-  draco: { dialect: 'dragon', windupMs: 700 }, flock: { dialect: 'flying', windupMs: 700 }, wavefront: { dialect: 'poison', windupMs: 700 }, chasm: { dialect: 'ground', windupMs: 700 }, rockfall: { dialect: 'rock', windupMs: 700 }, nightfall: { dialect: 'ghost', windupMs: 700 }, hurricane: { dialect: 'flying', windupMs: 700 }, hyperbeam: { dialect: 'normal', windupMs: 300 }, phoenix: { dialect: 'fire', windupMs: 600 }, judgement: { dialect: 'electric', windupMs: 500 }, aurorafall: { dialect: 'ice', windupMs: 600 },
+  draco: { dialect: 'dragon', windupMs: 700 }, flock: { dialect: 'flying', windupMs: 700 }, wavefront: { dialect: 'poison', windupMs: 700 }, chasm: { dialect: 'ground', windupMs: 700 }, rockfall: { dialect: 'rock', windupMs: 700 }, nightfall: { dialect: 'ghost', windupMs: 700 }, hurricane: { dialect: 'flying', windupMs: 700 }, frenzyplant: { dialect: 'grass', windupMs: 700 }, petaldance: { dialect: 'grass', windupMs: 600 }, blastburn: { dialect: 'fire', windupMs: 700 }, firedragon: { dialect: 'fire', windupMs: 700 }, hydrocannon: { dialect: 'water', windupMs: 600 }, hydrovortex: { dialect: 'water', windupMs: 600 }, thunderfall: { dialect: 'electric', windupMs: 600 }, volttackle: { dialect: 'electric', windupMs: 400 }, hyperbeam: { dialect: 'normal', windupMs: 300 }, phoenix: { dialect: 'fire', windupMs: 600 }, judgement: { dialect: 'electric', windupMs: 500 }, aurorafall: { dialect: 'ice', windupMs: 600 },
 };
 
 // ---------------------------------------------------------------------------------- bộ chiêu theo hệ
@@ -383,7 +383,6 @@ export const TYPE_KITS: Partial<Record<PokemonType, TypeKit>> = {
 
 export const SPECIES_KITS: Record<string, SpeciesKit> = {
   // ô J/K/L/U của Charmeleon dùng emberC/fireFangC/flamethrowerC/fireBlastC (có archetype trong moves.ts)
-  charmeleon: { ult: 'inferno' },
   // ===== Dòng Lửa còn lại: Charmander nhỏ & lanh · Charmeleon (bản duyệt, giữ nguyên ở trên) · Charizard to, có cánh =====
   // Charmander: đốm lửa nhỏ vệt ngắn · lao ngắn + vài nhát cào nhỏ (không lửa) · luồng lửa mảnh ngắn · cầu lửa nhỏ nổ hẹp
   charmander: {
@@ -1188,10 +1187,17 @@ export function resolveUlt(speciesId: string, types: PokemonType[]): UltSpec | n
 export function ultEffectType(speciesId: string, types: PokemonType[]): PokemonType {
   const r = resolveUlt(speciesId, types);
   if (!r) return types[0];
-  const NAT: Record<string, PokemonType> = { inferno: 'fire', tsunami: 'water', thunderstorm: 'electric', bloom: 'grass', timestop: 'psychic', mindbreak: 'psychic', absolutezero: 'ice', komode: 'fighting', draco: 'dragon', flock: 'flying', chasm: 'ground', rockfall: 'rock', nightfall: 'ghost', hurricane: 'flying', hyperbeam: 'normal', phoenix: 'fire', judgement: 'electric', aurorafall: 'ice' };
+  const NAT: Record<string, PokemonType> = { inferno: 'fire', tsunami: 'water', thunderstorm: 'electric', bloom: 'grass', timestop: 'psychic', mindbreak: 'psychic', absolutezero: 'ice', komode: 'fighting', draco: 'dragon', flock: 'flying', chasm: 'ground', rockfall: 'rock', nightfall: 'ghost', hurricane: 'flying', frenzyplant: 'grass', petaldance: 'grass', blastburn: 'fire', firedragon: 'fire', hydrocannon: 'water', hydrovortex: 'water', thunderfall: 'electric', volttackle: 'electric', hyperbeam: 'normal', phoenix: 'fire', judgement: 'electric', aurorafall: 'ice' };
   if (r.archetype === 'wavefront') {
     const shape = (r.params as { shape?: string }).shape;
     return shape === 'rock' ? 'rock' : shape === 'swarm' ? 'bug' : 'poison';
   }
   return NAT[r.archetype] ?? types[0];
 }
+
+// Tuyệt chiêu riêng của dòng khởi đầu + Pikachu (storyboard đã duyệt)
+const STARTER_ULTS: Record<string, UltArchetypeId> = {
+  ivysaur: 'petaldance', venusaur: 'frenzyplant', charmeleon: 'firedragon', charizard: 'blastburn',
+  wartortle: 'hydrovortex', blastoise: 'hydrocannon', pikachu: 'volttackle', raichu: 'thunderfall',
+};
+for (const [id, ult] of Object.entries(STARTER_ULTS)) SPECIES_KITS[id] = { ...SPECIES_KITS[id], ult, ultParams: undefined };

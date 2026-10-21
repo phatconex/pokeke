@@ -16,6 +16,7 @@ import { bulbCharge, crackBetween, flattenedGrass, groundCracks, leafBurst, wind
 import { meleeSignature } from './meleeFx';
 import { castBodySlam, castClones, castShellSpin, castSonic, castThrow, castWingSlash } from './airArchetypes';
 import { castHurricane, castHyperBeam, castNightfall, castRockfall } from './ultArchetypes';
+import { castBlastBurn, castFireDragon, castFrenzyPlant, castHydroCannon, castHydroVortex, castPetalDance, castThunderfall, castVoltTackle } from './starterUlts';
 import { castCloud, castTether, castWhip } from './grassArchetypes';
 import { castTelekinesis, castTimeStop } from './psyArchetypes';
 import { castBarrier, castBoomerang, castMindBreak, castSingularity } from './legendArchetypes';
@@ -105,6 +106,14 @@ export function castUltArchetype(h: SkillHost, f: Fighter, spec: UltSpec, u: Ult
   else if (spec.archetype === 'phoenix') BA.castPhoenix(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'hyperbeam') castHyperBeam(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'hurricane') castHurricane(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'frenzyplant') castFrenzyPlant(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'petaldance') castPetalDance(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'blastburn') castBlastBurn(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'firedragon') castFireDragon(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'hydrocannon') castHydroCannon(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'hydrovortex') castHydroVortex(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'thunderfall') castThunderfall(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'volttackle') castVoltTackle(h, f, spec.params, u, mv, amount);
 }
 
 /** Vạch chấm từ (x1, y1) tới (x2, y2) – vạch ngắm */

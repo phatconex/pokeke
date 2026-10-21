@@ -246,5 +246,6 @@ export function hasPreEvolution(id: string): boolean {
 export function hasUltimate(id: string): boolean {
   const sp = POKEMON[id];
   if (!sp) return false;
+  if (id === 'pikachu') return true; // đặc cách: Volt Tackle
   return evolutionsOf(sp).length === 0 || hasPreEvolution(id);
 }
