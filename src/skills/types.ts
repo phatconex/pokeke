@@ -41,8 +41,24 @@ export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 
 /** "Bộ từ vựng" hiệu ứng (vệt, nổ trúng, khói, vụ nổ, cháy xém, cột, vuốt) – xem dialects.ts */
 export type FxDialectId = 'fire' | 'water' | 'electric' | 'grass' | 'ghost' | 'psychic' | 'ice' | 'fighting' | 'dragon' | 'rock' | 'ground' | 'flying' | 'poison' | 'bug' | 'normal' | 'generic';
 
+/** Hiệu ứng từ sprite sheet (ảnh) thay cho hình vẽ bằng code: khung bay lặp lại, khung nổ khi trúng */
+export interface SheetFx {
+  /** khóa texture đã nạp (BootScene) */
+  key: string;
+  /** các khung bay (lặp) */
+  fly: number[];
+  /** khung nổ khi trúng */
+  hit: number;
+  /** tỉ lệ vẽ (khung gốc 256px) */
+  scale: number;
+  /** tốc độ đổi khung của đạn (khung/giây) */
+  fps: number;
+}
+
 export interface BoltParams {
   dialect: FxDialectId;
+  /** dùng ảnh sprite sheet thay cho hình đạn mặc định */
+  sheet?: SheetFx;
   /** tỉ lệ sprite (1 = như chiêu thường: bán kính ≥ 7 thì ×1,5) */
   scale: number;
   /** bán kính trúng (mặc định = move.radius) */

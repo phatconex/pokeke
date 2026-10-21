@@ -383,7 +383,8 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
   charmander: {
     kitType: 'fire',
     slots: {
-      J: { archetype: 'bolt', params: { scale: 0.62, trail: 'thin', trailPuffChance: 0.04, speedMult: 1.05 }, tiers: [] },
+      // thử nghiệm: hình cầu lửa lấy từ ảnh (public/assets/fx/fire/fireball.png): khung 1–5 bay, khung 6 nổ
+      J: { archetype: 'bolt', params: { scale: 0.62, trail: 'none', trailPuffChance: 0, speedMult: 1.05, sheet: { key: 'fx-fireball', fly: [0, 1, 2, 3, 4], hit: 5, scale: 0.34, fps: 16 } }, tiers: [] },
       K: {
         archetype: 'dashStrike',
         params: { dashMs: 105, lungeMult: 1, iframeExtraMs: 100, trailCount: 0, streaks: false, impactShake: [0.002, 70], impactSfx: null, startSfx: 'dash', scratch: { n: 3, len: 12, color: 0xdfe4ee, core: 0xffffff } },

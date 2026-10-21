@@ -1,0 +1,39 @@
+{
+  "frameWidth": 256,
+  "frameHeight": 256,
+  "framesPerSkill": 8,
+  "layout": "horizontal",
+  "background": "transparent RGBA",
+  "skills": {
+    "fireball": {
+      "file": "fireball.png",
+      "frames": 8,
+      "fps": 12,
+      "loop": false
+    },
+    "fire_claw": {
+      "file": "fire_claw.png",
+      "frames": 8,
+      "fps": 12,
+      "loop": false
+    },
+    "flamethrower": {
+      "file": "flamethrower.png",
+      "frames": 8,
+      "fps": 12,
+      "loop": false
+    },
+    "fire_ring": {
+      "file": "fire_ring.png",
+      "frames": 8,
+      "fps": 12,
+      "loop": false
+    },
+    "meteor_shower": {
+      "file": "meteor_shower.png",
+      "frames": 8,
+      "fps": 9,
+      "loop": false
+    }
+  }
+}

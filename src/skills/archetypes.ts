@@ -146,6 +146,11 @@ function castBolt(h: SkillHost, f: Fighter, m: MoveDef, P: BoltParams, dir: Phas
       shot.puff = m.particle ?? 'flamepuff';
       shot.move = mk;
       shot.sprite.setScale(P.scale !== 1 ? P.scale : (m.radius ?? 4) >= 7 ? 1.5 : 1);
+      const SH = P.sheet;
+      if (SH && h.scene.textures.exists(SH.key)) {
+        // đạn dùng khung ảnh: lặp các khung bay, hướng theo chiều bay (đầu đạn lệch phải khung)
+        shot.sprite.setTexture(SH.key, SH.fly[0]).setScale(SH.scale).setOrigin(0.62, 0.5);
+      } else shot.sprite.setOrigin(0.5, 0.5);
       if (P.texPick) shot.sprite.setTexture(P.texPick[(i + k) % P.texPick.length]);
       let wf = 0;
       if (P.hitRadius) shot.radius = P.hitRadius;
@@ -154,6 +159,7 @@ function castBolt(h: SkillHost, f: Fighter, m: MoveDef, P: BoltParams, dir: Phas
       let lastAge = 0;
       const curveSign = (i + k) % 2 ? -1 : 1;
       const onFly = (s: typeof shot) => {
+        if (SH && h.scene.textures.exists(SH.key)) s.sprite.setFrame(SH.fly[Math.floor((s.age / 1000) * SH.fps) % SH.fly.length]);
         if (P.curve) {
           // lượn sóng: xoay hướng bay theo đạo hàm của amp·sin(freq·t), xen kẽ ngược pha giữa các viên
           const tt = s.age / 1000;
@@ -179,7 +185,12 @@ function castBolt(h: SkillHost, f: Fighter, m: MoveDef, P: BoltParams, dir: Phas
       };
       shot.onFly = onFly;
       shot.onHitFx = (s) => {
-        d.hit(s.x, s.y, s.sprite.scale > 1.2);
+        if (SH && h.scene.textures.exists(SH.key)) {
+          // khung nổ: bung to rồi mờ dần
+          const boom = h.scene.add.sprite(s.x, s.y, SH.key, SH.hit).setDepth(s.y + 2100).setScale(SH.scale * 0.9);
+          h.scene.tweens.add({ targets: boom, scale: SH.scale * 1.6, alpha: 0, duration: 260, ease: 'Cubic.out', onComplete: () => boom.destroy() });
+          d.hit(s.x, s.y, false);
+        } else d.hit(s.x, s.y, s.sprite.scale > 1.2);
         if (P.lingerOnHit) d.scorch(s.x, s.y, P.lingerOnHit.r, P.lingerOnHit.ms);
         const S = P.splash;
         if (!S) return;
