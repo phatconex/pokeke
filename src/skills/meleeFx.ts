@@ -5,16 +5,26 @@ import type { MoveDef } from '../data/moveKit';
 import { TYPE_COLOR } from '../data/types';
 import { impactRays, powBurst } from '../fx/FightFx';
 
-export type MeleeStyle = 'claw' | 'bite' | 'jab' | 'twin' | 'impact';
+export type MeleeStyle = 'claw' | 'bite' | 'jab' | 'twin' | 'slap' | 'punch' | 'kick' | 'horn' | 'flurry' | 'impact';
 
 const CLAW = /(scratch|slash|cutter|claw|wingAttack|karateChop|crossChop|xScissor|viceGrip|guillotine|vineWhip|bonemerang|boneClub|trảm|cào|chém)/i;
+const SLAP = /(slap|tát)/i;
+const PUNCH = /(punch|submission|đấm|quyền|vật ngã)/i;
+const KICK = /(kick|đá)/i;
+const HORN = /(hornDrill|hornAttack|húc sừng|mũi khoan)/i;
+const FLURRY = /(thrash|rage|nổi điên|cuồng nộ|flail|quẫy)/i;
 const TWIN = /(twineedle|kim đôi)/i;
 const JAB = /(furyAttack|doublePeck|triPeck|needle|twineedle|jab|đâm loạn|mổ đôi|mổ ba)/i;
-const BITE = /(bite|fang|crunch|hyperFang|peck|drill|horn|cắn|nanh|mổ|sừng)/i;
+const BITE = /(bite|fang|crunch|hyperFang|peck|leechLife|cắn|nanh|mổ)/i;
 
 export function meleeStyleOf(m: MoveDef): MeleeStyle {
   const key = `${m.id} ${m.name}`;
   if (TWIN.test(key)) return 'twin';
+  if (SLAP.test(key)) return 'slap';
+  if (PUNCH.test(key)) return 'punch';
+  if (KICK.test(key)) return 'kick';
+  if (HORN.test(key)) return 'horn';
+  if (FLURRY.test(key)) return 'flurry';
   if (JAB.test(key)) return 'jab';
   if (CLAW.test(key)) return 'claw';
   if (BITE.test(key)) return 'bite';
@@ -62,6 +72,120 @@ export function meleeSignature(sc: Phaser.Scene, m: MoveDef, x: number, y: numbe
       });
     }
     impactRays(sc, x + aim.x * 26 * scale, y + aim.y * 18 * scale, 7, 8 * scale, 24 * scale, shade(col, 0.45), 200);
+  } else if (style === 'slap') {
+    // tát liên hoàn: các bàn tay tát trái - phải xen kẽ, vệt cong nhanh
+    for (let i = 0; i < 4; i++) {
+      const g = sc.add.graphics().setDepth(depth).setPosition(x + aim.x * 22 * scale, y + aim.y * 14 * scale).setRotation(ang);
+      const side = i % 2 ? 1 : -1;
+      const t0 = { k: 0 };
+      sc.tweens.add({
+        targets: t0, k: 1, duration: 110, delay: i * 70, ease: 'Cubic.out',
+        onUpdate: () => {
+          g.clear();
+          const pts: Phaser.Math.Vector2[] = [];
+          for (let q = 0; q <= 9 * t0.k; q++) {
+            const u = q / 9;
+            pts.push(new Phaser.Math.Vector2(-14 + u * 30 * scale, side * (18 - u * 36) * scale * 0.7));
+          }
+          if (pts.length > 1) {
+            g.lineStyle(8 * scale, col, 0.5).strokePoints(pts, false);
+            g.lineStyle(3 * scale, 0xffffff, 1).strokePoints(pts, false);
+          }
+          g.fillStyle(0xfff0d0, 0.95).fillCircle(-14 + t0.k * 30 * scale, side * (18 - t0.k * 36) * scale * 0.7, 7 * scale);
+          g.lineStyle(1.5, col, 1).strokeCircle(-14 + t0.k * 30 * scale, side * (18 - t0.k * 36) * scale * 0.7, 7 * scale);
+        },
+        onComplete: () => {
+          impactRays(sc, g.x + Math.cos(ang) * 16, g.y + Math.sin(ang) * 10, 5, 4 * scale, 14 * scale, 0xffffff, 130);
+          sc.tweens.add({ targets: g, alpha: 0, duration: 80, onComplete: () => g.destroy() });
+        },
+      });
+    }
+  } else if (style === 'punch') {
+    // nắm đấm lớn đập ra, vòng xung kích, màu hệ (Đấm Lửa: lửa, Đấm Băng: băng...)
+    const px = x + aim.x * 26 * scale;
+    const py = y + aim.y * 17 * scale;
+    const g = sc.add.graphics().setDepth(depth).setPosition(px, py);
+    const t0 = { k: 0 };
+    sc.tweens.add({
+      targets: t0, k: 1, duration: 140, ease: 'Back.out',
+      onUpdate: () => {
+        g.clear();
+        const r = 14 * scale * (0.5 + t0.k * 0.7);
+        g.fillStyle(col, 0.4).fillCircle(0, 0, r * 1.5);
+        g.fillStyle(0xfff0d8, 1).fillCircle(0, 0, r);
+        g.lineStyle(3, shade(col, -0.25), 1).strokeCircle(0, 0, r);
+        for (let q = -1; q <= 1; q++) g.lineStyle(2, shade(col, -0.2), 0.9).lineBetween(-r * 0.2 + q * r * 0.45, -r * 0.7, -r * 0.2 + q * r * 0.45, r * 0.15);
+      },
+      onComplete: () => {
+        powBurst(sc, px, py, 22 * scale, 240);
+        impactRays(sc, px, py, 10, 8 * scale, 34 * scale, shade(col, 0.4), 220);
+        const ring = sc.add.ellipse(px, py, 16 * scale, 11 * scale, col, 0).setStrokeStyle(3, col, 1).setDepth(depth).setScale(0.3);
+        sc.tweens.add({ targets: ring, scale: 3, alpha: 0, duration: 280, ease: 'Cubic.out', onComplete: () => ring.destroy() });
+        sc.tweens.add({ targets: g, alpha: 0, duration: 160, onComplete: () => g.destroy() });
+      },
+    });
+  } else if (style === 'kick') {
+    // hai cú đá: hai vệt cong thấp quét liên tiếp
+    for (let i = 0; i < 2; i++) {
+      const g = sc.add.graphics().setDepth(depth).setPosition(x, y + 6).setRotation(ang);
+      const t0 = { k: 0 };
+      sc.tweens.add({
+        targets: t0, k: 1, duration: 120, delay: i * 120, ease: 'Cubic.out',
+        onUpdate: () => {
+          g.clear();
+          const pts: Phaser.Math.Vector2[] = [];
+          for (let q = 0; q <= 12 * t0.k; q++) {
+            const u = q / 12;
+            pts.push(new Phaser.Math.Vector2(4 + u * 56 * scale, (i ? 1 : -1) * Math.sin(u * Math.PI) * 14 * scale));
+          }
+          if (pts.length > 1) {
+            g.lineStyle(9 * scale, col, 0.5).strokePoints(pts, false);
+            g.lineStyle(3.5 * scale, 0xffffff, 1).strokePoints(pts, false);
+          }
+        },
+        onComplete: () => {
+          impactRays(sc, g.x + Math.cos(ang) * 58 * scale, g.y + Math.sin(ang) * 46 * scale, 6, 5 * scale, 20 * scale, shade(col, 0.4), 160);
+          sc.tweens.add({ targets: g, alpha: 0, duration: 90, onComplete: () => g.destroy() });
+        },
+      });
+    }
+  } else if (style === 'horn') {
+    // húc sừng / mũi khoan: mũi nhọn xoắn ốc lao thẳng ra phía trước
+    const g = sc.add.graphics().setDepth(depth).setPosition(x, y).setRotation(ang);
+    const t0 = { k: 0 };
+    sc.tweens.add({
+      targets: t0, k: 1, duration: 170, ease: 'Cubic.in',
+      onUpdate: () => {
+        g.clear();
+        const tip = 14 + 62 * scale * t0.k;
+        const w = 9 * scale;
+        g.fillStyle(col, 0.35).fillTriangle(tip - 30 * scale, -w * 1.4, tip - 30 * scale, w * 1.4, tip + 6, 0);
+        g.fillStyle(0xfdf4d8, 1).fillTriangle(tip - 26 * scale, -w, tip - 26 * scale, w, tip, 0);
+        g.lineStyle(2, shade(col, -0.2), 1).strokeTriangle(tip - 26 * scale, -w, tip - 26 * scale, w, tip, 0);
+        // vân xoắn của mũi khoan
+        for (let q = 0; q < 4; q++) {
+          const px = tip - 24 * scale + q * 6 * scale;
+          const sw = Math.sin(t0.k * 30 + q) * w * (1 - q / 5);
+          g.lineStyle(1.6, shade(col, -0.3), 0.9).lineBetween(px, -sw, px + 4, sw);
+        }
+      },
+      onComplete: () => {
+        impactRays(sc, g.x + Math.cos(ang) * 78 * scale, g.y + Math.sin(ang) * 62 * scale, 8, 5 * scale, 24 * scale, shade(col, 0.45), 200);
+        sc.tweens.add({ targets: g, alpha: 0, duration: 110, onComplete: () => g.destroy() });
+      },
+    });
+  } else if (style === 'flurry') {
+    // nổi điên / cuồng nộ: nhiều vòng xung kích đỏ chồng nhau + tia nổ ngẫu nhiên, vài lần liên tiếp
+    for (let i = 0; i < 4; i++) {
+      sc.time.delayedCall(i * 80, () => {
+        const px = x + aim.x * 20 * scale + (Math.random() - 0.5) * 28 * scale;
+        const py = y + aim.y * 13 * scale + (Math.random() - 0.5) * 20 * scale;
+        powBurst(sc, px, py, 14 * scale, 200);
+        impactRays(sc, px, py, 7, 5 * scale, 22 * scale, 0xff8a60, 170);
+        const ring = sc.add.ellipse(px, py, 12 * scale, 8 * scale, col, 0).setStrokeStyle(2.5, 0xff6a40, 1).setDepth(depth).setScale(0.3);
+        sc.tweens.add({ targets: ring, scale: 2.4, alpha: 0, duration: 220, onComplete: () => ring.destroy() });
+      });
+    }
   } else if (style === 'twin') {
     // hai ngòi kim to song song đâm thẳng tới một lượt, nhỏ độc
     for (const side of [-1, 1]) {

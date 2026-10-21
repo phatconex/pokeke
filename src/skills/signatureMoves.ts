@@ -45,6 +45,16 @@ reg(['swift', 'barrage'], ({ d, sz }) => S('bolt', { dialect: d, texPick: ['star
 reg(['pinMissile', 'poisonSting'], ({ d, sz }) => S('bolt', { dialect: d, texPick: ['needle'], scale: 0.85 + sz * 0.1, split: 1 + sz, splitSpreadDeg: 10, splitPowerMult: 0.65 }));
 reg(['sonicBoom'], ({ d, sz }) => S('bolt', { dialect: d, scale: 1 + sz * 0.1, trail: 'thick', speedMult: 1.3 }));
 reg(['xScissor'], ({ d }) => S('xslash', { dialect: d }));
+// ---- chiêu đạn / vật thể theo anime
+reg(['bubble'], ({ d, sz }) => S('bolt', { dialect: d, scale: 0.9, texPick: ['bubble'], split: 2 + sz, splitSpreadDeg: 26, splitPowerMult: 0.5, speedMult: 0.8, trail: 'none', trailPuffChance: 0.2 }));
+reg(['acid'], ({ d, sz }) => S('lob', { dialect: d, tex: 'goo', scale: 0.7 + sz * 0.15, r: 20 + sz * 3, linger: { ms: 1800, tickMs: 500, powerMult: 0.2, color: 0x7ad04a } }));
+reg(['thundershock'], ({ d, sz }) => S('bolt', { dialect: d, scale: 0.9 + sz * 0.1, trail: 'none', trailPuffChance: 0, zigzag: 0xfff6b0, zigWidth: 1.6, zigDouble: true, speedMult: 1.2 }));
+reg(['willOWisp'], ({ d, sz }) => S('bolt', { dialect: d, scale: 0.9, split: 2 + sz, splitSpreadDeg: 34, splitPowerMult: 0.5, speedMult: 0.7, curve: { amp: 0.5, freq: 6 }, trail: 'thin', trailPuffChance: 0.3 }));
+reg(['stringShot'], ({ d }) => S('web', { dialect: d, r: 34, ms: 1500, bugs: 2, n: 6, rings: 3 }));
+reg(['powderSnow'], ({ d, sz }) => S('fan', { dialect: d, n: 8 + sz * 2, halfDeg: 24, range: 80 + sz * 10 }));
+reg(['triAttack'], ({ d, sz }) => S('triattack', { dialect: d, r: 24 + sz * 3, flyMs: 420 }));
+reg(['seismicToss', 'submission'], ({ sz }) => S('throw', { dialect: 'fighting', reach: 110 + sz * 12, powerMult: 1.2 }));
+reg(['leechLife'], ({ d }) => S('dashStrike', { dialect: d, dashMs: 90, trailCount: 1, streaks: false, lungeMult: 0.9, impactSfx: null }));
 // ---- nhóm chiêu cùng kiểu
 reg(['flamethrower', 'hydroPump', 'bubbleBeam', 'auroraBeam', 'iceBeam', 'psybeam', 'signalBeam', 'solarBeam', 'hyperBeam', 'dragonRage', 'psywave', 'zapCannon', 'acidSpray', 'waterPulse', 'psychic'], ({ d }) => S('stream', { dialect: d }));
 reg(['fireBlast', 'eggBomb', 'spikeCannon', 'thunder', 'nineFlames', 'sludgeBomb'], ({ d }) => S('blast', { dialect: d }));
