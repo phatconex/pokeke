@@ -69,6 +69,17 @@ reg(['slash', 'furyCutter', 'viceGrip', 'hyperFang', 'guillotine', 'crabhammer',
 reg(['vineWhip', 'powerWhip', 'bind', 'wrap', 'constrict', 'ingrain'], ({ d }) => S('whip', { dialect: d }));
 reg(['quickAttack', 'extremeSpeed', 'aquaJet', 'flameCharge', 'flareBlitz', 'machPunch', 'peck', 'doublePeck', 'triPeck', 'furyAttack', 'rollingKick', 'lowKick'], ({ d, col }) => S('dashStrike', { dialect: d, dashMs: 100, trailCount: 2, streaks: true, afterimages: 3, afterimageTint: col, lungeMult: 1.5 }));
 
+// ---- đợt 2 (Vulpix / Oddish / Mankey...): đúng theo anime
+reg(['fireSpin'], ({ sz }) => S('twister', { dialect: 'fire', tex: 'fireFeather', colors: [0xff6a1a, 0xffe070], r: 22 + sz * 7, height: 50 + sz * 14, ms: 1300 + sz * 250 }));
+reg(['nineFlames'], () => S('fan', { dialect: 'fire', n: 9, halfDeg: 52, range: 130 }));
+reg(['absorb', 'megaDrain', 'gigaDrain'], ({ id, sz }) => S('tether', { dialect: 'grass', flyMs: 340, arcH: 24, range: 200 + sz * 20, drainMs: 1800 + sz * 500, pulseMs: 500, spread: id === 'absorb' ? 0 : 1, spreadRange: 90, spreadDelayMs: 900 }));
+reg(['crossChop'], ({ sz }) => S('xslash', { dialect: 'fighting', reach: 40 + sz * 10 }));
+const powder = (cols: number[], st: string, ms: number) => ({ sz }: MoveCtx) =>
+  S('cloud', { dialect: 'poison', colors: [cols], halfDeg: 34 + sz * 4, range: 66 + sz * 14, puffN: 22 + sz * 8, lingerMs: 2000, tickMs: 400, totalPowerMult: 1, statuses: [{ kind: st, chance: 0.6, ms }] });
+reg(['poisonPowder'], powder([0xb070d8, 0x9050c0, 0xd8a0f0], 'poison', 2500));
+reg(['stunSpore'], powder([0xf0e060, 0xd8c840, 0xfff8a0], 'paralyze', 1800));
+reg(['sleepPowder'], powder([0x80c8f0, 0x60a8e0, 0xc0e8ff], 'sleep', 1800));
+
 /**
  * Ghi đè theo loài cho một chiêu cụ thể (khóa: `loài:chiêu`), vd:
  *   'charizard:flareBlitz': ({ d, col }) => S('dashStrike', { dialect: d, ... })
