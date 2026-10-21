@@ -41,6 +41,8 @@ export const ARCHETYPE_DEFAULTS: { [A in ArchetypeId]: (m: MoveDef) => Archetype
   prism: () => ({ dialect: 'generic' }),
   icewall: () => ({ dialect: 'generic' }),
   sweep: () => ({ dialect: 'generic' }),
+  wingslash: () => ({ dialect: 'flying' }),
+  sonic: () => ({ dialect: 'generic' }),
   serpent: () => ({ dialect: 'generic' }),
   dive: () => ({ dialect: 'generic' }),
   lob: () => ({ dialect: 'generic' }),
@@ -986,9 +988,9 @@ const TK: Record<string, SpeciesKit> = {
   diglett: { kitType: 'ground', slots: { J: S('lob', { dialect: 'ground', tex: 'mudball', scale: 0.8, r: 20, linger: { ms: 1600, tickMs: 500, powerMult: 0.25 } }), K: S('ambush', { dialect: 'ground', undergroundMs: 450, hitR: 34 }), L: S('ridge', { dialect: 'ground', range: 130, width: 16 }) } },
   dugtrio: { kitType: 'ground', ult: 'chasm', slots: { J: S('lob', { dialect: 'ground', tex: 'mudball', scale: 1.1, r: 26, linger: { ms: 2000, tickMs: 500, powerMult: 0.3 } }), K: S('ambush', { dialect: 'ground', undergroundMs: 650, hitR: 48 }), L: S('ridge', { dialect: 'ground', range: 190, width: 24 }), U: S('quicksand', { dialect: 'ground', r: 70, ms: 3000 }) }, ultParams: { dialect: 'ground', holdMs: 1100 } },
   // --- Bay: lông vũ, bóng chim, V xung kích, bay vút rồi lao
-  pidgey: { kitType: 'flying', slots: { J: S('bolt', { dialect: 'flying', scale: 0.9, texPick: ['featherA'], trail: 'thin', trailPuffChance: 0.2, split: 1 }), K: S('dashStrike', { dialect: 'flying', dashMs: 110, trailCount: 0, streaks: false, impactSfx: null }), L: S('sweep', { dialect: 'flying', reach: 40, spanDeg: 130, fill: 0xf4ead0, edge: 0x8a6a3a }) } },
-  pidgeotto: { kitType: 'flying', slots: { J: S('bolt', { dialect: 'flying', scale: 1.1, texPick: ['featherA'], split: 2, splitSpreadDeg: 14, splitPowerMult: 0.7 }), K: S('dive', { dialect: 'flying', airMs: 600, hitR: 40, trailColor: 0xffffff }), L: S('sweep', { dialect: 'flying', reach: 50, spanDeg: 150, fill: 0xf4ead0, edge: 0x8a6a3a, spikes: 3 }) } },
-  pidgeot: { kitType: 'flying', ult: 'flock', slots: { J: S('bolt', { dialect: 'flying', scale: 1.3, texPick: ['featherA'], split: 3, splitSpreadDeg: 18, splitPowerMult: 0.65 }), K: S('dive', { dialect: 'flying', airMs: 700, hitR: 48, trailColor: 0xffd34a, powerMult: 1.3 }), L: S('sweep', { dialect: 'flying', reach: 60, spanDeg: 170, fill: 0xf8f0d8, edge: 0xd04a2a, spikes: 5 }), U: S('twister', { dialect: 'flying', r: 40, height: 110, colors: [0xffffff, 0xcfe6ff], tex: 'featherA', ms: 1800 }) }, ultParams: { dialect: 'flying', birds: 26, totalMs: 3000 } },
+  pidgey: { kitType: 'flying', slots: { J: S('bolt', { dialect: 'flying', scale: 0.9, trail: 'none', trailPuffChance: 0, split: 1, gust: { color: 0xbfe0ff, color2: 0xffffff, r: 14 } }), K: S('dashStrike', { dialect: 'flying', dashMs: 110, trailCount: 0, streaks: false, impactSfx: null }), L: S('wingslash', { dialect: 'flying', reach: 50, spanDeg: 150, feathers: 7 }) } },
+  pidgeotto: { kitType: 'flying', slots: { J: S('bolt', { dialect: 'flying', scale: 1.1, trail: 'none', trailPuffChance: 0, split: 2, splitSpreadDeg: 14, splitPowerMult: 0.7, gust: { color: 0xbfe0ff, color2: 0xffffff, r: 17 } }), K: S('dive', { dialect: 'flying', airMs: 600, hitR: 40, trailColor: 0xffffff }), L: S('wingslash', { dialect: 'flying', reach: 62, spanDeg: 165, feathers: 8 }) } },
+  pidgeot: { kitType: 'flying', ult: 'flock', slots: { J: S('bolt', { dialect: 'flying', scale: 1.3, trail: 'none', trailPuffChance: 0, split: 3, splitSpreadDeg: 18, splitPowerMult: 0.65, gust: { color: 0xbfe0ff, color2: 0xffffff, r: 20 } }), K: S('dive', { dialect: 'flying', airMs: 700, hitR: 48, trailColor: 0xffd34a, powerMult: 1.3 }), L: S('wingslash', { dialect: 'flying', reach: 76, spanDeg: 180, feathers: 10 }), U: S('twister', { dialect: 'flying', r: 40, height: 110, colors: [0xffffff, 0xcfe6ff], tex: 'featherA', ms: 1800 }) }, ultParams: { dialect: 'flying', birds: 26, totalMs: 3000 } },
   // --- Độc: xanh lá + vàng, kim, vũng, bùn
   ekans: { kitType: 'poison', slots: { J: S('bolt', { dialect: 'poison', scale: 0.9, texPick: ['needle'], trail: 'thin', trailPuffChance: 0.1, split: 1 }), K: S('dashStrike', { dialect: 'poison', dashMs: 130, trailCount: 0, streaks: false, impactSfx: null }) } },
   arbok: { kitType: 'poison', slots: { J: S('bolt', { dialect: 'poison', scale: 1.2, texPick: ['needle'], split: 3, splitSpreadDeg: 14, splitPowerMult: 0.6 }), K: S('dashStrike', { dialect: 'poison', dashMs: 120, trailCount: 1, streaks: false, impactSfx: null }), L: S('dashStrike', { dialect: 'poison', dashMs: 140, trailCount: 1, streaks: true, impactSfx: null }) } },
@@ -1165,6 +1167,8 @@ function mergedKit(speciesId: string): SpeciesKit | undefined {
 /** Tuyệt chiêu riêng của loài (null = tuyệt chiêu theo hệ như cũ) */
 export function resolveUlt(speciesId: string, types: PokemonType[]): UltSpec | null {
   const sk = kitFor(speciesId);
+  // hệ Độc chưa có tuyệt chiêu riêng: dùng Biển Độc (sóng độc quét sân + đầm lầy) thay cho bản chung
+  if (!sk?.ult && types.includes('poison')) return { archetype: 'wavefront', params: { ...ULT_DEFAULTS.wavefront, dialect: 'poison', shape: 'sludge', status: 'poison', ms: 1900 } } as UltSpec;
   if (!sk?.ult) return null;
   const typeUlt = TYPE_KITS[(sk.kitType ?? types[0]) as PokemonType]?.[sk.ult];
   return { archetype: sk.ult, params: { ...ULT_DEFAULTS[sk.ult], ...typeUlt, ...sk.ultParams } } as UltSpec;

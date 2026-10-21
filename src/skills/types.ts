@@ -23,11 +23,11 @@ import type { StatusKind } from '../data/moveKit';
  *  trap   – vùng gài, kích hoạt sau một lúc · summon – gọi trợ thủ / tháp bắn tạm thời
  */
 export type ArchetypeId = 'bolt' | 'dashStrike' | 'stream' | 'blast' | 'nova' | 'chain' | 'rain' | 'whip' | 'cloud' | 'tether' | 'telekinesis' | 'blizzard' | 'lance' | 'gale' | 'strike' | 'counter' | 'slam' | 'cross' | 'boomerang' | 'barrier' | 'singularity'
-  | 'fan' | 'sweep' | 'serpent' | 'dive' | 'lob' | 'roll' | 'fallers' | 'ridge' | 'quicksand' | 'ambush' | 'twister' | 'web' | 'swarm' | 'triattack' | 'beam'
+  | 'wingslash' | 'sonic' | 'fan' | 'sweep' | 'serpent' | 'dive' | 'lob' | 'roll' | 'fallers' | 'ridge' | 'quicksand' | 'ambush' | 'twister' | 'web' | 'swarm' | 'triattack' | 'beam'
   | 'arcshot' | 'phoenixdash' | 'xslash' | 'forkbolt' | 'blink' | 'stormcloud' | 'powergrid' | 'aurora' | 'iceglide' | 'prism' | 'icewall';
 export type PlannedArchetypeId = 'trap' | 'summon';
 export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStrike', 'stream', 'blast', 'nova', 'chain', 'rain', 'whip', 'cloud', 'tether', 'telekinesis', 'blizzard', 'lance', 'gale', 'strike', 'counter', 'slam', 'cross', 'boomerang', 'barrier', 'singularity',
-  'fan', 'sweep', 'serpent', 'dive', 'lob', 'roll', 'fallers', 'ridge', 'quicksand', 'ambush', 'twister', 'web', 'swarm', 'triattack', 'beam', 'arcshot', 'phoenixdash', 'xslash', 'forkbolt', 'blink', 'stormcloud', 'powergrid', 'aurora', 'iceglide', 'prism', 'icewall'];
+  'wingslash', 'sonic', 'fan', 'sweep', 'serpent', 'dive', 'lob', 'roll', 'fallers', 'ridge', 'quicksand', 'ambush', 'twister', 'web', 'swarm', 'triattack', 'beam', 'arcshot', 'phoenixdash', 'xslash', 'forkbolt', 'blink', 'stormcloud', 'powergrid', 'aurora', 'iceglide', 'prism', 'icewall'];
 
 /**
  * Nguyên mẫu tuyệt chiêu (phím I).
@@ -84,6 +84,8 @@ export interface BoltParams {
   /** cỏ: chọn ngẫu nhiên texture lá cho mỗi viên, vệt gió mảnh sau lá (không quầng sáng) */
   texPick?: string[];
   windTrail?: boolean;
+  /** đạn gió: xoáy ốc nhiều vòng quay tít + vệt gió cong phía sau (thay cho hình đạn) */
+  gust?: { color: number; color2: number; r: number };
   /** cỏ: lá xoáy quanh người `ms` rồi mới bay ra (lốc lá) */
   cyclone?: { ms: number; r: number };
 }
@@ -692,6 +694,8 @@ export interface ArchetypeParamMap {
   singularity: SingularityParams;
   fan: LooseParams;
   sweep: LooseParams;
+  wingslash: LooseParams;
+  sonic: LooseParams;
   serpent: LooseParams;
   dive: LooseParams;
   lob: LooseParams;
@@ -794,6 +798,8 @@ export interface TypeKit {
   singularity?: KitEntry<SingularityParams>;
   fan?: KitEntry<LooseParams>;
   sweep?: KitEntry<LooseParams>;
+  wingslash?: KitEntry<LooseParams>;
+  sonic?: KitEntry<LooseParams>;
   serpent?: KitEntry<LooseParams>;
   dive?: KitEntry<LooseParams>;
   lob?: KitEntry<LooseParams>;

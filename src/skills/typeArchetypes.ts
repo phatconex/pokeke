@@ -952,13 +952,50 @@ export function castWavefront(h: SkillHost, f: Fighter, P: LooseParams, _u: Ulti
     g.clear();
     const trailLen = 260;
     if (shape === 'sludge') {
-      const pts: Phaser.Math.Vector2[] = [V(fx - dirX * trailLen, wv.y - 10), V(fx, wv.y - 10)];
-      for (let i = 0; i <= 14; i++) pts.push(V(fx + Math.sin(i * 1.3 + now / 120) * 12, wv.y + (wv.height * i) / 14));
-      pts.push(V(fx - dirX * trailLen, wv.bottom + 10));
-      g.fillStyle(0x6a3ab0, 0.8).fillPoints(pts, true);
-      g.lineStyle(4, 0x2a1050, 1).strokePoints(pts, true);
-      g.fillStyle(0xa0e060, 0.35).fillRect(Math.min(fx, fx - dirX * trailLen), wv.y, trailLen, wv.height);
-      if (Math.random() < 0.7) scatter(sc, 'goo', fx - dirX * Math.random() * trailLen, wv.y + Math.random() * wv.height, 1, 10);
+      // Biển Độc: con sóng độc cuồn cuộn quét ngang sân — mặt sóng sủi bọt khí, thân sóng tím sẫm ánh xanh, để lại đầm lầy độc bốc khói
+      const span = Math.abs(fx - x0);
+      const back = dirX > 0 ? x0 : x0; // đầm lầy kéo dài từ điểm xuất phát tới mặt sóng
+      const swampPts = [V(back, wv.y - 10), V(fx, wv.y - 10)];
+      for (let i = 0; i <= 18; i++) swampPts.push(V(fx - dirX * (6 + Math.abs(Math.sin(i * 0.9 + now / 140)) * 14), wv.y + (wv.height * i) / 18));
+      swampPts.push(V(back, wv.bottom + 10));
+      g.fillStyle(0x3e7a2a, 0.22).fillPoints(swampPts, true);
+      // thân sóng: dải màu chuyển dần từ tím sẫm (sát mặt sóng) sang xanh độc nhạt (đuôi), mặt sóng lượn
+      const strips = 22;
+      for (let j = 0; j < strips; j++) {
+        const u = j / strips;
+        const sx = fx - dirX * (u * trailLen);
+        const w = trailLen / strips + 1;
+        const lerp = (a1: number, b1: number) => Math.round(a1 + (b1 - a1) * u);
+        const col = (lerp(0x2a, 0x6a) << 16) | (lerp(0x10, 0xb0) << 8) | lerp(0x50, 0x30);
+        g.fillStyle(col, 0.92 * Math.pow(1 - u, 0.8)).fillRect(Math.min(sx, sx - dirX * w), wv.y - 10, w, wv.height + 20);
+      }
+      for (let i = 0; i < 18; i++) {
+        const yy = wv.y + (wv.height * i) / 18;
+        g.fillStyle(0x2a1050, 0.9).fillCircle(fx + dirX * (6 + Math.sin(i * 1.1 + now / 110) * 12), yy + wv.height / 36, 12);
+      }
+      g.fillStyle(0xa0e060, 0.18).fillRect(Math.min(fx, fx - dirX * trailLen), wv.y, trailLen, wv.height);
+      // bọt khí trên mặt sóng (sáng, có điểm sáng trắng) và bọt vỡ lác đác phía sau
+      for (let i = 0; i < 12; i++) {
+        const by = wv.y + (wv.height * (i + 0.5)) / 12;
+        const bx = fx + dirX * (14 + Math.sin(i * 1.7 + now / 120) * 10);
+        const br = 9 + 5 * Math.abs(Math.sin(now / 160 + i * 1.3));
+        g.fillStyle(0x7ae04a, 0.9).fillCircle(bx, by, br);
+        g.lineStyle(2, 0x1a4a10, 1).strokeCircle(bx, by, br);
+        g.fillStyle(0xe8ffc8, 0.9).fillCircle(bx - br * 0.3, by - br * 0.3, br * 0.28);
+      }
+      for (let i = 0; i < 10; i++) {
+        const bx = fx - dirX * (30 + ((i * 53 + now / 8) % trailLen));
+        const by = wv.y + ((i * 71 + now / 12) % wv.height);
+        g.lineStyle(1.5, 0xc8ff90, 0.7).strokeCircle(bx, by, 3 + (i % 4) * 2);
+      }
+      // giọt nhớt chảy dọc theo sau sóng
+      for (let i = 0; i < 8; i++) {
+        const dx = fx - dirX * (20 + i * 26);
+        g.lineStyle(3, 0x1a0a30, 0.7).lineBetween(dx, wv.y + ((i * 83) % wv.height), dx, wv.y + ((i * 83) % wv.height) + 26 + (i % 3) * 8);
+      }
+      void span;
+      if (Math.random() < 0.8) scatter(sc, 'goo', fx - dirX * Math.random() * trailLen, wv.y + Math.random() * wv.height, 1, 14);
+      if (Math.random() < 0.5) h.fx.puff('poisonpuff', fx - dirX * Math.random() * trailLen * 0.8, wv.y + Math.random() * wv.height, 1);
     } else if (shape === 'rock') {
       for (let i = 0; i < 8; i++) {
         const y = wv.y + (wv.height * (i + 0.5)) / 8;
@@ -984,7 +1021,9 @@ export function castWavefront(h: SkillHost, f: Fighter, P: LooseParams, _u: Ulti
       }
     }
   }, () => {
-    g.destroy();
+    // Biển Độc: đầm lầy độc còn lại một lúc rồi mờ dần
+    if (shape === 'sludge') sc.tweens.add({ targets: g, alpha: 0, duration: 900, delay: 300, onComplete: () => g.destroy() });
+    else g.destroy();
     bugs.forEach((b) => b.destroy());
     if (!h.over) h.fx.shake(0.02, 300);
   });

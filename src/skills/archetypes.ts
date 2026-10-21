@@ -14,6 +14,7 @@ import type {
 import type { Enemy } from '../entities/Enemy';
 import { bulbCharge, crackBetween, flattenedGrass, groundCracks, leafBurst, windStreak } from '../fx/GrassFx';
 import { meleeSignature } from './meleeFx';
+import { castSonic, castWingSlash } from './airArchetypes';
 import { castCloud, castTether, castWhip } from './grassArchetypes';
 import { castTelekinesis, castTimeStop } from './psyArchetypes';
 import { castBarrier, castBoomerang, castMindBreak, castSingularity } from './legendArchetypes';
@@ -48,6 +49,8 @@ export function castArchetype(h: SkillHost, f: Fighter, m: MoveDef, spec: SkillS
     case 'singularity': return castSingularity(h, f, m, spec.params);
     case 'fan': return TA.castFan(h, f, m, spec.params, dir);
     case 'sweep': return TA.castSweep(h, f, m, spec.params, dir);
+    case 'wingslash': return castWingSlash(h, f, m, spec.params, dir);
+    case 'sonic': return castSonic(h, f, m, spec.params, dir);
     case 'serpent': return TA.castSerpent(h, f, m, spec.params, dir);
     case 'dive': return TA.castDive(h, f, m, spec.params);
     case 'lob': return TA.castLob(h, f, m, spec.params);
@@ -149,12 +152,42 @@ function castBolt(h: SkillHost, f: Fighter, m: MoveDef, P: BoltParams, dir: Phas
       shot.sprite.setScale(P.scale !== 1 ? P.scale : (m.radius ?? 4) >= 7 ? 1.5 : 1);
       if (P.texPick) shot.sprite.setTexture(P.texPick[(i + k) % P.texPick.length]);
       let wf = 0;
+      // đạn gió: ẩn hình đạn, vẽ xoáy ốc quay tít + vệt gió cong sau đạn
+      let gustG: Phaser.GameObjects.Graphics | null = null;
+      if (P.gust) {
+        shot.sprite.setAlpha(0);
+        gustG = h.scene.add.graphics().setDepth(shot.y + 2005);
+        const gg = gustG;
+        h.scene.time.delayedCall((m.lifeMs ?? 700) * (P.lifeMult ?? 1) + 80, () => gg.destroy());
+      }
       if (P.hitRadius) shot.radius = P.hitRadius;
       let last = { x: shot.x, y: shot.y };
       let zz = 0;
       let lastAge = 0;
       const curveSign = (i + k) % 2 ? -1 : 1;
       const onFly = (s: typeof shot) => {
+        if (P.gust && gustG) {
+          const G = P.gust;
+          const ang = Math.atan2(s.vy, s.vx);
+          const tt = s.age / 1000;
+          gustG.clear();
+          for (let ring = 0; ring < 3; ring++) {
+            const rr = G.r * (0.45 + ring * 0.3);
+            const pts: Phaser.Math.Vector2[] = [];
+            for (let q = 0; q <= 18; q++) {
+              const u = q / 18;
+              const a2 = tt * (14 + ring * 3) + u * Math.PI * 1.7 + ring * 2.1;
+              const back = u * G.r * 1.1;
+              pts.push(new Phaser.Math.Vector2(s.x - Math.cos(ang) * back + Math.cos(ang + Math.PI / 2) * Math.sin(a2) * rr * (1 - u * 0.4), s.y - Math.sin(ang) * back + Math.sin(ang + Math.PI / 2) * Math.sin(a2) * rr * (1 - u * 0.4) * 0.9));
+            }
+            gustG.lineStyle(3.2 - ring * 0.7, ring === 0 ? G.color2 : G.color, 0.9 - ring * 0.18).strokePoints(pts, false);
+          }
+          // vệt gió dài, mảnh phía sau
+          for (let st = 0; st < 2; st++) {
+            const off = (st ? 1 : -1) * G.r * 0.5;
+            gustG.lineStyle(1.4, G.color2, 0.55).lineBetween(s.x - Math.cos(ang) * G.r * 0.8 + Math.cos(ang + Math.PI / 2) * off, s.y - Math.sin(ang) * G.r * 0.8 + Math.sin(ang + Math.PI / 2) * off, s.x - Math.cos(ang) * G.r * 2.6 + Math.cos(ang + Math.PI / 2) * off * 0.4, s.y - Math.sin(ang) * G.r * 2.6 + Math.sin(ang + Math.PI / 2) * off * 0.4);
+          }
+        }
         if (P.curve) {
           // lượn sóng: xoay hướng bay theo đạo hàm của amp·sin(freq·t), xen kẽ ngược pha giữa các viên
           const tt = s.age / 1000;
@@ -180,6 +213,7 @@ function castBolt(h: SkillHost, f: Fighter, m: MoveDef, P: BoltParams, dir: Phas
       };
       shot.onFly = onFly;
       shot.onHitFx = (s) => {
+        gustG?.destroy();
         d.hit(s.x, s.y, s.sprite.scale > 1.2);
         if (P.lingerOnHit) d.scorch(s.x, s.y, P.lingerOnHit.r, P.lingerOnHit.ms);
         const S = P.splash;
