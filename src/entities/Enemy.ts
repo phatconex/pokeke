@@ -658,6 +658,12 @@ export class Enemy {
   }
 
   /** walkScale: tốc độ animation bước chân */
+  /** đứng yên nhưng vẫn cập nhật hình (đang dừng trận khi người chơi đổi Pokémon): con mới ra sân vẫn hiện đúng chỗ */
+  holdStill(clock: number, dtMs: number) {
+    this.applyVelocity(0, 0, dtMs);
+    this.syncVisual(clock, dtMs);
+  }
+
   protected syncVisual(clock: number, dtMs: number, walkScale = 1) {
     const speed = this.body.velocity.length();
     const moving = speed > 5;

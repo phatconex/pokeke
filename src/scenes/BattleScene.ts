@@ -920,7 +920,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     for (const e of this.enemies) {
       if (this.slowZones.length && !e.species.types.some((t) => this.slowImmune.includes(t)) && this.inSlowZone(e.x, e.feetY)) e.applySlow(0.55, 150, clock);
       if (clock < this.swapFreezeUntil && !e.beingCaught) {
-        e.body.setVelocity(0, 0);
+        e.holdStill(clock, dt);
         continue;
       }
       e.update(this, dt);
