@@ -25,6 +25,8 @@ export interface GymDef {
   pool?: GymPokemon[];
   pick?: number;
   ace?: GymPokemon;
+  /** chỉnh độ khó riêng của hội quán (mặc định 1 hết): tốc độ đánh của các con thường, máu / sát thương của át chủ bài */
+  tuning?: { attackSpeed?: number; aceHp?: number; aceDmg?: number };
   /** lời thoại trước trận */
   intro: string[];
   /** câu khi tung từng Pokémon ra (theo thứ tự đội hình) */
@@ -110,6 +112,8 @@ const CORE_GYMS: Record<string, GymDef> = {
     ],
     pick: 2,
     ace: { species: 'starmie', level: 23, boss: true },
+    // 2 con đầu ổn nhưng đánh nhanh hơn 1,2 lần; Starmie (át chủ bài) từng quá trâu và đau → giảm
+    tuning: { attackSpeed: 1.2, aceHp: 0.45, aceDmg: 0.85 },
     intro: [
       'Kasumi: Chào mừng đến Hội quán Cerulean! Ta là Kasumi, nàng tiên cá của Cerulean.',
       'Kasumi: Cả sân là mặt nước — làm chậm ai không phải hệ Nước. Hãy nhảy qua các bệ nổi bằng phím Space, và cẩn thận cột nước phun lên đấy!',

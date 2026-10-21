@@ -31,6 +31,7 @@ pewter: {
   pool: [...],        // (tùy chọn) kho Pokémon để bốc; bỏ trống = dùng team
   pick: 2,            // (tùy chọn) số con bốc từ kho; mặc định = số con trong team − 1
   ace: { ... },       // (tùy chọn) át chủ bài; mặc định = con `boss` cuối cùng trong team
+  tuning: { attackSpeed, aceHp, aceDmg },  // (tùy chọn) chỉnh độ khó riêng: tốc độ đánh con thường ×, máu át chủ bài ×, sát thương át chủ bài ×
   intro / sendOut / winLines / afterLines / reward ...
 }
 ```

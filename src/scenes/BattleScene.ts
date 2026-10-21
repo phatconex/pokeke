@@ -3299,6 +3299,17 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
           e.attackGapMult *= 1 / es;
         }
       }
+      // chỉnh riêng từng hội quán (GymDef.tuning)
+      if (trainer && this.gym?.tuning) {
+        const tu = this.gym.tuning;
+        if (p.boss) {
+          if (tu.aceHp) e.maxHp = e.hp = Math.max(1, Math.round(e.maxHp * tu.aceHp));
+          if (tu.aceDmg) e.dmgMult *= tu.aceDmg;
+        } else if (tu.attackSpeed) {
+          e.rangedCdMult /= tu.attackSpeed;
+          e.attackGapMult /= tu.attackSpeed;
+        }
+      }
       if (trainer && p.hpRatio !== undefined && p.hpRatio < 1) e.hp = Math.max(1, Math.round(e.maxHp * p.hpRatio));
       this.addEnemy(e);
       if (trainer) {
@@ -3902,7 +3913,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       const sk = e.species.skills.find((x) => x.slot === rot.slot);
       const move = sk ? MOVES[sk.move] : undefined;
       // dưới 35% máu: nổi giận, ra chiêu dồn dập hơn
-      st.next = this.clock + rot.gap * (ratio < 0.35 || e.rageOn ? GYM_RULES.rage.gapMult : 1) * (0.9 + Math.random() * 0.2);
+      st.next = this.clock + rot.gap * (ratio < 0.35 || e.rageOn ? GYM_RULES.rage.gapMult : 1) / (e.trainer && !e.isBoss ? this.gym?.tuning?.attackSpeed ?? 1 : 1) * (0.9 + Math.random() * 0.2);
       if (!move) continue;
       const spec = resolveSkill(e.species.id, e.level, rot.slot, move);
       if (!spec.archetype) continue;
