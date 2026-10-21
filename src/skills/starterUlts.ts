@@ -378,6 +378,7 @@ export function castHydroCannon(h: SkillHost, f: Fighter, _P: LooseParams, _u: U
   }, () => gather.destroy());
   // 2–3) hai tia pháo quét chéo
   const bg = sc.add.graphics().setDepth(99997);
+  const wd = dialectFor('water', h.fx, mv, h);
   let nextTick = 0;
   h.schedule(t0 + 700, () => {
     if (h.over || f.dead) return;
@@ -394,14 +395,24 @@ export function castHydroCannon(h: SkillHost, f: Fighter, _P: LooseParams, _u: U
       const angles = [base - sw, base + sw];
       cs.forEach((c, i) => {
         const a = angles[i];
-        const ex = c.x + Math.cos(a) * L;
-        const ey = c.y + Math.sin(a) * L * 0.8;
-        bg.lineStyle(54, 0x1f4fb0, 0.45).lineBetween(c.x, c.y, ex, ey);
-        bg.lineStyle(38, 0x2a7ad8, 0.75).lineBetween(c.x, c.y, ex, ey);
-        bg.lineStyle(26, 0x4aa8f0, 0.95).lineBetween(c.x, c.y, ex, ey);
-        bg.lineStyle(12, 0xe8fbff, 1).lineBetween(c.x, c.y, ex, ey);
-        bg.fillStyle(0xe8fbff, 0.7).fillCircle(c.x, c.y, 11);
-        for (let q = 0; q < 2; q++) h.fx.puff('bubblepuff', c.x + (ex - c.x) * Math.random(), c.y + (ey - c.y) * Math.random(), 1);
+        const ux = Math.cos(a);
+        const uy = Math.sin(a) * 0.8;
+        const nx = -uy;
+        const ny = ux;
+        const flick = 0.9 + Math.random() * 0.2;
+        // lõi: các nêm thuôn nhiều lớp từ họng pháo, như chiêu L nhưng dày hơn
+        for (const [ln, w0, wr, col, al] of [[1, 5, 0.5, 0x1f4fb0, 0.5], [0.96, 4, 0.38, 0x2a7ad8, 0.75], [0.88, 3, 0.26, 0x6ac0ff, 0.9], [0.8, 1.5, 0.1, 0xe8fbff, 0.95]] as [number, number, number, number, number][]) {
+          const l = L * ln * flick;
+          const w1 = 40 * wr * 2 * flick;
+          const ex = c.x + ux * l;
+          const ey = c.y + uy * l;
+          bg.fillStyle(col, al).fillPoints([V(c.x + nx * w0, c.y + ny * w0), V(ex + nx * w1, ey + ny * w1), V(ex + ux * w1 * 0.8, ey + uy * w1 * 0.8), V(ex - nx * w1, ey - ny * w1), V(c.x - nx * w0, c.y - ny * w0)], true);
+        }
+        // hạt nước dày đặc dọc tia + bọt/khói ở đuôi
+        wd.spray(c.x, c.y, Phaser.Math.RadToDeg(Math.atan2(uy, ux)), 6);
+        wd.spray(c.x + ux * L * 0.4, c.y + uy * L * 0.4, Phaser.Math.RadToDeg(Math.atan2(uy, ux)) + (Math.random() - 0.5) * 40, 3);
+        if (Math.random() < 0.6) wd.smoke(c.x + ux * L * (0.85 + Math.random() * 0.2) + nx * (Math.random() - 0.5) * 40, c.y + uy * L * 0.9 + ny * (Math.random() - 0.5) * 40, 1);
+        wd.puff(c.x + ux * L * Math.random() + nx * (Math.random() - 0.5) * 20, c.y + uy * L * Math.random() + ny * (Math.random() - 0.5) * 20, 1);
       });
       if (now >= nextTick) {
         nextTick = now + 110;
