@@ -171,3 +171,204 @@ export function castNightfall(h: SkillHost, _f: Fighter, _P: LooseParams, u: Ult
     }
   });
 }
+
+/**
+ * Siêu Phá Hủy (Hyper Beam): gom năng lượng thành quả cầu cam trước miệng (tia năng lượng hút về, màn hình tối đỏ, đất rung),
+ * rồi phóng một chùm tia khổng lồ vàng cam lõi trắng có vòng xoắn chạy dọc, xuyên toàn sân; điểm cuối nổ lớn. Người dùng kiệt sức một lúc.
+ */
+export function castHyperBeam(h: SkillHost, f: Fighter, P: LooseParams, _u: UltimateDef, mv: MoveDef, amount: number) {
+  if (h.over) return;
+  const sc = h.scene;
+  const cam = sc.cameras.main;
+  const wind: number = P.windupMs ?? 1000;
+  const aimT = h.aimTarget && !h.aimTarget.dead ? h.aimTarget : null;
+  const base = aimT ? Math.atan2(aimT.centerY - f.chestY, aimT.x - f.x) : Math.atan2(f.facing.y, f.facing.x || 1);
+  const ax = Math.cos(base);
+  const ay = Math.sin(base);
+  f.faceTo(ax, ay);
+  f.anim.playOnce('charge', wind);
+  f.sprayUntil = h.clock + wind + 900;
+  playSfx('roar');
+  const tint = sc.add.rectangle(0, 0, cam.width, cam.height, 0x2a0a00, 0).setOrigin(0).setScrollFactor(0).setDepth(99989);
+  sc.tweens.add({ targets: tint, fillAlpha: 0.38, duration: wind * 0.8 });
+  const g = sc.add.graphics().setDepth(99996);
+  const t0 = h.clock;
+  const mouth = () => ({ x: f.x + ax * 12, y: f.chestY + ay * 8 });
+  h.addFrameTask(wind, (now) => {
+    if (f.dead || !f.onField) return;
+    const k = (now - t0) / wind;
+    const m = mouth();
+    g.clear();
+    // quả cầu năng lượng lớn dần + vầng sáng
+    const r = 5 + 22 * k + Math.sin(now / 50) * 1.5;
+    g.fillStyle(0xff6a10, 0.25 + 0.2 * k).fillCircle(m.x, m.y, r * 2.2);
+    g.fillStyle(0xffa030, 0.6).fillCircle(m.x, m.y, r * 1.4);
+    g.fillStyle(0xffe070, 0.95).fillCircle(m.x, m.y, r);
+    g.fillStyle(0xffffff, 1).fillCircle(m.x, m.y, r * 0.5);
+    // tia năng lượng hút về quả cầu
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2 + now / 260;
+      const rr = (70 - 50 * k) + ((i * 13 + now / 9) % 40);
+      g.lineStyle(2, i % 2 ? 0xffd060 : 0xff8a30, 0.8).lineBetween(m.x + Math.cos(a) * rr, m.y + Math.sin(a) * rr * 0.7, m.x + Math.cos(a) * (rr - 14), m.y + Math.sin(a) * (rr - 14) * 0.7);
+    }
+    h.fx.shake(0.003 + 0.007 * k, 70);
+  }, () => {
+    g.destroy();
+    sc.tweens.add({ targets: tint, fillAlpha: 0, duration: 700, delay: 1100, onComplete: () => tint.destroy() });
+  });
+  h.schedule(t0 + wind, () => {
+    if (h.over || f.dead || !f.onField) return;
+    f.playMove(mv);
+    playSfx('boom');
+    cam.flash(180, 255, 220, 140, false);
+    h.fx.shake(0.03, 1000);
+    const len: number = P.len ?? 640;
+    const W: number = P.width ?? 38;
+    const m = mouth();
+    const nx = -ay;
+    const ny = ax;
+    const bm = sc.add.graphics().setDepth(99997);
+    const ms = 1000;
+    const b0 = h.clock;
+    let next = 0;
+    f.sprayUntil = h.clock + ms + 900;
+    const tipX = () => Phaser.Math.Clamp(m.x + ax * len, 10, h.worldW - 10);
+    const tipY = () => Phaser.Math.Clamp(m.y + ay * len, 10, h.worldH - 10);
+    h.addFrameTask(ms, (now) => {
+      if (f.dead) return;
+      const k = Math.min(1, (now - b0) / 140);
+      const fade = now - b0 > ms - 220 ? (ms - (now - b0)) / 220 : 1;
+      bm.clear();
+      const ww = W * (0.85 + 0.15 * Math.sin(now / 35)) * k * fade;
+      const ex = tipX();
+      const ey = tipY();
+      for (const [mul, col, al] of [[1.5, 0xff6a10, 0.45], [1, 0xffa830, 0.75], [0.62, 0xffe070, 0.95], [0.28, 0xffffff, 1]] as [number, number, number][]) {
+        const w2 = ww * mul;
+        bm.fillStyle(col, al).fillPoints([V(m.x + nx * w2 * 0.5, m.y + ny * w2 * 0.5), V(ex + nx * w2, ey + ny * w2), V(ex - nx * w2, ey - ny * w2), V(m.x - nx * w2 * 0.5, m.y - ny * w2 * 0.5)], true);
+      }
+      // vòng xoắn năng lượng chạy dọc chùm tia
+      const blen = Math.hypot(ex - m.x, ey - m.y);
+      for (let i = 0; i < 12; i++) {
+        const tt = (((i / 12) + now / 380) % 1);
+        const px = m.x + (ex - m.x) * tt;
+        const py = m.y + (ey - m.y) * tt;
+        const rw = ww * (0.9 + 0.5 * tt);
+        bm.lineStyle(3, 0xfff0b0, 0.85 * fade).strokeEllipse(px, py, rw * 0.55, rw * 2.0);
+      }
+      if (Math.random() < 0.7) h.fx.puff('flamepuff', m.x + (ex - m.x) * Math.random(), m.y + (ey - m.y) * Math.random(), 1);
+      // điểm cuối: nổ liên tục
+      if (Math.random() < 0.35) h.fx.dustPuff(ex, ey, 4);
+      if (now >= next) {
+        next = now + 100;
+        for (const e of h.enemies()) {
+          if (!e.targetable) continue;
+          const rx = e.x - m.x;
+          const ry = e.centerY - m.y;
+          const along = rx * ax + ry * ay;
+          const side = Math.abs(rx * nx + ry * ny);
+          if (along < 0 || along > blen + e.radius || side > W * 1.3 + e.radius) continue;
+          h.damageEnemy(e, mv, amount * 0.16, ax, ay, true, true);
+        }
+      }
+      void blen;
+    }, () => {
+      bm.destroy();
+      if (h.over) return;
+      // nổ lớn ở cuối chùm tia + người dùng kiệt sức
+      const ex = tipX();
+      const ey = tipY();
+      h.fx.ringBurst(ex, ey, 70, 0xffa030, 0xffffff, 520);
+      h.fx.dustPuff(ex, ey, 16);
+      h.fx.debrisBurst(ex, ey, 20);
+      h.fx.shake(0.03, 420);
+      playSfx('boom');
+      for (const e of h.enemies()) {
+        if (!e.targetable) continue;
+        if (Math.hypot(e.x - ex, (e.y - ey) / 0.8) > 60 + e.radius) continue;
+        h.damageEnemy(e, mv, amount * 0.5, e.x - ex, e.y - ey, true);
+      }
+    });
+  });
+}
+
+/**
+ * Cuồng Phong (Hurricane): một cơn lốc xoáy khổng lồ càn qua sân, hút mọi địch vào tâm, nhấc bổng quay tít (gây Rối loạn),
+ * rồi hất tung ra ngoài khi tan. Lá và lông vũ bay mù mịt.
+ */
+export function castHurricane(h: SkillHost, f: Fighter, P: LooseParams, _u: UltimateDef, mv: MoveDef, amount: number) {
+  if (h.over) return;
+  const sc = h.scene;
+  const cam = sc.cameras.main;
+  cam.flash(240, 170, 220, 255, false);
+  h.fx.shake(0.01, 2300);
+  playSfx('roar');
+  const sky = sc.add.rectangle(0, 0, cam.width, cam.height, 0x1a4a6a, 0).setOrigin(0).setScrollFactor(0).setDepth(99989);
+  sc.tweens.add({ targets: sky, fillAlpha: 0.3, duration: 400 });
+  const totalMs = 2400;
+  sc.time.delayedCall(totalMs + 200, () => sc.tweens.add({ targets: sky, fillAlpha: 0, duration: 450, onComplete: () => sky.destroy() }));
+  const enemies = h.enemies().filter((e) => e.targetable);
+  const cx0 = enemies.length ? enemies.reduce((a, e) => a + e.x, 0) / enemies.length : f.x + f.facing.x * 120;
+  const cy0 = enemies.length ? enemies.reduce((a, e) => a + e.y, 0) / enemies.length : f.y;
+  const R: number = P.r ?? 78;
+  const g = sc.add.graphics().setDepth(99995);
+  const t0 = h.clock;
+  let nextTick = t0 + 260;
+  let cx = f.x;
+  let cy = f.y;
+  const grabbed = new Set<(typeof enemies)[number]>();
+  h.addFrameTask(totalMs, (now) => {
+    const k = (now - t0) / totalMs;
+    // lốc di chuyển từ người dùng tới tâm đám địch rồi lượn nhẹ quanh đó
+    const mv1 = Math.min(1, k * 2.2);
+    cx = f.x + (cx0 - f.x) * mv1 + Math.cos(now / 300) * 14 * k;
+    cy = f.y + (cy0 - f.y) * mv1 + Math.sin(now / 260) * 8 * k;
+    g.clear();
+    const appear = Math.min(1, k * 4);
+    const fade = k > 0.88 ? (1 - k) / 0.12 : 1;
+    // phễu lốc: nhiều tầng elip xoáy, rộng dần lên cao
+    const H = 120 * appear;
+    for (let i = 0; i < 22; i++) {
+      const u = i / 21;
+      const y = cy - u * H;
+      const rr = (6 + u * R) * appear;
+      const a0 = now / 90 + u * 7;
+      g.lineStyle(3.2 - u * 1.4, i % 2 ? 0xffffff : 0xbfe6ff, (0.85 - u * 0.35) * fade).strokeEllipse(cx + Math.sin(a0) * 4, y, rr * 2, rr * 0.7);
+      // mảnh gió cong chạy quanh thân lốc
+      const ang = a0 * 1.3;
+      g.fillStyle(0xffffff, 0.8 * fade).fillCircle(cx + Math.cos(ang) * rr, y + Math.sin(ang) * rr * 0.35, 2);
+    }
+    g.fillStyle(0x6a8aa8, 0.25 * fade).fillEllipse(cx, cy + 2, R * 1.6 * appear, R * 0.5 * appear);
+    if (Math.random() < 0.8) h.fx.puff(Math.random() < 0.5 ? 'leafpuff' : 'windpuff', cx + (Math.random() - 0.5) * R * 1.6, cy - Math.random() * H, 1);
+    // hút + nhấc + quay các địch trong tầm
+    for (const e of enemies) {
+      if (e.dead || !e.targetable) continue;
+      const dx = cx - e.x;
+      const dy = cy - e.y;
+      const dd = Math.hypot(dx, dy / 0.7);
+      if (dd > R * 1.5 + e.radius && !grabbed.has(e)) continue;
+      grabbed.add(e);
+      const ang = now / 140 + (e.x % 7);
+      (e.body as unknown as { reset: (x: number, y: number) => void }).reset(e.x + dx * 0.08 + Math.cos(ang) * 1.8, e.y + dy * 0.08 + Math.sin(ang) * 1.2);
+      e.anim.lift = Math.min(70, (e.anim.lift || 0) + 3) * (k > 0.88 ? (1 - k) / 0.12 : 1);
+      e.stunnedUntil = Math.max(e.stunnedUntil, now + 200);
+    }
+    if (now >= nextTick) {
+      nextTick = now + 260;
+      for (const e of grabbed) if (!e.dead && e.targetable) h.damageEnemy(e, mv, amount * 0.09, 0, 0, true);
+    }
+  }, () => {
+    g.destroy();
+    for (const e of grabbed) {
+      e.anim.lift = 0;
+      if (e.dead) continue;
+      const dx = e.x - cx;
+      const dy = e.y - cy;
+      const dd = Math.hypot(dx, dy) || 1;
+      h.damageEnemy(e, { ...mv, knockback: 320 }, amount * 0.35, dx / dd, dy / dd, true);
+    }
+    if (h.over) return;
+    h.fx.ringBurst(cx, cy, 90, 0xbfe6ff, 0xffffff, 460);
+    h.fx.shake(0.018, 300);
+    playSfx('boom');
+  });
+}

@@ -36,7 +36,7 @@ export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStri
  *  thunderstorm = trời tối, sét giáng dày đặc + sét nảy chuỗi
  *  bloom        = bão cánh hoa xoay / rễ gai trồi khắp sân + đóa hoa khổng lồ nở rộ (hệ cỏ)
  */
-export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 'timestop' | 'absolutezero' | 'komode' | 'mindbreak' | 'draco' | 'flock' | 'wavefront' | 'chasm' | 'rockfall' | 'nightfall' | 'hyperbeam' | 'phoenix' | 'judgement' | 'aurorafall';
+export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 'timestop' | 'absolutezero' | 'komode' | 'mindbreak' | 'draco' | 'flock' | 'wavefront' | 'chasm' | 'rockfall' | 'nightfall' | 'hurricane' | 'hyperbeam' | 'phoenix' | 'judgement' | 'aurorafall';
 
 /** "Bộ từ vựng" hiệu ứng (vệt, nổ trúng, khói, vụ nổ, cháy xém, cột, vuốt) – xem dialects.ts */
 export type FxDialectId = 'fire' | 'water' | 'electric' | 'grass' | 'ghost' | 'psychic' | 'ice' | 'fighting' | 'dragon' | 'rock' | 'ground' | 'flying' | 'poison' | 'bug' | 'normal' | 'generic';
@@ -766,6 +766,7 @@ export interface UltParamMap {
   chasm: LooseParams;
   rockfall: LooseParams;
   nightfall: LooseParams;
+  hurricane: LooseParams;
   hyperbeam: LooseParams;
   phoenix: LooseParams;
   judgement: LooseParams;
@@ -851,6 +852,7 @@ export interface TypeKit {
   chasm?: Partial<LooseParams>;
   rockfall?: Partial<LooseParams>;
   nightfall?: Partial<LooseParams>;
+  hurricane?: Partial<LooseParams>;
   hyperbeam?: Partial<LooseParams>;
   phoenix?: Partial<LooseParams>;
   judgement?: Partial<LooseParams>;

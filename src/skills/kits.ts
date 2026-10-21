@@ -171,7 +171,7 @@ const MINDBREAK_DEFAULTS: MindBreakParams = { dialect: 'psychic', windupMs: 800,
 
 const ULT_DEFAULTS: { [U in UltArchetypeId]: UltParamMap[U] } = {
   inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS, timestop: TIMESTOP_DEFAULTS, absolutezero: ABSZERO_DEFAULTS, komode: KOMODE_DEFAULTS, mindbreak: MINDBREAK_DEFAULTS,
-  draco: { dialect: 'dragon', windupMs: 700 }, flock: { dialect: 'flying', windupMs: 700 }, wavefront: { dialect: 'poison', windupMs: 700 }, chasm: { dialect: 'ground', windupMs: 700 }, rockfall: { dialect: 'rock', windupMs: 700 }, nightfall: { dialect: 'ghost', windupMs: 700 }, hyperbeam: { dialect: 'normal', windupMs: 300 }, phoenix: { dialect: 'fire', windupMs: 600 }, judgement: { dialect: 'electric', windupMs: 500 }, aurorafall: { dialect: 'ice', windupMs: 600 },
+  draco: { dialect: 'dragon', windupMs: 700 }, flock: { dialect: 'flying', windupMs: 700 }, wavefront: { dialect: 'poison', windupMs: 700 }, chasm: { dialect: 'ground', windupMs: 700 }, rockfall: { dialect: 'rock', windupMs: 700 }, nightfall: { dialect: 'ghost', windupMs: 700 }, hurricane: { dialect: 'flying', windupMs: 700 }, hyperbeam: { dialect: 'normal', windupMs: 300 }, phoenix: { dialect: 'fire', windupMs: 600 }, judgement: { dialect: 'electric', windupMs: 500 }, aurorafall: { dialect: 'ice', windupMs: 600 },
 };
 
 // ---------------------------------------------------------------------------------- bộ chiêu theo hệ
@@ -985,7 +985,7 @@ const TK: Record<string, SpeciesKit> = {
   // --- Bay: lông vũ, bóng chim, V xung kích, bay vút rồi lao
   pidgey: { kitType: 'flying', slots: { J: S('bolt', { dialect: 'flying', scale: 0.9, trail: 'none', trailPuffChance: 0, split: 1, gust: { color: 0xbfe0ff, color2: 0xffffff, r: 14 } }), K: S('dashStrike', { dialect: 'flying', dashMs: 110, trailCount: 0, streaks: false, impactSfx: null }), L: S('wingslash', { dialect: 'flying', reach: 50, spanDeg: 150, feathers: 7 }) } },
   pidgeotto: { kitType: 'flying', slots: { J: S('bolt', { dialect: 'flying', scale: 1.1, trail: 'none', trailPuffChance: 0, split: 2, splitSpreadDeg: 14, splitPowerMult: 0.7, gust: { color: 0xbfe0ff, color2: 0xffffff, r: 17 } }), K: S('dive', { dialect: 'flying', airMs: 600, hitR: 40, trailColor: 0xffffff }), L: S('wingslash', { dialect: 'flying', reach: 62, spanDeg: 165, feathers: 8 }) } },
-  pidgeot: { kitType: 'flying', ult: 'flock', slots: { J: S('bolt', { dialect: 'flying', scale: 1.3, trail: 'none', trailPuffChance: 0, split: 3, splitSpreadDeg: 18, splitPowerMult: 0.65, gust: { color: 0xbfe0ff, color2: 0xffffff, r: 20 } }), K: S('dive', { dialect: 'flying', airMs: 700, hitR: 48, trailColor: 0xffd34a, powerMult: 1.3 }), L: S('wingslash', { dialect: 'flying', reach: 76, spanDeg: 180, feathers: 10 }), U: S('twister', { dialect: 'flying', r: 40, height: 110, colors: [0xffffff, 0xcfe6ff], tex: 'featherA', ms: 1800 }) }, ultParams: { dialect: 'flying', birds: 26, totalMs: 3000 } },
+  pidgeot: { kitType: 'flying', ult: 'hurricane', slots: { J: S('bolt', { dialect: 'flying', scale: 1.3, trail: 'none', trailPuffChance: 0, split: 3, splitSpreadDeg: 18, splitPowerMult: 0.65, gust: { color: 0xbfe0ff, color2: 0xffffff, r: 20 } }), K: S('dive', { dialect: 'flying', airMs: 700, hitR: 48, trailColor: 0xffd34a, powerMult: 1.3 }), L: S('wingslash', { dialect: 'flying', reach: 76, spanDeg: 180, feathers: 10 }), U: S('twister', { dialect: 'flying', r: 40, height: 110, colors: [0xffffff, 0xcfe6ff], tex: 'featherA', ms: 1800 }) }, ultParams: { r: 84 } },
   // --- Độc: xanh lá + vàng, kim, vũng, bùn
   ekans: { kitType: 'poison', slots: { J: S('bolt', { dialect: 'poison', scale: 0.9, texPick: ['needle'], trail: 'thin', trailPuffChance: 0.1, split: 1 }), K: S('dashStrike', { dialect: 'poison', dashMs: 130, trailCount: 0, streaks: false, impactSfx: null }) } },
   arbok: { kitType: 'poison', slots: { J: S('bolt', { dialect: 'poison', scale: 1.2, texPick: ['needle'], split: 3, splitSpreadDeg: 14, splitPowerMult: 0.6 }), K: S('dashStrike', { dialect: 'poison', dashMs: 120, trailCount: 1, streaks: false, impactSfx: null }), L: S('dashStrike', { dialect: 'poison', dashMs: 140, trailCount: 1, streaks: true, impactSfx: null }) } },
@@ -1163,12 +1163,21 @@ function mergedKit(speciesId: string): SpeciesKit | undefined {
 }
 
 /** Tuyệt chiêu riêng của loài (null = tuyệt chiêu theo hệ như cũ) */
+const TYPE_DEFAULT_ULT: Partial<Record<PokemonType, UltArchetypeId>> = {
+  fire: 'inferno', water: 'tsunami', electric: 'thunderstorm', grass: 'bloom', psychic: 'timestop', ice: 'absolutezero', fighting: 'komode',
+  dragon: 'draco', flying: 'hurricane', ground: 'chasm', normal: 'hyperbeam', rock: 'rockfall', ghost: 'nightfall',
+};
+
 export function resolveUlt(speciesId: string, types: PokemonType[]): UltSpec | null {
   const sk = kitFor(speciesId);
-  // chưa có tuyệt chiêu riêng: hệ chính Độc / Đá / Ma dùng bản có hình đúng tên (Biển Độc / Mưa Thiên Thạch / Bóng Đêm Vĩnh Cửu)
-  if (!sk?.ult && types[0] === 'poison') return { archetype: 'wavefront', params: { ...ULT_DEFAULTS.wavefront, dialect: 'poison', shape: 'sludge', status: 'poison', ms: 1900 } } as UltSpec;
-  if (!sk?.ult && types[0] === 'rock') return { archetype: 'rockfall', params: { ...ULT_DEFAULTS.rockfall } } as UltSpec;
-  if (!sk?.ult && types[0] === 'ghost') return { archetype: 'nightfall', params: { ...ULT_DEFAULTS.nightfall } } as UltSpec;
+  // chưa có tuyệt chiêu riêng: dùng bản mặc định của HỆ CHÍNH, có hình đúng tên (Đại Hồng Thủy = sóng thần, Cuồng Phong = lốc xoáy, Siêu Phá Hủy = Hyper Beam...)
+  if (!sk?.ult) {
+    const t0 = types[0];
+    if (t0 === 'poison') return { archetype: 'wavefront', params: { ...ULT_DEFAULTS.wavefront, dialect: 'poison', shape: 'sludge', status: 'poison', ms: 1900 } } as UltSpec;
+    if (t0 === 'bug') return { archetype: 'wavefront', params: { ...ULT_DEFAULTS.wavefront, dialect: 'bug', shape: 'swarm', ms: 1800 } } as UltSpec;
+    const arch = TYPE_DEFAULT_ULT[t0];
+    if (arch) return { archetype: arch, params: { ...ULT_DEFAULTS[arch], ...TYPE_KITS[t0]?.[arch] } } as UltSpec;
+  }
   if (!sk?.ult) return null;
   const typeUlt = TYPE_KITS[(sk.kitType ?? types[0]) as PokemonType]?.[sk.ult];
   return { archetype: sk.ult, params: { ...ULT_DEFAULTS[sk.ult], ...typeUlt, ...sk.ultParams } } as UltSpec;
@@ -1179,7 +1188,7 @@ export function resolveUlt(speciesId: string, types: PokemonType[]): UltSpec | n
 export function ultEffectType(speciesId: string, types: PokemonType[]): PokemonType {
   const r = resolveUlt(speciesId, types);
   if (!r) return types[0];
-  const NAT: Record<string, PokemonType> = { inferno: 'fire', tsunami: 'water', thunderstorm: 'electric', bloom: 'grass', timestop: 'psychic', mindbreak: 'psychic', absolutezero: 'ice', komode: 'fighting', draco: 'dragon', flock: 'flying', chasm: 'ground', rockfall: 'rock', nightfall: 'ghost', hyperbeam: 'normal', phoenix: 'fire', judgement: 'electric', aurorafall: 'ice' };
+  const NAT: Record<string, PokemonType> = { inferno: 'fire', tsunami: 'water', thunderstorm: 'electric', bloom: 'grass', timestop: 'psychic', mindbreak: 'psychic', absolutezero: 'ice', komode: 'fighting', draco: 'dragon', flock: 'flying', chasm: 'ground', rockfall: 'rock', nightfall: 'ghost', hurricane: 'flying', hyperbeam: 'normal', phoenix: 'fire', judgement: 'electric', aurorafall: 'ice' };
   if (r.archetype === 'wavefront') {
     const shape = (r.params as { shape?: string }).shape;
     return shape === 'rock' ? 'rock' : shape === 'swarm' ? 'bug' : 'poison';

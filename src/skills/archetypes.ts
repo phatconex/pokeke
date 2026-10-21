@@ -15,7 +15,7 @@ import type { Enemy } from '../entities/Enemy';
 import { bulbCharge, crackBetween, flattenedGrass, groundCracks, leafBurst, windStreak } from '../fx/GrassFx';
 import { meleeSignature } from './meleeFx';
 import { castBodySlam, castClones, castShellSpin, castSonic, castThrow, castWingSlash } from './airArchetypes';
-import { castNightfall, castRockfall } from './ultArchetypes';
+import { castHurricane, castHyperBeam, castNightfall, castRockfall } from './ultArchetypes';
 import { castCloud, castTether, castWhip } from './grassArchetypes';
 import { castTelekinesis, castTimeStop } from './psyArchetypes';
 import { castBarrier, castBoomerang, castMindBreak, castSingularity } from './legendArchetypes';
@@ -103,7 +103,8 @@ export function castUltArchetype(h: SkillHost, f: Fighter, spec: UltSpec, u: Ult
   else if (spec.archetype === 'judgement') BA.castJudgement(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'aurorafall') BA.castAuroraFall(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'phoenix') BA.castPhoenix(h, f, spec.params, u, mv, amount);
-  else if (spec.archetype === 'hyperbeam') TA.castHyperBeamUlt(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'hyperbeam') castHyperBeam(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'hurricane') castHurricane(h, f, spec.params, u, mv, amount);
 }
 
 /** Vạch chấm từ (x1, y1) tới (x2, y2) – vạch ngắm */

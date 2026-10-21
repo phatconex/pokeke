@@ -47,34 +47,56 @@ export function castWingSlash(h: SkillHost, f: Fighter, m: MoveDef, P: LoosePara
     const fade = 1 - Math.max(0, (now - t0 - ms) / 160);
     g.clear();
     const lead = base + side * (-span / 2 + span * k);
-    // vệt gió cong trắng phía sau cánh
-    for (let w = 0; w < 3; w++) {
+    // hai cánh dang rộng quét chập vào nhau phía trước (như Wing Attack trong anime): mỗi cánh có xương cánh cong + các sợi lông xếp lớp
+    const drawWing = (ang: number, sd: number) => {
+      const L = reach * 0.98;
+      const ox = f.x;
+      const oy = f.chestY - 2;
+      const armPts: Phaser.Math.Vector2[] = [];
+      for (let i = 0; i <= 8; i++) {
+        const t = i / 8;
+        const bend = Math.sin(t * Math.PI) * 0.22 * sd;
+        const aa = ang + bend;
+        armPts.push(V(ox + Math.cos(aa) * L * t, oy + Math.sin(aa) * L * t * 0.8));
+      }
+      // vầng sáng sau cánh
+      g.fillStyle(0xffffff, 0.16 * fade).fillEllipse(ox + Math.cos(ang) * L * 0.5, oy + Math.sin(ang) * L * 0.4, L * 0.9, L * 0.55);
+      // lông cánh: từ gốc ra ngọn, hướng lệch về phía sau chiều quét, dài nhất ở giữa cánh
+      const N = feathers + 2;
+      for (let i = 0; i < N; i++) {
+        const t = 0.12 + 0.88 * (i / (N - 1));
+        const p0 = armPts[Math.min(8, Math.round(t * 8))];
+        const fa = ang + sd * (0.62 - 0.18 * t);
+        const flen = L * (0.34 + 0.36 * Math.sin(Math.min(1, t * 1.15) * Math.PI * 0.85)) * (0.92 + 0.08 * Math.sin(now / 50 + i));
+        const fw = 5.5 + 3.5 * (1 - Math.abs(t - 0.5));
+        const tx = p0.x + Math.cos(fa) * flen;
+        const ty = p0.y + Math.sin(fa) * flen * 0.8;
+        const nx = -Math.sin(fa) * fw;
+        const ny = Math.cos(fa) * fw * 0.8;
+        const mx = (p0.x + tx) / 2;
+        const my = (p0.y + ty) / 2;
+        const pts = [V(p0.x - nx * 0.5, p0.y - ny * 0.5), V(mx - nx, my - ny), V(tx - Math.cos(fa) * 3, ty - Math.sin(fa) * 3 - 0), V(tx + Math.cos(fa) * 3, ty + Math.sin(fa) * 2.4), V(mx + nx, my + ny), V(p0.x + nx * 0.5, p0.y + ny * 0.5)];
+        g.fillStyle(i % 2 ? 0xe6f0ff : col, 0.96 * fade).fillPoints(pts, true);
+        g.lineStyle(1.4, edge, fade).strokePoints(pts, true);
+        g.lineStyle(1, 0xffffff, 0.8 * fade).lineBetween(p0.x, p0.y, tx - Math.cos(fa) * 4, ty - Math.sin(fa) * 3);
+      }
+      // xương cánh (cạnh trước) sáng
+      g.lineStyle(5, 0xcfe0ff, 0.9 * fade).strokePoints(armPts, false);
+      g.lineStyle(2.2, 0xffffff, fade).strokePoints(armPts, false);
+    };
+    const spread = span / 2;
+    const swing = spread * (1 - k);
+    drawWing(base + swing, 1);
+    drawWing(base - swing, -1);
+    // vệt gió cong sau cánh
+    for (let w = 0; w < 2; w++) {
       const pts: Phaser.Math.Vector2[] = [];
-      const r = reach * (0.55 + w * 0.22);
+      const r = reach * (0.7 + w * 0.2);
       for (let i = 0; i <= 14; i++) {
-        const aa = lead - side * (span * 0.5 * (i / 14));
+        const aa = base + (swing + spread * 0.7 * (i / 14)) * (w ? 1 : -1) * 0.95;
         pts.push(V(f.x + Math.cos(aa) * r, f.chestY + Math.sin(aa) * r * 0.8));
       }
-      g.lineStyle(2 - w * 0.4, 0xffffff, (0.7 - w * 0.2) * fade).strokePoints(pts, false);
-    }
-    // các sợi lông: toả ra từ thân, dài dần về phía ngoài của cánh
-    for (let i = 0; i < feathers; i++) {
-      const u = i / (feathers - 1);
-      const aa = lead - side * (span * 0.42 * (1 - u));
-      const len = reach * (0.62 + 0.38 * u) * (0.9 + 0.1 * Math.sin(now / 40 + i));
-      const w = 6 + 4 * u;
-      const cx = f.x + Math.cos(aa) * 8;
-      const cy = f.chestY + Math.sin(aa) * 6;
-      const tx = f.x + Math.cos(aa) * len;
-      const ty = f.chestY + Math.sin(aa) * len * 0.8;
-      const nx = -Math.sin(aa);
-      const ny = Math.cos(aa) * 0.8;
-      const mx = (cx + tx) / 2 + nx * w * 0.5 * side;
-      const my = (cy + ty) / 2 + ny * w * 0.5 * side;
-      const pts = [V(cx, cy), V(mx + nx * w, my + ny * w), V(tx, ty), V(mx - nx * w, my - ny * w)];
-      g.fillStyle(col, 0.92 * fade).fillPoints(pts, true);
-      g.lineStyle(1.6, edge, fade).strokePoints(pts, true);
-      g.lineStyle(1, edge, 0.6 * fade).lineBetween(cx, cy, tx, ty);
+      g.lineStyle(1.6, 0xffffff, 0.55 * fade).strokePoints(pts, false);
     }
     // lông rụng bay tung
     if (k < 0.95 && shed++ % 2 === 0) {
