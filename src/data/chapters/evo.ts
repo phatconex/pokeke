@@ -122,7 +122,7 @@ const species: ChapterContent['species'] = {
   },
   charizard: {
     dex: 6, name: 'Charizard', types: ['fire', 'flying'], body: { w: 18, h: 12 }, fallbackColor: 0xf07830, scale: 1.2,
-    base: { hp: 136, atk: 86, speed: 130 }, skills: sk('emberF3', 'wingSlashF3', ['flamethrowerF3', 10], ['fireBlastF3', 36]), catchRate: 45,
+    base: { hp: 136, atk: 86, speed: 130 }, skills: sk('emberF3', 'seismicTossF3', ['flamethrowerF3', 10], ['flareBlitzF3', 36]), catchRate: 45,
     blurb: 'Bay lượn bổ nhào khắp sân, phun Đại Hỏa thiêu rụi cả vùng.',
   },
   blastoise: {

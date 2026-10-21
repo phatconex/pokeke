@@ -45,6 +45,7 @@ export const ARCHETYPE_DEFAULTS: { [A in ArchetypeId]: (m: MoveDef) => Archetype
   sonic: () => ({ dialect: 'generic' }),
   clones: () => ({ dialect: 'generic' }),
   bodyslam: () => ({ dialect: 'generic' }),
+  throw: () => ({ dialect: 'generic' }),
   serpent: () => ({ dialect: 'generic' }),
   dive: () => ({ dialect: 'generic' }),
   lob: () => ({ dialect: 'generic' }),
@@ -427,11 +428,8 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
         tiers: [],
       },
       K: {
-        archetype: 'dashStrike',
-        params: {
-          dashMs: 170, lungeMult: 1, iframeExtraMs: 240, trailCount: 3, streaks: false, afterimages: 5, afterimageTint: 0xff9a40, afterimageMs: 360,
-          arc: { r: 48, color: 0xff7a1a, core: 0xfff0b0 }, arc2: { r: 34, color: 0xe8401a, core: 0xffd070 }, impactShake: [0.012, 200], impactSfx: 'flame', startSfx: 'roar',
-        },
+        archetype: 'throw',
+        params: { dialect: 'fighting', reach: 140, powerMult: 1.3 },
         tiers: [],
       },
       L: {
@@ -450,11 +448,11 @@ export const SPECIES_KITS: Record<string, SpeciesKit> = {
         tiers: [],
       },
       U: {
-        archetype: 'blast',
+        archetype: 'dashStrike',
         params: {
-          telegraphMs: 520, speed: 380, hitStopMs: 90, arcHeight: 40, ballScale: 3.2, haloScale: 4.2, star: { points: 5, color: 0xe8401a, core: 0xffe070 },
-          shockwave: { color: 0xff7a20, color2: 0xfff0b0 }, debris: 30, shake: [0.026, 520],
-          linger: { ms: 3500, tickMs: 400, powerMult: 0.12, radiusMult: 0.85, color: 0xff5a14 },
+          dashMs: 230, lungeMult: 1.5, iframeExtraMs: 260, trailCount: 4, streaks: false, afterimages: 6, afterimageTint: 0xff7a30, afterimageMs: 320,
+          wrap: { color: 0xff6a20, core: 0xffe080 }, impactShake: [0.016, 240], impactSfx: 'flame', startSfx: 'roar',
+          shockwave: { r: 70, power: 1, push: 360, color: 0xe8501a, color2: 0xffe070, stopMs: 100 },
         },
         tiers: [],
       },

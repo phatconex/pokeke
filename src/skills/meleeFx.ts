@@ -5,13 +5,15 @@ import type { MoveDef } from '../data/moveKit';
 import { TYPE_COLOR } from '../data/types';
 import { impactRays, powBurst } from '../fx/FightFx';
 
-export type MeleeStyle = 'claw' | 'bite' | 'impact';
+export type MeleeStyle = 'claw' | 'bite' | 'jab' | 'impact';
 
 const CLAW = /(scratch|slash|cutter|claw|wingAttack|karateChop|crossChop|xScissor|viceGrip|guillotine|vineWhip|bonemerang|boneClub|trảm|cào|chém)/i;
+const JAB = /(furyAttack|doublePeck|triPeck|needle|twineedle|jab|đâm loạn|mổ đôi|mổ ba)/i;
 const BITE = /(bite|fang|crunch|hyperFang|peck|drill|horn|cắn|nanh|mổ|sừng)/i;
 
 export function meleeStyleOf(m: MoveDef): MeleeStyle {
   const key = `${m.id} ${m.name}`;
+  if (JAB.test(key)) return 'jab';
   if (CLAW.test(key)) return 'claw';
   if (BITE.test(key)) return 'bite';
   return 'impact';
@@ -58,6 +60,32 @@ export function meleeSignature(sc: Phaser.Scene, m: MoveDef, x: number, y: numbe
       });
     }
     impactRays(sc, x + aim.x * 26 * scale, y + aim.y * 18 * scale, 7, 8 * scale, 24 * scale, shade(col, 0.45), 200);
+  } else if (style === 'jab') {
+    // chọc liên hoàn: nhiều mũi kim / mỏ đâm nhanh vào điểm trúng từ các hướng lệch nhau
+    for (let i = 0; i < 7; i++) {
+      const g = sc.add.graphics().setDepth(depth).setPosition(x + aim.x * 26 * scale, y + aim.y * 18 * scale);
+      const jx = (Math.random() - 0.5) * 22 * scale;
+      const jy = (Math.random() - 0.5) * 16 * scale;
+      const a2 = ang + (Math.random() - 0.5) * 0.9;
+      const t0 = { k: 0 };
+      sc.tweens.add({
+        targets: t0, k: 1, duration: 120, delay: i * 38, ease: 'Cubic.out',
+        onUpdate: () => {
+          g.clear();
+          const len = 34 * scale * (1 - t0.k * 0.35);
+          const bx = jx - Math.cos(a2) * len * (1 - t0.k * 0.6);
+          const by = jy - Math.sin(a2) * len * (1 - t0.k * 0.6);
+          const nx = -Math.sin(a2) * 2.6;
+          const ny = Math.cos(a2) * 2.6;
+          g.fillStyle(0xffffff, 0.95).fillTriangle(bx + nx, by + ny, bx - nx, by - ny, jx, jy);
+          g.lineStyle(1.4, col, 1).lineBetween(bx, by, jx, jy);
+        },
+        onComplete: () => {
+          impactRays(sc, g.x + jx, g.y + jy, 4, 3 * scale, 11 * scale, shade(col, 0.5), 130);
+          sc.tweens.add({ targets: g, alpha: 0, duration: 90, onComplete: () => g.destroy() });
+        },
+      });
+    }
   } else if (style === 'bite') {
     // hàm răng trên + dưới khép lại tại điểm cắn
     const g = sc.add.graphics().setDepth(depth).setPosition(x + aim.x * 20 * scale, y + aim.y * 14 * scale).setRotation(ang);

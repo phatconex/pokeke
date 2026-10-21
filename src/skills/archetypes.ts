@@ -14,7 +14,7 @@ import type {
 import type { Enemy } from '../entities/Enemy';
 import { bulbCharge, crackBetween, flattenedGrass, groundCracks, leafBurst, windStreak } from '../fx/GrassFx';
 import { meleeSignature } from './meleeFx';
-import { castBodySlam, castClones, castSonic, castWingSlash } from './airArchetypes';
+import { castBodySlam, castClones, castSonic, castThrow, castWingSlash } from './airArchetypes';
 import { castNightfall, castRockfall } from './ultArchetypes';
 import { castCloud, castTether, castWhip } from './grassArchetypes';
 import { castTelekinesis, castTimeStop } from './psyArchetypes';
@@ -54,6 +54,7 @@ export function castArchetype(h: SkillHost, f: Fighter, m: MoveDef, spec: SkillS
     case 'sonic': return castSonic(h, f, m, spec.params, dir);
     case 'clones': return castClones(h, f, m, spec.params, dir);
     case 'bodyslam': return castBodySlam(h, f, m, spec.params, dir);
+    case 'throw': return castThrow(h, f, m, spec.params, dir);
     case 'serpent': return TA.castSerpent(h, f, m, spec.params, dir);
     case 'dive': return TA.castDive(h, f, m, spec.params);
     case 'lob': return TA.castLob(h, f, m, spec.params);
@@ -289,6 +290,22 @@ function castDashStrike(h: SkillHost, f: Fighter, m: MoveDef, P: DashStrikeParam
   const dist = t ? Phaser.Math.Clamp(Math.hypot(t.x - f.x, t.y - f.y) - t.radius - 8, 0, lunge) : lunge;
   const ms = P.dashMs;
   f.startLunge(dir, Math.max(8, dist), ms, h.clock);
+  if (P.wrap) {
+    // bọc thân trong lửa khi lao: vài tia lửa cuộn quanh thân + quầng sáng
+    const W = P.wrap;
+    const wg = h.scene.add.graphics().setDepth(f.anim.sprite.depth + 3);
+    h.addFrameTask(ms + 120, (now) => {
+      wg.clear();
+      const fl = 0.85 + Math.random() * 0.3;
+      wg.fillStyle(W.color, 0.35).fillEllipse(f.x, f.chestY, 34 * fl, 38 * fl);
+      wg.fillStyle(W.core, 0.45).fillEllipse(f.x, f.chestY, 20 * fl, 24 * fl);
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + now / 70;
+        wg.fillStyle(W.color, 0.8).fillTriangle(f.x + Math.cos(a) * 12, f.chestY + Math.sin(a) * 14, f.x + Math.cos(a + 0.3) * 22 * fl, f.chestY + Math.sin(a + 0.3) * 24 * fl, f.x + Math.cos(a - 0.3) * 10, f.chestY + Math.sin(a - 0.3) * 12);
+      }
+      if (P.trailCount) d.trail(f.x - aim.x * 6, f.chestY - aim.y * 4, 3);
+    }, () => wg.destroy());
+  }
   f.playMove(m);
   h.fx.dustPuff(f.x, f.feetY, 5);
   if (P.startSfx) playSfx(P.startSfx);

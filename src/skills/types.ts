@@ -23,11 +23,11 @@ import type { StatusKind } from '../data/moveKit';
  *  trap   – vùng gài, kích hoạt sau một lúc · summon – gọi trợ thủ / tháp bắn tạm thời
  */
 export type ArchetypeId = 'bolt' | 'dashStrike' | 'stream' | 'blast' | 'nova' | 'chain' | 'rain' | 'whip' | 'cloud' | 'tether' | 'telekinesis' | 'blizzard' | 'lance' | 'gale' | 'strike' | 'counter' | 'slam' | 'cross' | 'boomerang' | 'barrier' | 'singularity'
-  | 'wingslash' | 'sonic' | 'clones' | 'bodyslam' | 'fan' | 'sweep' | 'serpent' | 'dive' | 'lob' | 'roll' | 'fallers' | 'ridge' | 'quicksand' | 'ambush' | 'twister' | 'web' | 'swarm' | 'triattack' | 'beam'
+  | 'wingslash' | 'sonic' | 'clones' | 'bodyslam' | 'throw' | 'fan' | 'sweep' | 'serpent' | 'dive' | 'lob' | 'roll' | 'fallers' | 'ridge' | 'quicksand' | 'ambush' | 'twister' | 'web' | 'swarm' | 'triattack' | 'beam'
   | 'arcshot' | 'phoenixdash' | 'xslash' | 'forkbolt' | 'blink' | 'stormcloud' | 'powergrid' | 'aurora' | 'iceglide' | 'prism' | 'icewall';
 export type PlannedArchetypeId = 'trap' | 'summon';
 export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStrike', 'stream', 'blast', 'nova', 'chain', 'rain', 'whip', 'cloud', 'tether', 'telekinesis', 'blizzard', 'lance', 'gale', 'strike', 'counter', 'slam', 'cross', 'boomerang', 'barrier', 'singularity',
-  'wingslash', 'sonic', 'clones', 'bodyslam', 'fan', 'sweep', 'serpent', 'dive', 'lob', 'roll', 'fallers', 'ridge', 'quicksand', 'ambush', 'twister', 'web', 'swarm', 'triattack', 'beam', 'arcshot', 'phoenixdash', 'xslash', 'forkbolt', 'blink', 'stormcloud', 'powergrid', 'aurora', 'iceglide', 'prism', 'icewall'];
+  'wingslash', 'sonic', 'clones', 'bodyslam', 'throw', 'fan', 'sweep', 'serpent', 'dive', 'lob', 'roll', 'fallers', 'ridge', 'quicksand', 'ambush', 'twister', 'web', 'swarm', 'triattack', 'beam', 'arcshot', 'phoenixdash', 'xslash', 'forkbolt', 'blink', 'stormcloud', 'powergrid', 'aurora', 'iceglide', 'prism', 'icewall'];
 
 /**
  * Nguyên mẫu tuyệt chiêu (phím I).
@@ -121,6 +121,8 @@ export interface DashStrikeParams {
   arc2?: { r: number; color: number; core: number };
   /** vài nhát cào nhỏ tại điểm cuối (không lửa): số nhát, dài, màu, lõi */
   scratch?: { n: number; len: number; color: number; core: number };
+  /** bọc thân trong lửa / hào quang khi lao (Flare Blitz): màu ngoài, màu lõi */
+  wrap?: { color: number; core: number };
   /** dây leo cong vút (sào nhảy) từ chỗ xuất phát tới điểm cuối: độ cong (px), màu, lõi */
   vine?: { h: number; color: number; core: number };
   /** rễ gai trồi dọc đường lao: số rễ, khoảng cách, chiều cao, trễ mỗi rễ (ms) */
@@ -698,6 +700,7 @@ export interface ArchetypeParamMap {
   sonic: LooseParams;
   clones: LooseParams;
   bodyslam: LooseParams;
+  throw: LooseParams;
   serpent: LooseParams;
   dive: LooseParams;
   lob: LooseParams;
@@ -806,6 +809,7 @@ export interface TypeKit {
   sonic?: KitEntry<LooseParams>;
   clones?: KitEntry<LooseParams>;
   bodyslam?: KitEntry<LooseParams>;
+  throw?: KitEntry<LooseParams>;
   serpent?: KitEntry<LooseParams>;
   dive?: KitEntry<LooseParams>;
   lob?: KitEntry<LooseParams>;

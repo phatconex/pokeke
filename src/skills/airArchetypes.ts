@@ -253,3 +253,80 @@ export function castBodySlam(h: SkillHost, f: Fighter, m: MoveDef, P: LooseParam
     if (any) h.hitStop(90);
   });
 }
+
+/**
+ * Quật Ngã Địa Chấn (Seismic Toss): lao tới túm lấy địch, nhấc bổng lên cao xoay tít rồi quật xuống đất — xung kích, bụi, rung mạnh, choáng.
+ */
+export function castThrow(h: SkillHost, f: Fighter, m: MoveDef, P: LooseParams, dir: Phaser.Math.Vector2) {
+  const sc = h.scene;
+  const mult = h.stackMult(f, m);
+  const aim = aimOf(h, f, dir);
+  const reach: number = P.reach ?? 140;
+  const col: number = P.color ?? TYPE_COLOR[m.type];
+  let target = h.aimTarget && !h.aimTarget.dead ? h.aimTarget : null;
+  if (!target || Math.hypot(target.x - f.x, target.y - f.y) > reach + target.radius) {
+    target = null;
+    for (const e of h.enemies()) if (e.targetable && Math.hypot(e.x - f.x, e.y - f.y) <= reach + e.radius && (!target || Math.hypot(e.x - f.x, e.y - f.y) < Math.hypot(target.x - f.x, target.y - f.y))) target = e;
+  }
+  const dist = target ? Math.max(8, Math.hypot(target.x - f.x, target.y - f.y) - target.radius - 12) : 70;
+  f.startLunge(aim, dist, 150, h.clock);
+  f.playMove(m);
+  playSfx('dash');
+  h.fx.dustPuff(f.x, f.feetY, 5);
+  h.schedule(h.clock + 150, () => {
+    if (h.over || f.dead || !f.onField) return;
+    const e = target;
+    if (!e || e.dead || !e.targetable) {
+      h.fx.dustPuff(f.x + aim.x * 20, f.feetY, 6);
+      return;
+    }
+    // túm lấy
+    playSfx('hit');
+    h.fx.ringBurst(e.x, e.centerY, 18, col, 0xffffff, 240);
+    e.stunnedUntil = Math.max(e.stunnedUntil, h.clock + 1100);
+    const sx = e.x;
+    const sy = e.y;
+    const up = 520;
+    const down = 170;
+    const g = sc.add.graphics().setDepth(99994);
+    const t1 = h.clock;
+    h.addFrameTask(up + down, (now) => {
+      if (e.dead) return;
+      const k = now - t1;
+      const lift = k < up ? 96 * Math.sin((k / up) * (Math.PI / 2)) : 96 * (1 - (k - up) / down);
+      e.anim.lift = Math.max(0, lift);
+      const px = sx + aim.x * 16 * Math.min(1, k / up);
+      const py = sy + aim.y * 10 * Math.min(1, k / up);
+      (e.body as unknown as { reset: (x: number, y: number) => void }).reset(px, py);
+      g.clear();
+      // vòng xoáy quanh địch bị nhấc: các cung trắng quay tít
+      for (let i = 0; i < 3; i++) {
+        const a0 = now / 60 + i * 2.1;
+        const pts: Phaser.Math.Vector2[] = [];
+        for (let q = 0; q <= 10; q++) {
+          const aa = a0 + (q / 10) * 1.8;
+          pts.push(V(px + Math.cos(aa) * (20 + i * 4), py - lift + Math.sin(aa) * 9 - 4));
+        }
+        g.lineStyle(3 - i * 0.6, i === 0 ? 0xffffff : col, 0.9 - i * 0.2).strokePoints(pts, false);
+      }
+      g.fillStyle(0x000000, 0.28 * (1 - Math.min(1, lift / 110) * 0.6)).fillEllipse(px, py + 2, 20 * (1 - lift / 220), 7);
+    }, () => {
+      g.destroy();
+      e.anim.lift = 0;
+      if (h.over) return;
+      h.fx.shake(0.022, 340);
+      playSfx('boom');
+      h.fx.ringBurst(e.x, e.y + 2, 56, col, 0xffffff, 460);
+      h.fx.dustPuff(e.x, e.y, 14);
+      h.fx.debrisBurst(e.x, e.y, 14);
+      if (e.targetable) h.damageEnemy(e, { ...m, knockback: m.knockback + 80 }, m.power * f.power * mult * (P.powerMult ?? 1.3), aim.x, aim.y, true);
+      for (const o of h.enemies()) {
+        if (o === e || !o.targetable) continue;
+        const dd = Math.hypot(o.x - e.x, (o.y - e.y) / 0.75);
+        if (dd > 54 + o.radius) continue;
+        h.damageEnemy(o, m, m.power * f.power * mult * 0.35, (o.x - e.x) / (dd || 1), (o.y - e.y) / (dd || 1), true);
+      }
+      h.hitStop(120);
+    });
+  });
+}
