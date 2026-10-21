@@ -112,7 +112,7 @@ const CORE_GYMS: Record<string, GymDef> = {
     ace: { species: 'starmie', level: 23, boss: true },
     intro: [
       'Kasumi: Chào mừng đến Hội quán Cerulean! Ta là Kasumi, nàng tiên cá của Cerulean.',
-      'Kasumi: Cả sân là mặt nước — làm chậm ai không phải hệ Nước. Chỉ có mấy đảo gạch là đứng vững, cẩn thận cột nước phun lên đấy!',
+      'Kasumi: Cả sân là mặt nước — làm chậm ai không phải hệ Nước. Hãy nhảy qua các bệ nổi bằng phím Space, và cẩn thận cột nước phun lên đấy!',
     ],
     sendOut: ['Kasumi: Goldeen, lượn đi!', 'Kasumi: Staryu, ra trận!', 'Kasumi: Starmie, kết thúc trận này!'],
     winLines: [

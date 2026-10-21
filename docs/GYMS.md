@@ -40,7 +40,7 @@ pewter: {
 ## 4. Địa hình riêng — `arenaLayout()` trong `src/art/arenaArt.ts`
 Mỗi hội quán một kiểu hazard (khai báo trong `ArenaLayout.hazards`, kiểu ở `src/data/hazards.ts`):
 - Pewter: đá rơi từ trần (`rain`, dày hơn khi Pokémon hệ Đá cuồng nộ).
-- Cerulean: cả sân là mặt nước làm chậm (`slowZones`) với các đảo gạch đứng vững (`safeRects`), cột nước phun lên báo trước (`rain`, dày hơn khi Pokémon hệ Nước cuồng nộ).
+- Cerulean: sân lớn 1280×720 (`CERULEAN_SIZE`), cả sân là mặt nước làm chậm 45% (`slowZones`); 7 bệ Poké Ball + thùng gỗ so le (~59 bệ, `ceruleanPlatforms`) là chỗ đứng vững (`safeRects`), nhảy qua bằng Space (lướt ≈ 80px); 3 cột nước phun lên báo trước 0,8s (`rain`, dày hơn khi Pokémon hệ Nước cuồng nộ). Vị trí xuất phát riêng: `ceruleanSpots`.
 - Vermilion: ô điện giật (`pulse`).
 - Hội quán mới: thêm nhánh `biome === 'gym-xxx'` trả về `{ inset, solids, hazards }`.
 

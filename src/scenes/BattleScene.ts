@@ -3,7 +3,7 @@ import { scatter } from '../fx/TypeFx';
 import { leafBurst } from '../fx/GrassFx';
 import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, GYM_RULES, PLAYER, POTION, SKILL_UNLOCK, SPAWN, STAGE_REWARD, STAGE_RAMP, STAGE_TUNING, SURVIVAL, SURVIVAL_REWARD, stageRamp, SWITCH, TRAINER, arenaSize } from '../config/balance';
 import { makeFrame } from '../art/chapters';
-import { arenaLayout, generateArena } from '../art/arenaArt';
+import { arenaLayout, CERULEAN_SIZE, ceruleanSpots, generateArena } from '../art/arenaArt';
 import { METRONOME_POOL, MOVES, MoveDef, slotScaledMove, STATUS_COLOR, upgradeMove } from '../data/moves';
 import { hasUltimate, POKEMON, SKILL_SLOTS, SkillSlot } from '../data/pokemon';
 import { STAGES, STAGE_BY_ID, StageDef, TUTORIAL_STAGE_ID } from '../data/stages';
@@ -107,7 +107,11 @@ const LAB_DUMMY_HP = 1e9;
 export const TRAINER_SCALE = 1.5;
 /** vị trí đoạn mở màn hội quán theo kích thước sân: Pokémon đối thủ = makeFrame().startR, thủ lĩnh / người chơi đứng
  *  hai bên trong khung 640 px giữa sân (camera giữ tâm sân suốt đoạn mở màn nên cả hai đều trong hình) */
-export function gymPositions(W: number, H: number) {
+export function gymPositions(W: number, H: number, biome?: string) {
+  if (biome === 'gym-cerulean') {
+    const c = ceruleanSpots(W, H);
+    return { leader: c.leader, foe: c.foe, trainer: c.trainer, player: c.player };
+  }
   const f = makeFrame(W, H);
   return { leader: { x: Math.round(W / 2 + 280), y: Math.round(H / 2 + 22) }, foe: { ...f.startR }, trainer: { x: Math.round(W / 2 - 276), y: Math.round(H / 2 + 22) }, player: { ...f.startL } };
 }
@@ -577,10 +581,10 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     const solids = this.physics.add.staticGroup();
     if (this.stage || lab) {
       const biome = this.stage?.biome ?? 'forest';
-      const size = arenaSize(lab ? 'lab' : this.gym ? 'trainer' : 'stage');
+      const size = biome === 'gym-cerulean' ? { w: CERULEAN_SIZE.w, h: CERULEAN_SIZE.h } : arenaSize(lab ? 'lab' : this.gym ? 'trainer' : 'stage');
       this.worldW = size.w;
       this.worldH = size.h;
-      this.gymPos = gymPositions(size.w, size.h);
+      this.gymPos = gymPositions(size.w, size.h, biome);
       const key = `arena-${biome}-${size.w}x${size.h}`;
       if (!this.textures.exists(key)) generateArena(this, key, biome, size.w, size.h);
       this.add.image(0, 0, key).setOrigin(0).setDepth(-10000);

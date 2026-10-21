@@ -372,62 +372,118 @@ function pewterSlabs(f: ArenaFrame): Rect[] {
   ];
 }
 
+/** Kích thước sân Cerulean (lớn hơn sân hội quán thường: nhiều chỗ nhảy) */
+export const CERULEAN_SIZE = { w: 1280, h: 720 } as const;
+
+/** Chỗ xuất phát / đứng của hai bên ở sân Cerulean (đều nằm trên bệ) */
+export function ceruleanSpots(W: number, H: number) {
+  const cy = Math.round(H / 2);
+  return {
+    player: { x: 230, y: cy },
+    trainer: { x: 148, y: cy + 26 },
+    foe: { x: W - 230, y: cy },
+    leader: { x: W - 148, y: cy + 26 },
+  };
+}
+
+export interface WaterPlatform {
+  kind: 'ball' | 'barrel';
+  x: number;
+  y: number;
+  rx: number;
+  ry: number;
+}
+
+/** Bệ nổi của sân Cerulean: 7 bệ Poké Ball + thùng gỗ xếp so le (khe giữa các bệ vừa tầm lướt Space ≈ 80px) */
+export function ceruleanPlatforms(W: number, H: number): WaterPlatform[] {
+  const sp = ceruleanSpots(W, H);
+  const cy = Math.round(H / 2);
+  const out: WaterPlatform[] = [
+    { kind: 'ball', x: sp.player.x, y: sp.player.y, rx: 62, ry: 28 },
+    { kind: 'ball', x: sp.foe.x, y: sp.foe.y, rx: 62, ry: 28 },
+    { kind: 'ball', x: W / 2, y: cy, rx: 78, ry: 35 },
+    { kind: 'ball', x: W / 2 - 205, y: cy - 165, rx: 46, ry: 21 },
+    { kind: 'ball', x: W / 2 + 205, y: cy - 165, rx: 46, ry: 21 },
+    { kind: 'ball', x: W / 2 - 205, y: cy + 165, rx: 46, ry: 21 },
+    { kind: 'ball', x: W / 2 + 205, y: cy + 165, rx: 46, ry: 21 },
+    // bệ nhỏ cho huấn luyện viên và thủ lĩnh
+    { kind: 'barrel', x: sp.trainer.x, y: sp.trainer.y, rx: 30, ry: 14 },
+    { kind: 'barrel', x: sp.leader.x, y: sp.leader.y, rx: 30, ry: 14 },
+  ];
+  // thùng gỗ: lưới so le, bỏ chỗ đã có bệ lớn và một số ô theo mã băm để mỗi vùng có đường vòng khác nhau
+  const px = 106;
+  const py = 86;
+  const hash = (a: number, b: number) => {
+    const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
+    return v - Math.floor(v);
+  };
+  for (let r = 0, y = 70; y < H - 60; r++, y += py) {
+    for (let x = 92 + (r % 2 ? px / 2 : 0); x < W - 80; x += px) {
+      if (out.some((o) => Math.hypot((o.x - x) / (o.rx + 40), (o.y - y) / (o.ry + 34)) < 1)) continue;
+      if (hash(x, y) < 0.1) continue;
+      out.push({ kind: 'barrel', x: Math.round(x + (hash(y, x) - 0.5) * 14), y: Math.round(y + (hash(x, y) - 0.5) * 8), rx: 28, ry: 13 });
+    }
+  }
+  return out;
+}
+
 /** Cả sân Cerulean là mặt nước (trừ tường): làm chậm ai không phải hệ Nước */
 export function ceruleanPool(W: number, H: number): Rect {
   const wall = 24;
   return { x: wall, y: wall, w: W - wall * 2, h: H - wall * 2 };
 }
 
-/** Các đảo gạch khô trong hồ: hai đảo xuất phát, đảo giữa, hai đảo trên/dưới và vài bậc đá nối */
-export function ceruleanIslands(f: ArenaFrame): Rect[] {
-  const { W, H } = f;
-  const isl = (cx: number, cy: number, w: number, h: number): Rect => ({ x: Math.round(cx - w / 2), y: Math.round(cy - h / 2), w, h });
-  return [
-    isl(f.startL.x, f.startL.y, 104, 84),
-    isl(f.startR.x, f.startR.y, 104, 84),
-    isl(W * 0.5, H * 0.5, 84, 60),
-    isl(W * 0.5, H * 0.17, 64, 44),
-    isl(W * 0.5, H * 0.83, 64, 44),
-    // bậc đá nối
-    isl(W * 0.31, H * 0.5, 28, 24),
-    isl(W * 0.69, H * 0.5, 28, 24),
-    isl(W * 0.36, H * 0.28, 24, 22),
-    isl(W * 0.64, H * 0.72, 24, 22),
-  ];
+/** Chỗ đứng khô: hình chữ nhật nội tiếp mặt bệ */
+export function ceruleanIslands(W: number, H: number): Rect[] {
+  return ceruleanPlatforms(W, H).map((p) => ({ x: Math.round(p.x - p.rx * 0.95), y: Math.round(p.y - p.ry * 0.9), w: Math.round(p.rx * 1.9), h: Math.round(p.ry * 1.8) }));
 }
 
-/** Sàn Hội quán Cerulean: mặt nước phủ kín sân (làm chậm), chỉ có các đảo gạch để đứng vững */
+/** Sàn Hội quán Cerulean: mặt nước phủ kín sân (làm chậm), bệ Poké Ball và thùng gỗ nổi để nhảy qua lại */
 function drawCeruleanGym(f: ArenaFrame, set: SetFn, disc: DiscFn) {
   const { W, H } = f;
-  // nước: hai tông xanh, gợn sóng ngang
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
-      const wave = Math.sin(x / 9 + y / 5) + Math.sin(x / 23 - y / 7);
-      let c: RGB = wave > 1.1 ? [120, 184, 246] : wave > 0.2 ? [66, 132, 222] : [46, 108, 200];
-      if ((y * 3 + Math.floor(x / 7)) % 19 === 0) c = [160, 210, 250];
+      const wave = Math.sin(x / 9 + y / 5) + Math.sin(x / 23 - y / 7) + Math.sin(y / 4 + x / 50);
+      let c: RGB = wave > 1.7 ? [40, 98, 200] : wave > 0.6 ? [26, 70, 170] : [18, 52, 140];
+      const d = y / H;
+      c = [c[0] * (1 - d * 0.25), c[1] * (1 - d * 0.2), c[2] * (1 - d * 0.05)] as RGB;
+      if ((y * 3 + Math.floor(x / 7)) % 19 === 0) c = [60, 124, 220];
       set(x, y, c);
     }
   }
-  // đảo gạch: viền đá, mặt gạch trắng–xanh, bóng đổ xuống nước
-  for (const R of ceruleanIslands(f)) {
-    for (let y = R.y + 3; y < R.y + R.h + 6; y++) for (let x = R.x + 3; x < R.x + R.w + 3; x++) if (y >= R.y + R.h) set(x, y, [30, 80, 160], 0.45);
-    for (let y = R.y - 3; y < R.y + R.h + 3; y++) for (let x = R.x - 3; x < R.x + R.w + 3; x++) set(x, y, [120, 150, 180]);
-    for (let y = R.y - 1; y < R.y + R.h + 1; y++) for (let x = R.x - 1; x < R.x + R.w + 1; x++) set(x, y, [250, 252, 255]);
-    for (let y = R.y; y < R.y + R.h; y++) {
-      for (let x = R.x; x < R.x + R.w; x++) {
-        const tx = Math.floor((x - R.x) / 14);
-        const ty = Math.floor((y - R.y) / 14);
-        let c: RGB = (tx + ty) % 2 === 0 ? [236, 244, 250] : [208, 226, 242];
-        if ((x - R.x) % 14 === 13 || (y - R.y) % 14 === 13) c = [160, 190, 214];
-        set(x, y, c);
+  const ellipse = (cx: number, cy: number, rx: number, ry: number, c: RGB, a = 1) => {
+    for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1) set(x, y, c, a);
+  };
+  const ring = (cx: number, cy: number, rx: number, ry: number, c: RGB, a: number) => {
+    for (let t = 0; t < 360; t += 2) set(Math.round(cx + Math.cos((t * Math.PI) / 180) * rx), Math.round(cy + Math.sin((t * Math.PI) / 180) * ry), c, a);
+  };
+  const plats = ceruleanPlatforms(W, H).sort((a, b) => a.y - b.y);
+  for (const P of plats) {
+    ring(P.x, P.y + P.ry * 0.9, P.rx + 12, P.ry + 7, [190, 225, 255], 0.35);
+    ring(P.x, P.y + P.ry * 0.9, P.rx + 22, P.ry + 12, [190, 225, 255], 0.2);
+    ellipse(P.x + 6, P.y + P.ry * 0.45 + 8, P.rx, P.ry, [5, 20, 70], 0.4);
+    if (P.kind === 'ball') {
+      ellipse(P.x, P.y + 7, P.rx, P.ry, [154, 166, 184]);
+      ellipse(P.x, P.y, P.rx + 1, P.ry + 1, [255, 255, 255]);
+      for (let y = Math.floor(P.y - P.ry); y <= P.y + P.ry; y++) {
+        for (let x = Math.floor(P.x - P.rx); x <= P.x + P.rx; x++) {
+          if (((x - P.x) / (P.rx - 2)) ** 2 + ((y - P.y) / (P.ry - 2)) ** 2 > 1) continue;
+          set(x, y, y < P.y - 2 ? [232, 80, 58] : y > P.y + 2 ? [233, 238, 246] : [26, 32, 48]);
+        }
       }
-    }
-  }
-  // vòng xuất phát hai đội
-  for (const s of [f.startL, f.startR]) {
-    for (let y = 0; y < H; y++) for (let x = s.x - 40; x < s.x + 40; x++) {
-      const d = Math.hypot(x - s.x, (y - s.y) * 1.6);
-      if (d < 34 && d > 31) set(x, y, [90, 140, 200]);
+      ellipse(P.x, P.y, P.rx * 0.28, P.ry * 0.28, [245, 247, 251]);
+      ring(P.x, P.y, P.rx * 0.28, P.ry * 0.28, [26, 32, 48], 1);
+      ellipse(P.x, P.y, P.rx * 0.14, P.ry * 0.14, [255, 255, 255]);
+    } else {
+      // thùng gỗ: thành thùng + mặt gỗ có vân
+      for (let y = Math.floor(P.y); y <= P.y + 8; y++) for (let x = Math.floor(P.x - P.rx); x <= P.x + P.rx; x++) set(x, y, [138, 90, 44]);
+      ellipse(P.x, P.y + 8, P.rx, P.ry, [106, 62, 28]);
+      ellipse(P.x, P.y, P.rx + 1, P.ry + 1, [255, 255, 255]);
+      ellipse(P.x, P.y, P.rx - 1, P.ry - 1, [226, 178, 116]);
+      for (let k = -3; k <= 3; k++) for (let x = Math.floor(P.x - P.rx * 0.85); x < P.x + P.rx * 0.85; x++) {
+        const yy = Math.round(P.y + k * P.ry * 0.28);
+        if (((x - P.x) / (P.rx - 3)) ** 2 + ((yy - P.y) / (P.ry - 3)) ** 2 < 1) set(x, yy, [184, 134, 74]);
+      }
     }
   }
   // tường men xanh
@@ -555,9 +611,9 @@ export function arenaLayout(biome: ArenaBiome, W: number, H: number): ArenaLayou
       inset: 24,
       solids: [],
       slowZones: [ceruleanPool(W, H)],
-      safeRects: ceruleanIslands(f),
+      safeRects: ceruleanIslands(W, H),
       // cột nước phun từ đáy hồ: báo trước rồi bắn lên; Pokémon hệ Nước cuồng nộ thì phun dày hơn
-      hazards: [{ kind: 'rain', count: 2, radius: 28, periodMs: 4600, warnMs: 800, fx: 'water', color: 0x4a90e8, damagePct: 0.05, type: 'water', immuneTypes: ['water'] }],
+      hazards: [{ kind: 'rain', count: 3, radius: 30, periodMs: 4200, warnMs: 800, fx: 'water', color: 0x4a90e8, damagePct: 0.05, type: 'water', immuneTypes: ['water'] }],
     };
   }
   if (biome === 'gym-vermilion') {
