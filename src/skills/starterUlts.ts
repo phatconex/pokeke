@@ -385,7 +385,7 @@ export function castHydroCannon(h: SkillHost, f: Fighter, _P: LooseParams, _u: U
     cam.flash(160, 220, 240, 255, false);
     const b0 = h.clock;
     const ms = 1250;
-    const L = 380;
+    const L = 460;
     h.addFrameTask(ms, (now) => {
       const k = (now - b0) / ms;
       const sw = 0.55 * (k * 2 - 1); // -0.55 → +0.55 rad
@@ -396,10 +396,12 @@ export function castHydroCannon(h: SkillHost, f: Fighter, _P: LooseParams, _u: U
         const a = angles[i];
         const ex = c.x + Math.cos(a) * L;
         const ey = c.y + Math.sin(a) * L * 0.8;
-        bg.lineStyle(15, 0x2a6ac8, 0.55).lineBetween(c.x, c.y, ex, ey);
-        bg.lineStyle(9, 0x4aa8f0, 0.9).lineBetween(c.x, c.y, ex, ey);
-        bg.lineStyle(3.5, 0xe8fbff, 1).lineBetween(c.x, c.y, ex, ey);
-        if (Math.random() < 0.8) h.fx.puff('bubblepuff', c.x + (ex - c.x) * Math.random(), c.y + (ey - c.y) * Math.random(), 1);
+        bg.lineStyle(54, 0x1f4fb0, 0.45).lineBetween(c.x, c.y, ex, ey);
+        bg.lineStyle(38, 0x2a7ad8, 0.75).lineBetween(c.x, c.y, ex, ey);
+        bg.lineStyle(26, 0x4aa8f0, 0.95).lineBetween(c.x, c.y, ex, ey);
+        bg.lineStyle(12, 0xe8fbff, 1).lineBetween(c.x, c.y, ex, ey);
+        bg.fillStyle(0xe8fbff, 0.7).fillCircle(c.x, c.y, 11);
+        for (let q = 0; q < 2; q++) h.fx.puff('bubblepuff', c.x + (ex - c.x) * Math.random(), c.y + (ey - c.y) * Math.random(), 1);
       });
       if (now >= nextTick) {
         nextTick = now + 110;
@@ -412,7 +414,7 @@ export function castHydroCannon(h: SkillHost, f: Fighter, _P: LooseParams, _u: U
             const ry = e.centerY - c.y;
             const along = rx * ux + ry * uy;
             const side = Math.abs(rx * -uy + ry * ux);
-            if (along < 0 || along > L + e.radius || side > 20 + e.radius) continue;
+            if (along < 0 || along > L + e.radius || side > 36 + e.radius) continue;
             h.damageEnemy(e, mv, amount * 0.07, ux, uy, true, true);
           }
         });
