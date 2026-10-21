@@ -41,11 +41,6 @@ export class Enemy {
   /** dùng bộ chiêu riêng của loài (qua cầu nối huyền thoại) thay vì chiêu địch chung */
   usesKit = false;
   rageOn = false;
-  /** hội quán nước: lặn xuống bơi dưới mặt nước rồi trồi lên đánh (dùng lại cách chạy của Đào đất) */
-  diver = false;
-  private diveMode = false;
-  private diveShown = false;
-  private nextDiveAt = 0;
   get enraged(): boolean {
     return this.rageOn;
   }
@@ -360,18 +355,7 @@ export class Enemy {
     const s = this.stats;
     const clock = ctx.clock;
 
-    // lặn: tới giờ thì chuyển sang cách chạy "dưới mặt nước" (burrow) cho tới khi trồi lên đánh
-    if (this.diver && !this.isBoss) {
-      if (!this.diveMode && this.state === 'move' && clock >= this.nextDiveAt && this.nextDiveAt > 0) {
-        this.diveMode = true;
-        this.hidden = true;
-        this.nextAttackAt = clock + 700;
-        ctx.fx.splashExplosion(this.x, this.feetY, 14);
-        playSfx('water');
-      }
-      if (this.nextDiveAt === 0) this.nextDiveAt = clock + 3500 + Math.random() * 2500;
-    }
-    switch (this.diver && this.diveMode ? 'burrow' : s.behavior) {
+    switch (s.behavior) {
       case 'tank': {
         vx = nx * s.speed;
         vy = ny * s.speed;
@@ -466,13 +450,11 @@ export class Enemy {
         // dưới đất: lần theo người chơi, cuộn bụi; tới nơi thì báo vòng đỏ rồi trồi lên
         if (this.state === 'move') {
           this.hidden = true;
-          const swim = this.diver ? Math.max(s.speed, 90) * 1.5 : s.speed;
-          vx = nx * swim;
-          vy = ny * swim;
+          vx = nx * s.speed;
+          vy = ny * s.speed;
           if (clock >= this.nextDustAt) {
             this.nextDustAt = clock + 140;
-            if (this.diver) ctx.fx.puff('bubblepuff', this.x, this.feetY, 2);
-            else ctx.fx.dustPuff(this.x, this.feetY, 2);
+            ctx.fx.dustPuff(this.x, this.feetY, 2);
           }
           if ((dist < 26 || clock >= this.nextAttackAt + 2500) && clock >= this.nextAttackAt) {
             this.state = 'windup';
@@ -495,22 +477,13 @@ export class Enemy {
             this.state = 'recover';
             this.stateUntil = clock + 1700;
             this.anim.playOnce('attack', 450);
-            if (this.diver) ctx.fx.splashExplosion(this.x, this.feetY, 26);
-            else ctx.fx.dustPuff(this.x, this.feetY, 12);
+            ctx.fx.dustPuff(this.x, this.feetY, 12);
             ctx.fx.shake(0.004, 120);
             for (const f of ctx.aliveFighters()) {
               if (Math.hypot(f.x - this.strikeAt.x, f.y - this.strikeAt.y) < 30) ctx.damageFighter(f, s.contactDamage * 1.5 * this.dmgMult, this.x, this.y, this.species.types[0]);
             }
           }
         } else if (clock >= this.stateUntil) {
-          if (this.diver) {
-            // lặn xong: nổi hẳn lên đánh bằng chiêu một lúc rồi mới lặn lại
-            this.diveMode = false;
-            this.hidden = false;
-            this.nextDiveAt = clock + 4500 + Math.random() * 3000;
-            this.state = 'move';
-            break;
-          }
           // nhô lên một lúc (lúc này mới đánh được) rồi chui xuống lại
           this.state = 'move';
           this.nextAttackAt = clock + (900 + Math.random() * 700) * this.attackGapMult;
@@ -702,18 +675,7 @@ export class Enemy {
     else if (this.hasStatus('poison', clock)) this.anim.sprite.setTint(0xdcaaff);
     else if (this.hasStatus('confuse', clock)) this.anim.sprite.setTint(0xffc8ec);
     else this.anim.sprite.clearTint();
-    if (this.diver && this.hidden) {
-      // lặn: chỉ còn bóng tối mờ dưới mặt nước
-      this.anim.sprite.setVisible(true).setAlpha(0.38).setTint(0x16327a);
-      this.diveShown = true;
-    } else {
-      this.anim.sprite.setVisible(!this.hidden);
-      if (this.diveShown) {
-        this.anim.sprite.clearTint();
-        this.anim.sprite.setAlpha(1);
-        this.diveShown = false;
-      }
-    }
+    this.anim.sprite.setVisible(!this.hidden);
     this.shadow.setPosition(this.zone.x, this.feetY).setTint(this.hidden ? 0x6a4a28 : 0xffffff);
     this.aura?.setPosition(this.zone.x, this.feetY);
     this.crown?.setPosition(Math.round(this.zone.x), Math.round(this.topY - 10));

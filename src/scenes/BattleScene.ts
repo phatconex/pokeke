@@ -291,10 +291,6 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private slowZones: { x: number; y: number; w: number; h: number }[] = [];
   /** hệ không bị vùng làm chậm ảnh hưởng (mặc định hệ Nước) */
   private slowImmune: PokemonType[] = ['water'];
-  private safeRects: { x: number; y: number; w: number; h: number }[] = [];
-  private voidWater = false;
-  private lastPlat: { x: number; y: number } | null = null;
-  private wasAirborne = false;
   /** bẫy sân đấu (sàn điện, bào tử, mưa đá, ô dịch chuyển, băng, bóng tối, gió) */
   private hazards: HazardDef[] = [];
   private hazardState: { nextAt: number; warned: boolean; group: number; spots: { x: number; y: number }[]; dir: number }[] = [];
@@ -497,10 +493,6 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.potionReadyAt = 0;
     this.potionsUsed = 0;
     this.slowZones = [];
-    this.safeRects = [];
-    this.voidWater = false;
-    this.lastPlat = null;
-    this.wasAirborne = false;
     this.hazards = [];
     this.hazardState = [];
     this.hiddenWalls = new Map();
@@ -594,8 +586,6 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       this.physics.world.setBounds(lay.inset, lay.inset, this.worldW - lay.inset * 2, this.worldH - lay.inset * 2);
       this.solidRects = lay.solids;
       this.slowZones = lay.slowZones ?? [];
-      this.safeRects = lay.safeRects ?? [];
-      this.voidWater = !!lay.voidWater;
       this.slowImmune = lay.slowImmuneTypes ?? ['water'];
       this.hazards = [...(lay.hazards ?? [])];
       if (this.trial) {
@@ -863,7 +853,6 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     }
     p.zoneSlow = this.inSlowZone(p.x, p.feetY) && !p.species.types.some((t) => this.slowImmune.includes(t)) ? 0.55 : 1;
     p.update(clock, dt, move, lookAt);
-    if (this.voidWater) this.enforceWater(p);
     this.updateEvoAura();
     // chơi bàn phím (chưa dùng chuột) thì tự khóa mục tiêu 360°, không bắn mù theo hướng quay
     this.updateAimTarget(useMouse ? 'mouse' : mode === 'mouse' ? 'auto' : mode);
@@ -981,59 +970,6 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     if (p.onField) p.update(this.clock, dt, { x: 0, y: 0 });
   }
 
-  /**
-   * Sân vực nước (Cerulean): hệ khác Nước chỉ đứng được trên bệ. Đi bộ ra mép thì bị chặn lại; lướt (Space) qua khe nước sang bệ khác
-   * thì đứng vững; lướt hụt rơi xuống nước: mất một ít máu rồi được đưa về bệ cũ. Hệ Nước bơi tự do.
-   */
-  private enforceWater(p: Fighter) {
-    if (!p.onField || p.dead || this.over) return;
-    if (p.species.types.some((ty) => this.slowImmune.includes(ty))) return;
-    const onPlat = !this.inSlowZone(p.x, p.feetY);
-    const air = p.isDashing;
-    if (onPlat) {
-      this.lastPlat = { x: p.x, y: p.y };
-      this.wasAirborne = air;
-      return;
-    }
-    if (air) {
-      this.wasAirborne = true;
-      return;
-    }
-    const back = this.lastPlat ?? { x: this.gymPos.player.x, y: this.gymPos.player.y };
-    if (this.wasAirborne) {
-      this.wasAirborne = false;
-      // lướt xong: có bệ trong tầm thì bám lên bệ gần nhất (lướt không cần chính xác từng pixel)
-      let best: { x: number; y: number } | null = null;
-      let bestD = 52;
-      for (const r of this.safeRects) {
-        const cx = Phaser.Math.Clamp(p.x, r.x + 4, r.x + r.w - 4);
-        const cy = Phaser.Math.Clamp(p.feetY, r.y + 3, r.y + r.h - 3);
-        const d = Math.hypot(cx - p.x, cy - p.feetY);
-        if (d < bestD) {
-          bestD = d;
-          best = { x: cx, y: cy - (p.feetY - p.y) };
-        }
-      }
-      if (best) {
-        const body = p.zone.body as Phaser.Physics.Arcade.Body;
-        body.reset(best.x, best.y);
-        this.lastPlat = { x: best.x, y: best.y };
-        this.fx.dustPuff(best.x, best.y + 6, 4);
-        return;
-      }
-      // lướt hụt: rơi xuống nước
-      this.fx.splashExplosion(p.x, p.feetY, 22);
-      playSfx('water');
-      this.fx.floatingLabel(p.x, p.chestY - 22, t('battle.fellWater'), '#9ad8ff');
-      p.invulnUntil = 0;
-      this.damageFighter(p, p.maxHp * GYM_RULES.fallWaterPct, p.x, p.y, 'water');
-      p.invulnUntil = Math.max(p.invulnUntil, this.clock + 900);
-    }
-    // không đi bộ ra nước được: đưa về chỗ đứng gần nhất
-    const body = p.zone.body as Phaser.Physics.Arcade.Body;
-    body.reset(back.x, back.y);
-    body.setVelocity(0, 0);
-  }
 
 
   /** Thủ lĩnh ném bóng tới điểm ra sân; onOpen gọi khi bóng bật mở */
@@ -1258,7 +1194,6 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   }
 
   private inSlowZone(x: number, y: number) {
-    if (this.safeRects.some((z) => x > z.x && x < z.x + z.w && y > z.y && y < z.y + z.h)) return false;
     return this.slowZones.some((z) => x > z.x && x < z.x + z.w && y > z.y && y < z.y + z.h);
   }
 
@@ -2091,6 +2026,24 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
           st.warned = false;
           break;
         }
+        case 'vents': {
+          const groups = Math.max(1, ...h.spots.map((v) => v.group + 1));
+          const spots = h.spots.filter((v) => v.group === st.group);
+          if (!st.warned && this.clock >= st.nextAt - h.warnMs) {
+            st.warned = true;
+            for (const v of spots) this.fx.addTelegraph({ kind: 'circle', x: v.x, y: v.y, r: h.radius, start: this.clock, end: st.nextAt, color: h.color, owner: this.hazards });
+            playSfx('warn');
+          }
+          if (this.clock < st.nextAt) break;
+          for (const v of spots) this.hazardFx(h.fx, v.x, v.y);
+          this.fx.shake(0.004, 120);
+          const hit = spots.find((v) => Math.hypot(f.x - v.x, (f.feetY - v.y) / 0.8) <= h.radius + 4);
+          if (hit) this.hazardHit(f, h, hit.x, hit.y);
+          st.group = (st.group + 1) % groups;
+          st.nextAt = this.clock + h.periodMs;
+          st.warned = false;
+          break;
+        }
         case 'rain': {
           if (!st.warned && this.clock >= st.nextAt - h.warnMs) {
             st.warned = true;
@@ -2178,6 +2131,15 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
           this.fx.dustPuff(x, y, 8);
           this.tweens.add({ targets: img, alpha: 0, delay: 200, duration: 220, onComplete: () => img.destroy() });
         } });
+        break;
+      }
+      case 'water': {
+        // cột nước phun lên: thân cột cao dần rồi tan, nước bắn ra quanh chân
+        this.fx.splashExplosion(x, y, 16);
+        const col = this.add.rectangle(x, y, 20, 72, 0xbfe4ff, 0.7).setOrigin(0.5, 1).setDepth(y + 6).setScale(0.8, 0.05);
+        const core = this.add.rectangle(x, y, 8, 72, 0xffffff, 0.55).setOrigin(0.5, 1).setDepth(y + 7).setScale(1, 0.05);
+        this.tweens.add({ targets: [col, core], scaleY: 1, duration: 140, ease: 'Cubic.out' });
+        this.tweens.add({ targets: [col, core], alpha: 0, scaleX: 0.5, delay: 420, duration: 260, onComplete: () => { col.destroy(); core.destroy(); } });
         break;
       }
       default: {
@@ -3218,7 +3180,10 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     });
     // cuồng nộ cùng hệ với bẫy của sân (Đá → mưa đá, Nước → cột nước) thì bẫy dày hơn
     {
-      for (const h of this.hazards) if (h.kind === 'rain' && e.species.types.includes(h.type)) { h.count = Math.max(h.count, 3); h.periodMs = Math.min(h.periodMs, 2600); }
+      for (const h of this.hazards) if ((h.kind === 'rain' || h.kind === 'vents') && e.species.types.includes(h.type)) {
+        if (h.kind === 'rain') h.count = Math.max(h.count, 3);
+        h.periodMs = Math.min(h.periodMs, 2400);
+      }
     }
   }
 
@@ -3295,7 +3260,6 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       markSeen(getGame(), p.species);
       e.catchable = !trainer && !!this.stage?.catchable?.includes(p.species);
       if (trainer && p.ridx !== undefined) e.gymIdx = p.ridx;
-      if (trainer && !p.boss && this.voidWater && e.species.types.includes('water')) e.diver = true;
       if (trainer && !p.boss) {
         const ok = (['J', 'K', 'L', 'U'] as SkillSlot[]).some((sl) => {
           const sk = e.species.skills.find((x) => x.slot === sl);

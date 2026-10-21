@@ -27,6 +27,8 @@ export type HazardDef =
   | ({ kind: 'pulse'; areas: (Rect & { group: number })[]; periodMs: number; warnMs: number; fx: HazardFx; color: number } & HazardHit)
   /** mưa đòn: count vòng tròn ngẫu nhiên quanh người chơi, báo hiệu rồi nổ */
   | ({ kind: 'rain'; count: number; radius: number; periodMs: number; warnMs: number; fx: HazardFx; color: number } & HazardHit)
+  /** nắp phun cố định chia nhóm: mỗi chu kỳ một nhóm báo trước (vòng đỏ) rồi phun cột lên; đứng trong vòng thì dính */
+  | ({ kind: 'vents'; spots: { x: number; y: number; group: number }[]; radius: number; periodMs: number; warnMs: number; fx: HazardFx; color: number } & HazardHit)
   /** ô dịch chuyển: đứng vào ô i sẽ bị đưa tới ô pads[i].to */
   | { kind: 'teleport'; pads: { x: number; y: number; r: number; to: number }[] }
   /** sàn băng trơn trượt: người chơi trôi theo quán tính */
@@ -47,10 +49,6 @@ export interface ArenaLayout {
   solids: Solid[];
   /** vùng làm chậm (nước, cát lún...) */
   slowZones?: Rect[];
-  /** chỗ đứng khô trong vùng làm chậm (đảo gạch giữa hồ): không bị làm chậm ở đây */
-  safeRects?: Rect[];
-  /** sân "vực nước": hệ khác Nước không đi bộ ra ngoài chỗ đứng khô được, chỉ nhảy (lướt) qua; lướt hụt thì rơi xuống nước */
-  voidWater?: boolean;
   /** hệ không bị vùng làm chậm ảnh hưởng (mặc định ['water']) */
   slowImmuneTypes?: PokemonType[];
   hazards?: HazardDef[];

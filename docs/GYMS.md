@@ -40,9 +40,18 @@ pewter: {
 ## 4. Địa hình riêng — `arenaLayout()` trong `src/art/arenaArt.ts`
 Mỗi hội quán một kiểu hazard (khai báo trong `ArenaLayout.hazards`, kiểu ở `src/data/hazards.ts`):
 - Pewter: đá rơi từ trần (`rain`, dày hơn khi Pokémon hệ Đá cuồng nộ).
-- Cerulean (cùng kích thước 800×450 với mọi hội quán): sân "vực nước" (`voidWater`). Hệ khác Nước chỉ đứng được trên bệ nổi (7 bệ Poké Ball + thùng gỗ so le, `ceruleanPlatforms`); đi bộ ra mép bị chặn, phải **lướt (Space ≈ 80px)** sang bệ khác (lướt xong tự bám bệ trong 52px); lướt hụt rơi xuống nước mất `GYM_RULES.fallWaterPct` máu rồi về bệ cũ. Hệ Nước bơi tự do. 3 cột nước phun lên (báo trước 0,8s). Pokémon hệ Nước của thủ lĩnh **lặn xuống bơi dưới mặt nước rồi trồi lên đánh** (`Enemy.diver`, dùng lại cách chạy của Đào đất).
+- Cerulean: sân bình thường (sàn gạch, hồ giữa sân làm chậm hệ khác Nước) + **8 nắp thoát nước** trên sàn phun cột nước (`vents`, `ceruleanVents`): 3 nhóm luân phiên, báo trước vòng đỏ 0,8s, đứng trong vòng khi phun mất 5% máu; Pokémon hệ Nước cuồng nộ thì phun dày hơn.
 - Vermilion: ô điện giật (`pulse`).
 - Hội quán mới: thêm nhánh `biome === 'gym-xxx'` trả về `{ inset, solids, hazards }`.
+
+### Nguyên tắc: mỗi hội quán một đặc điểm riêng
+Luật chung (mục 1–2) giống nhau, nhưng **mỗi hội quán có một điểm nhấn riêng** về sân (và có thể cả cách đánh). Sân vẫn là sân bình thường, cùng kích thước, đi lại tự do — điểm riêng chỉ là một cơ chế dễ hiểu, không làm khó quá.
+| Hội quán | Đặc điểm riêng |
+|---|---|
+| Pewter | Đá rơi từ trần hang (báo trước rồi đập xuống) |
+| Cerulean | Cột nước phun từ nắp thoát nước trên sàn; hồ giữa sân làm chậm |
+| Vermilion | Ô sàn điện phóng luân phiên |
+| Các hội quán sau | (chưa làm — thêm mỗi hội quán một cơ chế riêng, làm mockup trước, duyệt rồi mới code) |
 
 ## 5. Thêm một hội quán mới — danh sách việc
 1. Thêm `GymDef` vào `CORE_GYMS` hoặc `chapters/*` (có ít nhất một con `boss`).
