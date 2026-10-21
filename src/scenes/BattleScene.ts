@@ -112,6 +112,34 @@ export function gymPositions(W: number, H: number) {
   return { leader: { x: Math.round(W / 2 + 280), y: Math.round(H / 2 + 22) }, foe: { ...f.startR }, trainer: { x: Math.round(W / 2 - 276), y: Math.round(H / 2 + 22) }, player: { ...f.startL } };
 }
 
+/** tầm với (px) của một chiêu theo khuôn: chiêu cận chiến phải áp sát mới đánh trúng, chiêu xa bắn được từ xa */
+const MELEE_ARCH = new Set(['dashStrike', 'sweep', 'roll', 'ambush', 'whip', 'dive', 'nova', 'twister', 'web', 'swarm', 'strike', 'slam', 'cross', 'counter', 'xslash', 'cloud']);
+export function skillReach(arch: string, params: Record<string, unknown>, m: MoveDef): number {
+  const n = (k: string, d: number) => (typeof params[k] === 'number' ? (params[k] as number) : d);
+  switch (arch) {
+    case 'dashStrike': return (m.lunge ?? 60) * n('lungeMult', 1) + 34;
+    case 'sweep': return n('reach', 44) + 26;
+    case 'roll': return n('speed', 220) * (n('ms', 450) / 1000) + 26;
+    case 'ambush': return 80;
+    case 'whip': return 92;
+    case 'dive': return 150;
+    case 'nova': return 96;
+    case 'twister': return 100;
+    case 'web': case 'swarm': case 'cloud': return 110;
+    case 'xslash': case 'strike': case 'slam': case 'cross': case 'counter': return 90;
+    case 'bolt': return 240;
+    case 'stream': case 'beam': return n('len', 190) + 20;
+    case 'blast': return 270;
+    case 'lob': return 220;
+    case 'fan': return n('range', 100) * 1.4 + 40;
+    case 'ridge': return n('range', 150) + 30;
+    default: return 200;
+  }
+}
+
+/** chiêu thuộc nhóm cận chiến (dùng để chọn kiểu di chuyển hợp với bộ chiêu) */
+export const isMeleeArch = (arch: string) => MELEE_ARCH.has(arch);
+
 /** vùng mây của Phấn Độc / Bào Tử Tê */
 interface MoveZone {
   x: number;
@@ -143,7 +171,7 @@ export interface HudState {
   active: { id: string; name: string; level: number; hp: number; maxHp: number; xp: number; xpToNext: number; types: PokemonType[]; guard: boolean;
     /** tiến độ tiến hóa (game/evolution.ts): tên loài mới, số cấp còn thiếu, giới hạn cấp, đá */
     evo: { state: EvoState; into: string; levelsLeft: number; cap: number; item?: string; atCap: boolean } };
-  bench: { id: string; level: number; hp: number; maxHp: number; active: boolean; dead: boolean }[];
+  bench: { id: string; level: number; hp: number; maxHp: number; active: boolean; dead: boolean; healing: boolean }[];
   skills: {
     key: string; name: string; upgrade: number; icon: string; color: number; left: number; total: number; locked: boolean; unlockLevel: number;
     /** chữ khóa ngắn: trong ô (vd. "Lv 10", "9/25") và dưới ô (vd. "Burn") – ui/unlockText.ts */
@@ -161,7 +189,7 @@ export interface HudState {
   timeMs: number;
   waveName: string;
   boss: { hp: number; maxHp: number; name: string; level: number; id: string; types: PokemonType[] } | null;
-  leaderTeam: { id: string; dead: boolean; active: boolean }[];
+  leaderTeam: { id: string; dead: boolean; active: boolean; hp: number; resting: boolean }[];
   bossInMs: number;
   balls: number;
   potions: number;
@@ -3144,6 +3172,10 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   /** thủ lĩnh: Pokémon đang nghỉ hồi máu CHẬM (1,2%/s, tối đa 70%); con đang đánh xuống ≤40% máu → 60% thu hồi, ném con khác (tối đa 2 lần mỗi trận, mỗi con 1 lần) */
   private updateGymRoster(dt: number) {
     if (!this.gym || !this.gymShuffled || this.introActive || this.over || !this.gymRoster.length) return;
+    for (const x of this.enemies) {
+      const r = x.gymIdx !== undefined ? this.gymRoster[x.gymIdx] : undefined;
+      if (r && r.state === 'out' && !x.dead) r.hpRatio = Math.max(0.01, x.hp / x.maxHp);
+    }
     for (const r of this.gymRoster) if (r.state === 'rest') r.hpRatio = Math.min(GYM_RULES.rest.cap, r.hpRatio + (dt * GYM_RULES.rest.regenPerSec) / 1000);
     for (const x of this.enemies) if (x.trainer && !x.isBoss && !x.dead && !x.rageOn && x.hp / x.maxHp <= GYM_RULES.rage.hpRatio) this.gymEnrage(x);
     if (this.gymRecallBusy || this.gymRecalls >= GYM_RULES.recall.maxPerBattle) return;
@@ -3268,7 +3300,21 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         });
         e.usesKit = ok;
       }
-      if (trainer && !p.boss) e.persona = (['brawler', 'stalker', 'skirmisher', 'sniper'] as const)[Math.floor(Math.random() * 4)];
+      if (trainer && !p.boss) {
+        // kiểu di chuyển hợp với bộ chiêu: toàn chiêu cận chiến thì phải áp sát; toàn chiêu xa thì giữ khoảng cách
+        let melee = 0;
+        let ranged = 0;
+        for (const sl of ['J', 'K', 'L', 'U'] as SkillSlot[]) {
+          const sk = e.species.skills.find((x) => x.slot === sl);
+          const mv = sk ? MOVES[sk.move] : undefined;
+          const sp = mv ? resolveSkill(e.species.id, e.level, sl, mv) : null;
+          if (!sp?.archetype) continue;
+          if (isMeleeArch(sp.archetype)) melee++;
+          else ranged++;
+        }
+        const opts: ('brawler' | 'stalker' | 'skirmisher' | 'sniper')[] = !e.usesKit ? ['brawler', 'stalker', 'skirmisher', 'sniper'] : ranged === 0 ? ['brawler', 'skirmisher', 'brawler'] : melee === 0 ? ['sniper', 'stalker'] : ['brawler', 'stalker', 'skirmisher'];
+        e.persona = opts[Math.floor(Math.random() * opts.length)];
+      }
       applyStageTuning(e, trainer ? STAGE_TUNING.gymHpMult : STAGE_TUNING.hpMult, STAGE_TUNING.dmgMult, STAGE_TUNING.rangedCooldownMult);
       // độ khó tăng dần theo thứ tự ải (ải đầu nhẹ hơn)
       if (this.stage) {
@@ -3816,7 +3862,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       title: mode === 'survival' ? t('battle.survivalTitle') : mode === 'lab' ? t('lab.title') : this.trial ? t('trial.title', { type: typeLabel(this.trial.type) }) : this.stage ? stageName(this.stage) : '',
       subtitle: mode === 'gym' ? t('battle.leader', { name: this.gym?.leader ?? '' }) : waveName,
       active: { id: p.species.id, name: p.species.name, level: p.level, hp: p.hp, maxHp: p.maxHp, xp: p.xp, xpToNext: p.xpToNext, types: p.species.types, guard: this.clock < p.guardUntil, evo: this.activeEvo(game) },
-      bench: this.fighters.map((f, i) => ({ id: f.species.id, level: f.level, hp: f.hp, maxHp: f.maxHp, active: i === this.activeIdx, dead: f.dead })),
+      bench: this.fighters.map((f, i) => ({ id: f.species.id, level: f.level, hp: f.hp, maxHp: f.maxHp, active: i === this.activeIdx, dead: f.dead, healing: !f.dead && !f.onField && f.member.hp < f.maxHp })),
       skills: [
         ...p.skills.map((s) => ({
           key: s.slot, name: moveName(s.move), upgrade: s.upgrade, icon: s.move.icon, color: TYPE_COLOR[s.move.type],
@@ -3832,7 +3878,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       timeMs: this.clock,
       waveName,
       boss: boss ? { hp: Math.max(0, boss.hp), maxHp: boss.maxHp, name: boss.species.name, level: boss.level, id: boss.species.id, types: boss.species.types } : null,
-      leaderTeam: this.gym ? this.gymRoster.map((r) => ({ id: r.spec.species, dead: r.state === 'dead', active: r.state === 'out' })) : [],
+      leaderTeam: this.gym ? this.gymRoster.map((r) => ({ id: r.spec.species, dead: r.state === 'dead', active: r.state === 'out', hp: r.hpRatio, resting: r.state === 'rest' })) : [],
       bossInMs: mode === 'survival' ? Math.max(0, BOSS.spawnAtMs - this.clock) : 0,
       balls: (game?.items.pokeball ?? 0) + (game?.items.greatball ?? 0),
       // trận có thủ lĩnh: chỉ còn số lọ được phép dùng
@@ -3904,8 +3950,21 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       }
       let rot = BattleScene.LEGEND_FOE_ROT[st.idx++ % BattleScene.LEGEND_FOE_ROT.length];
       if (!legend) {
-        // hội quán: chọn ô chiêu ngẫu nhiên có trọng số (không theo vòng cố định)
-        const pick = [['J', 5], ['K', 3], ['L', 2.2], ['U', 1.6]] as [SkillSlot, number][];
+        // hội quán: chọn ô chiêu ngẫu nhiên có trọng số, NHƯNG chỉ trong số chiêu đủ tầm với khoảng cách hiện tại
+        // (chiêu cận chiến phải áp sát mới ra; chiêu xa thì bắn từ xa) — không ra chiêu thì chờ tới khi tới tầm
+        const dist = Math.hypot(p.x - e.x, p.y - e.y);
+        const base: [SkillSlot, number][] = [['J', 5], ['K', 3], ['L', 2.2], ['U', 1.6]];
+        const pick = base.filter(([slot]) => {
+          const sk2 = e.species.skills.find((x) => x.slot === slot);
+          const mv = sk2 ? MOVES[sk2.move] : undefined;
+          if (!mv) return false;
+          const sp = resolveSkill(e.species.id, e.level, slot, mv);
+          return !!sp.archetype && dist <= skillReach(sp.archetype, sp.params as Record<string, unknown>, mv);
+        });
+        if (!pick.length) {
+          st.next = this.clock + 200;
+          continue;
+        }
         let r = Math.random() * pick.reduce((a, x) => a + x[1], 0);
         const slot = (pick.find((x) => (r -= x[1]) < 0) ?? pick[0])[0];
         rot = { slot, gap: slot === 'J' ? 900 : slot === 'K' ? 1500 : 2000 };

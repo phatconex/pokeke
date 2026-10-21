@@ -432,6 +432,8 @@ export class HudScene extends Phaser.Scene {
         const half = (this.leaderStep - 8) / 2;
         g.lineStyle(2, t.active ? 0xffd34a : 0x5a6488, 1).strokeRect(cx - half, height - 68, half * 2, 52);
         if (t.dead) g.lineStyle(3, 0xff6a5a, 1).lineBetween(cx - 10, height - 56, cx + 10, height - 34).lineBetween(cx + 10, height - 56, cx - 10, height - 34);
+        // máu của từng con (con đang nghỉ hồi máu thì thanh xanh nhấp nháy)
+        if (!t.dead) this.bar(g, cx - half + 4, height - 24, half * 2 - 8, 4, t.hp, t.resting ? (Math.floor(this.time.now / 250) % 2 ? 0x9affb0 : 0x40e070) : t.hp < 0.3 ? 0xff4040 : 0xff6a50);
       });
     }
     // đội dự bị
@@ -445,8 +447,19 @@ export class HudScene extends Phaser.Scene {
         this.toRegion('bl', this.benchSprites[i]);
       }
       this.benchSprites[i].setTint(b.dead ? 0x444444 : 0xffffff);
-      g.lineStyle(2, b.active ? 0xffd34a : 0x5a6488, 1).strokeRect(cx - 24, height - 68, 48, 52);
-      this.bar(g, cx - 20, height - 24, 40, 4, b.hp / b.maxHp, b.hp / b.maxHp < 0.3 ? 0xff4040 : 0x60d060);
+      g.lineStyle(2, b.active ? 0xffd34a : b.healing ? 0x60ff90 : 0x5a6488, 1).strokeRect(cx - 24, height - 68, 48, 52);
+      // đang nghỉ hồi máu: thanh xanh nhấp nháy + dấu + bay lên
+      const heal = b.healing;
+      this.bar(g, cx - 20, height - 24, 40, 4, b.hp / b.maxHp, heal ? (Math.floor(this.time.now / 250) % 2 ? 0x9affb0 : 0x40e070) : b.hp / b.maxHp < 0.3 ? 0xff4040 : 0x60d060);
+      if (heal) {
+        g.lineStyle(2, 0x60ff90, 0.5 + 0.5 * Math.sin(this.time.now / 160)).strokeRect(cx - 24, height - 68, 48, 52);
+        // hai dấu + xanh bay lên từ ô đang hồi máu
+        for (const [ox, ph] of [[-8, 0], [8, 0.5]] as const) {
+          const kk = ((this.time.now / 1100 + ph) % 1);
+          const yy = height - 42 - kk * 26;
+          g.fillStyle(0x7aff9a, 1 - kk).fillRect(cx + ox - 2, yy - 6, 4, 12).fillRect(cx + ox - 6, yy - 2, 12, 4);
+        }
+      }
       if (!b.active && !b.dead && s.switchLeft > 0) {
         g.fillStyle(0x000000, 0.5).fillRect(cx - 24, height - 68, 48, 52 * (s.switchLeft / 3000));
       }
