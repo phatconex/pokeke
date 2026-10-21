@@ -42,3 +42,12 @@ Ghi lại các nhận xét thật trong quá trình làm. Mỗi hệ / loài m�
 - J của Siêu linh 3 dạng còn giống nhau.
 - Chưa làm: Thường, Bọ, Độc, Bay, Đá, Đất, Giác đấu, Băng, Rồng.
 - Tuyệt chiêu cho Ma và Điện (Raichu đã có, Ma dùng bản mặc định).
+
+## 9. Nguyên tắc chốt về chiêu thức (người làm game, tháng 10/2026)
+1. **Mỗi Pokémon có chiêu riêng**, nhưng vẫn dựa trên **bộ chiêu của hệ** (tầng hệ → chiêu chữ ký → ghi đè theo loài, xem `SKILLS_GUIDE.md` mục 8) để sau này mở rộng thêm loài / chiêu chỉ cần vài dòng.
+2. **Tên chiêu, hệ của chiêu và hiệu ứng ra phải khớp nhau** (Siêu Âm = các vệt sóng cong, Cánh Chém = cánh lông vũ quét, Mưa Thiên Thạch = đá tảng thật rơi từ trời, Biển Độc = sóng độc). Tên tuyệt chiêu luôn lấy theo hiệu ứng thật.
+3. **Chiêu phải đúng theo anime** (Seismic Toss = túm, nhấc, quật; Flare Blitz = bọc lửa lao tới; Rapid Spin = thu vào mai rồi xoay, nước bắn quanh, vừa xoay vừa di chuyển; Double Team = phân thân; Body Slam = nhảy lên đè). Làm theo danh sách Pokédex, từng nhóm 3–4 con, có mô tả chiêu anime trước và duyệt rồi mới code.
+4. **Hai chiêu ở hai ô khác nhau không được giống nhau** (Beedrill J và K từng y chang → đã tách).
+5. Đòn cận chiến phải **có hình đặc trưng và tầm đủ xa** (chém / cào / cắn / húc / chọc đều có hình riêng).
+6. **Hiệu ứng vẽ bằng code**, không dùng ảnh sprite sheet / gói ngoài (đã thử ảnh AI, không đẹp bằng).
+7. Làm mockup / ảnh xem trước cho chiêu mới trước khi code; sau khi làm có ảnh chụp từng khung để người làm game kiểm tra.
