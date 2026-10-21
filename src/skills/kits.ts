@@ -1110,7 +1110,7 @@ export function kitFor(speciesId: string): SpeciesKit | undefined {
     for (const s of sp0?.skills ?? []) {
       const m = MOVES[s.move];
       if (!m) continue;
-      const v = moveVisual(m, evoDepth(speciesId));
+      const v = moveVisual(m, evoDepth(speciesId), speciesId);
       // chiêu "chữ ký anime" (phân thân, nhảy đè) luôn dùng đúng hình của nó, kể cả khi ô đã có hình khác
       const signature = v && (v.archetype === 'bodyslam' || v.archetype === 'clones');
       if (slots0[s.slot] && !signature) continue;
@@ -1133,7 +1133,7 @@ export function kitFor(speciesId: string): SpeciesKit | undefined {
   const slots: NonNullable<SpeciesKit['slots']> = {};
   for (const s of sp?.skills ?? []) {
     const m = MOVES[s.move];
-    const v = m ? moveVisual(m, size) : null;
+    const v = m ? moveVisual(m, size, speciesId) : null;
     if (v) slots[s.slot] = v;
   }
   familySlotCache.set(speciesId, slots);

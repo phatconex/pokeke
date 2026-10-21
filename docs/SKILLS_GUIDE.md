@@ -153,3 +153,12 @@ Khó hơn: máu ×1,8 (CATCH.legendHpMult) ngoài hệ số đầu đàn; chỉ 
 - Thắng ải về bản đồ: nhân vật tự đi tới ải kế tiếp đã mở (`StageMapScene.autoAdvance`).
 - Mặc định Tự ngắm (`systems/settings.ts`, người chơi cũ chuyển sang Tự ngắm một lần).
 - Sinh tồn: màn chọn Pokémon (`SurvivalPickScene`): chọn Pokémon khỏe của mình hoặc Charmander mặc định. Chọn Pokémon của mình: nhận EXP rất ít trong trận (`SURVIVAL_REWARD.ownXpMult`), máu được trả lại sau trận, không bao giờ bị thương; vẫn nhận tiền thưởng. Lưu ý: địch Sinh tồn không tăng theo cấp nên đội cấp cao sẽ dễ.
+
+## 8. Ba tầng bộ chiêu: hệ → chiêu chữ ký → loài (để dễ mở rộng)
+Mục tiêu: mỗi Pokémon có chiêu riêng đúng anime, nhưng vẫn dựa trên bộ chiêu của hệ để thêm loài / chiêu mới chỉ cần vài dòng.
+1. **Tầng hệ (mặc định):** `skills/kits.ts` (`TYPE_KITS`, mẫu `KIT_TEMPLATES`) + phần "theo loại chiêu" trong `skills/moveVisuals.ts` (đạn → bolt, cận chiến → dashStrike, vòng → nova...). Chiêu nào chưa có công thức riêng thì rơi về đây.
+2. **Tầng chiêu chữ ký:** `skills/signatureMoves.ts` → `SIGNATURE[idChiêu]`. Thêm MỘT công thức là mọi Pokémon có chiêu đó đều có hình riêng (vd Seismic Toss, Skull Bash, Flare Blitz). Công thức nhận `{ m, id, d (hệ), col, sz (cỡ dạng tiến hóa 1–3) }` nên tự to dần theo tiến hóa.
+3. **Tầng loài (hiếm dùng):** `SPECIES_SIGNATURE['loài:idChiêu']` để một loài có bản riêng của chiêu đó. Bộ chiêu làm tay cho từng loài vẫn nằm ở `SPECIES_KITS` (kits.ts) và thắng mọi tầng trên.
+
+Thêm chiêu chữ ký mới: (a) nếu cần khuôn hiển thị mới thì thêm vào `skills/*Archetypes.ts` + đăng ký trong `types.ts` / `kits.ts` / `archetypes.ts`; (b) thêm công thức vào `SIGNATURE`; (c) gán id chiêu cho Pokémon trong `data/pokemon.ts`; (d) chạy thử bằng Skill Lab.
+Tuyệt chiêu (I): tên luôn lấy theo hiệu ứng thật (`ultEffectType` trong kits.ts); loài chưa có tuyệt chiêu riêng thì hệ chính Độc / Đá / Ma dùng bản mặc định tương ứng.
