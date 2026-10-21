@@ -14,7 +14,8 @@ import type {
 import type { Enemy } from '../entities/Enemy';
 import { bulbCharge, crackBetween, flattenedGrass, groundCracks, leafBurst, windStreak } from '../fx/GrassFx';
 import { meleeSignature } from './meleeFx';
-import { castSonic, castWingSlash } from './airArchetypes';
+import { castBodySlam, castClones, castSonic, castWingSlash } from './airArchetypes';
+import { castNightfall, castRockfall } from './ultArchetypes';
 import { castCloud, castTether, castWhip } from './grassArchetypes';
 import { castTelekinesis, castTimeStop } from './psyArchetypes';
 import { castBarrier, castBoomerang, castMindBreak, castSingularity } from './legendArchetypes';
@@ -51,6 +52,8 @@ export function castArchetype(h: SkillHost, f: Fighter, m: MoveDef, spec: SkillS
     case 'sweep': return TA.castSweep(h, f, m, spec.params, dir);
     case 'wingslash': return castWingSlash(h, f, m, spec.params, dir);
     case 'sonic': return castSonic(h, f, m, spec.params, dir);
+    case 'clones': return castClones(h, f, m, spec.params, dir);
+    case 'bodyslam': return castBodySlam(h, f, m, spec.params, dir);
     case 'serpent': return TA.castSerpent(h, f, m, spec.params, dir);
     case 'dive': return TA.castDive(h, f, m, spec.params);
     case 'lob': return TA.castLob(h, f, m, spec.params);
@@ -93,6 +96,8 @@ export function castUltArchetype(h: SkillHost, f: Fighter, spec: UltSpec, u: Ult
   else if (spec.archetype === 'flock') TA.castFlock(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'wavefront') TA.castWavefront(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'chasm') TA.castChasm(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'rockfall') castRockfall(h, f, spec.params, u, mv, amount);
+  else if (spec.archetype === 'nightfall') castNightfall(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'judgement') BA.castJudgement(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'aurorafall') BA.castAuroraFall(h, f, spec.params, u, mv, amount);
   else if (spec.archetype === 'phoenix') BA.castPhoenix(h, f, spec.params, u, mv, amount);

@@ -12,9 +12,9 @@ import { BADGES, GYMS, GymDef, GymPokemon } from '../data/trainers';
 import { effectiveness, PokemonType, TYPE_COLOR } from '../data/types';
 import { pickWeighted, waveAt, WAVES } from '../data/waves';
 import { buildRivalGym, rivalSpeciesPool } from '../data/rival';
-import { ULT_GAIN, ULT_PACING, ultimateFor } from '../data/ultimates';
+import { ULT_GAIN, ULT_PACING, ULTIMATES, ultimateFor } from '../data/ultimates';
 import { castArchetype, castUltArchetype } from '../skills/archetypes';
-import { resolveSkill, resolveUlt, SPECIES_DMG_MULT } from '../skills/kits';
+import { resolveSkill, resolveUlt, SPECIES_DMG_MULT, ultEffectType } from '../skills/kits';
 import type { SkillHost } from '../skills/host';
 import type { SkillSpec } from '../skills/types';
 import { lang, t, tr } from '../i18n';
@@ -72,7 +72,10 @@ const ULT_NAME_BY_SPECIES: Record<string, { vi: string; en: string }> = {
 };
 const ultName = (types: PokemonType[], speciesId?: string) => {
   const o = speciesId ? ULT_NAME_BY_SPECIES[speciesId] : undefined;
-  return o ? (lang() === 'en' ? o.en : o.vi) : ultimateText(types[0], ultimateFor(types)).name;
+  if (o) return lang() === 'en' ? o.en : o.vi;
+  // tên theo HIỆU ỨNG thật của tuyệt chiêu (không theo hệ chính) để tên và hình luôn khớp
+  const et = speciesId ? ultEffectType(speciesId, types) : types[0];
+  return ultimateText(et, ULTIMATES[et] ?? ultimateFor(types)).name;
 };
 
 /** nhãn khắc hệ (Rất hiệu quả! / Không hiệu quả lắm / Gần như vô hiệu...) */
@@ -1556,8 +1559,8 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     f.ultCharge = 0;
     this.ultLockUntil = this.clock + (legendOf(f.species.id)?.ultCooldownMs ?? ULT_PACING.cooldownMs);
     this.legendLiftPause = this.clock + 3200;
-    const u = ultimateFor(f.species.types);
-    const type = f.species.types[0];
+    const u = ULTIMATES[ultEffectType(f.species.id, f.species.types)] ?? ultimateFor(f.species.types);
+    const type = ultEffectType(f.species.id, f.species.types);
     const mv: MoveDef = {
       id: 'ultimate', name: ultName(f.species.types, f.species.id), desc: u.desc, type, kind: 'burst', power: u.power, cooldownMs: 0, anim: 'charge', animMs: 600,
       sfx: 'thunder', knockback: u.pattern === 'wave' ? 420 : 160, icon: 'crown', particle: 'spark', status: u.status,
@@ -3987,7 +3990,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private legendFoeUlt(e: Enemy, st: { host: SkillHost; caster: Fighter }) {
     const style = resolveUlt(e.species.id, e.species.types);
     if (!style) return;
-    const u = ultimateFor(e.species.types);
+    const u = ULTIMATES[ultEffectType(e.species.id, e.species.types)] ?? ultimateFor(e.species.types);
     const type = e.species.types[0];
     const name = ultName(e.species.types, e.species.id);
     const mv: MoveDef = {

@@ -20,13 +20,15 @@ const SONIC = new Set(['supersonic', 'sing', 'roar']);
 const GUST = new Set(['gust', 'silverWind', 'airCutter', 'whirlwind']);
 const ROLL = new Set(['rollout', 'flameWheel', 'rapidSpin']);
 const CLOUD = new Set(['poisonPowder', 'stunSpore', 'sleepPowder', 'spore', 'smog', 'smokescreen', 'toxicFog']);
-const QUAKE = new Set(['earthquake', 'earthPower', 'stomp', 'heavySlam', 'rockWrecker', 'rockSlide', 'boneRush', 'rockCharge']);
+const QUAKE = new Set(['earthquake', 'earthPower', 'rockWrecker', 'rockSlide', 'boneRush', 'rockCharge']);
 const DIVE = new Set(['aerialDive', 'skyAttack', 'jumpKick', 'hiJumpKick', 'drillPeck', 'waterfall']);
 const SLASH = new Set(['slash', 'furyCutter', 'viceGrip', 'hyperFang', 'guillotine', 'crabhammer', 'karateChop', 'crossChop']);
 const XSLASH = new Set(['xScissor']);
 const VINE = new Set(['vineWhip', 'powerWhip', 'bind', 'wrap', 'constrict', 'ingrain']);
 const RAPID = new Set(['quickAttack', 'extremeSpeed', 'aquaJet', 'flameCharge', 'flareBlitz', 'machPunch', 'peck', 'doublePeck', 'triPeck', 'furyAttack', 'rollingKick', 'lowKick']);
-const BUFF_LEGACY = new Set(['harden', 'withdraw', 'minimize', 'barrier', 'meditate', 'agility', 'doubleTeam', 'softBoiled', 'slackOff', 'transform', 'melt', 'counter', 'splash', 'metronome', 'aquaRing']);
+const CLONES = new Set(['doubleTeam']);
+const BODYSLAM = new Set(['bodySlam', 'heavySlam', 'stomp', 'stampede', 'gigaImpact']);
+const BUFF_LEGACY = new Set(['harden', 'withdraw', 'minimize', 'barrier', 'meditate', 'agility', 'softBoiled', 'slackOff', 'transform', 'melt', 'counter', 'splash', 'metronome', 'aquaRing']);
 
 /**
  * Ánh xạ một chiêu → khuôn hiển thị (null = giữ cách xử lý gốc của chiêu).
@@ -37,6 +39,8 @@ export function moveVisual(m: MoveDef, size: number): Entry | null {
   const d = m.type as string;
   const col = TYPE_COLOR[m.type];
   const sz = Math.max(1, Math.min(3, size));
+  if (CLONES.has(id)) return S('clones', { dialect: d, n: 3 + sz, tint: id === 'doubleTeam' ? 0xaad8ff : col });
+  if (BODYSLAM.has(id)) return S('bodyslam', { dialect: d, r: 34 + sz * 10, height: 90 + sz * 15, airMs: 560 + sz * 40, color: col });
   if (BUFF_LEGACY.has(id) || m.kind === 'buff') return null;
 
   if (BEAM.has(id)) return S('stream', { dialect: d });

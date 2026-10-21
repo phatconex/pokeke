@@ -160,3 +160,96 @@ export function castSonic(h: SkillHost, f: Fighter, m: MoveDef, P: LooseParams, 
     }
   }, () => g.destroy());
 }
+
+/**
+ * Phân thân (Ảo Ảnh / Double Team): vài bản sao mờ của chính mình toả ra rồi chạy vòng quanh, nhấp nháy; né đòn trong thời gian hiệu lực.
+ * Hết hạn các bản sao tan thành khói.
+ */
+export function castClones(h: SkillHost, f: Fighter, m: MoveDef, P: LooseParams, _dir: Phaser.Math.Vector2) {
+  const sc = h.scene;
+  f.startGuard(m, h.clock);
+  playSfx('swap');
+  const spr = f.anim.sprite;
+  const n: number = P.n ?? 4;
+  const ms = m.buffMs ?? 3000;
+  const tint: number = P.tint ?? 0xaad8ff;
+  const clones = Array.from({ length: n }, (_, i) => {
+    const c = sc.add.sprite(f.x, f.y, spr.texture.key, String(spr.frame.name)).setOrigin(spr.originX, spr.originY).setScale(spr.scaleX, spr.scaleY).setTint(tint).setAlpha(0).setDepth(spr.depth - 1);
+    return { c, a: (i / n) * Math.PI * 2, r: 26 + (i % 2) * 14 };
+  });
+  const t0 = h.clock;
+  h.fx.puff('sparkle', f.x, f.chestY, 8);
+  h.addFrameTask(ms, (now) => {
+    const k = (now - t0) / ms;
+    const fadeIn = Math.min(1, (now - t0) / 200);
+    const fadeOut = k > 0.85 ? (1 - k) / 0.15 : 1;
+    for (const q of clones) {
+      const ang = q.a + (now - t0) / 260;
+      const x = f.x + Math.cos(ang) * q.r;
+      const y = f.y + Math.sin(ang) * q.r * 0.55;
+      q.c.setTexture(spr.texture.key, String(spr.frame.name)).setFlipX(Math.cos(ang) < 0 !== spr.flipX ? spr.flipX : spr.flipX).setPosition(x + (spr.x - f.x), y + (spr.y - f.y)).setDepth(y + 1).setAlpha(((Math.floor(now / 70) + q.r) % 3 === 0 ? 0.25 : 0.5) * fadeIn * fadeOut);
+    }
+  }, () => {
+    for (const q of clones) {
+      if (!h.over) h.fx.puff('sparkle', q.c.x, q.c.y, 3);
+      q.c.destroy();
+    }
+  });
+}
+
+/**
+ * Nhảy lên đè (Body Slam / Heavy Slam / Giẫm Đạp): bật cao khỏi mặt đất, bóng thu nhỏ báo chỗ đáp, rồi rơi xuống nghiền mục tiêu —
+ * sóng xung kích, bụi, rung mạnh, hất văng và gây choáng ngắn những địch trong vùng đè.
+ */
+export function castBodySlam(h: SkillHost, f: Fighter, m: MoveDef, P: LooseParams, _dir: Phaser.Math.Vector2) {
+  const sc = h.scene;
+  const mult = h.stackMult(f, m);
+  const air: number = P.airMs ?? 620;
+  const R: number = P.r ?? 46;
+  const col: number = P.color ?? TYPE_COLOR[m.type];
+  const t = h.aimTarget;
+  const c = t && !t.dead ? { x: t.x, y: t.y } : { x: f.x + f.facing.x * 70, y: f.y + f.facing.y * 50 };
+  const spr = f.anim.sprite;
+  f.invulnUntil = Math.max(f.invulnUntil, h.clock + air + 220);
+  playSfx('swap');
+  const t0 = h.clock;
+  const sx = f.x;
+  const sy = f.y;
+  const warn = sc.add.graphics().setDepth(-2790);
+  h.addFrameTask(air, (now) => {
+    const k = Math.min(1, (now - t0) / air);
+    // vòng cung: lên cao rồi bay tới chỗ đáp
+    const arc = Math.sin(k * Math.PI);
+    f.anim.lift = (P.height ?? 110) * arc;
+    f.body.reset(sx + (c.x - sx) * Math.min(1, k * 1.08), sy + (c.y - sy) * Math.min(1, k * 1.08));
+    spr.setScale(spr.scaleX);
+    warn.clear();
+    // vùng đè hiện dần + bóng người nhảy
+    warn.lineStyle(2, col, 0.4 + 0.5 * k).strokeEllipse(c.x, c.y + 2, R * 2, R * 1.4);
+    warn.fillStyle(col, 0.08 + 0.2 * k).fillEllipse(c.x, c.y + 2, R * 2 * (0.3 + 0.7 * k), R * 1.4 * (0.3 + 0.7 * k));
+    warn.fillStyle(0x000000, 0.3 * (1 - arc * 0.6)).fillEllipse(f.x, f.feetY + 2, 22 * (1 - arc * 0.45), 7);
+  }, () => {
+    warn.destroy();
+    f.anim.lift = 0;
+    if (h.over || f.dead) return;
+    f.body.reset(c.x, c.y);
+    f.playMove(m);
+    h.fx.shake(0.016, 280);
+    playSfx('boom');
+    h.fx.ringBurst(c.x, c.y + 2, R * 1.5, col, 0xffffff, 420);
+    h.fx.dustPuff(c.x, c.y, 12);
+    h.fx.debrisBurst(c.x, c.y, 10);
+    let any = false;
+    for (const e of h.enemies()) {
+      if (!e.targetable) continue;
+      const dx = e.x - c.x;
+      const dy = (e.y - c.y) / 0.75;
+      const dd = Math.hypot(dx, dy);
+      if (dd > R + e.radius) continue;
+      any = true;
+      h.damageEnemy(e, { ...m, knockback: m.knockback + 120 }, m.power * f.power * mult * (P.powerMult ?? 1.25), dx / (dd || 1), dy / (dd || 1), true);
+      e.stunnedUntil = Math.max(e.stunnedUntil, h.clock + 450);
+    }
+    if (any) h.hitStop(90);
+  });
+}

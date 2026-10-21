@@ -43,6 +43,8 @@ export const ARCHETYPE_DEFAULTS: { [A in ArchetypeId]: (m: MoveDef) => Archetype
   sweep: () => ({ dialect: 'generic' }),
   wingslash: () => ({ dialect: 'flying' }),
   sonic: () => ({ dialect: 'generic' }),
+  clones: () => ({ dialect: 'generic' }),
+  bodyslam: () => ({ dialect: 'generic' }),
   serpent: () => ({ dialect: 'generic' }),
   dive: () => ({ dialect: 'generic' }),
   lob: () => ({ dialect: 'generic' }),
@@ -167,7 +169,7 @@ const MINDBREAK_DEFAULTS: MindBreakParams = { dialect: 'psychic', windupMs: 800,
 
 const ULT_DEFAULTS: { [U in UltArchetypeId]: UltParamMap[U] } = {
   inferno: INFERNO_DEFAULTS, tsunami: TSUNAMI_DEFAULTS, thunderstorm: THUNDERSTORM_DEFAULTS, bloom: BLOOM_DEFAULTS, timestop: TIMESTOP_DEFAULTS, absolutezero: ABSZERO_DEFAULTS, komode: KOMODE_DEFAULTS, mindbreak: MINDBREAK_DEFAULTS,
-  draco: { dialect: 'dragon', windupMs: 700 }, flock: { dialect: 'flying', windupMs: 700 }, wavefront: { dialect: 'poison', windupMs: 700 }, chasm: { dialect: 'ground', windupMs: 700 }, hyperbeam: { dialect: 'normal', windupMs: 300 }, phoenix: { dialect: 'fire', windupMs: 600 }, judgement: { dialect: 'electric', windupMs: 500 }, aurorafall: { dialect: 'ice', windupMs: 600 },
+  draco: { dialect: 'dragon', windupMs: 700 }, flock: { dialect: 'flying', windupMs: 700 }, wavefront: { dialect: 'poison', windupMs: 700 }, chasm: { dialect: 'ground', windupMs: 700 }, rockfall: { dialect: 'rock', windupMs: 700 }, nightfall: { dialect: 'ghost', windupMs: 700 }, hyperbeam: { dialect: 'normal', windupMs: 300 }, phoenix: { dialect: 'fire', windupMs: 600 }, judgement: { dialect: 'electric', windupMs: 500 }, aurorafall: { dialect: 'ice', windupMs: 600 },
 };
 
 // ---------------------------------------------------------------------------------- bộ chiêu theo hệ
@@ -981,7 +983,7 @@ const TK: Record<string, SpeciesKit> = {
   // --- Đá: tảng đá lì lợm, lăn, trượt phiến
   geodude: { kitType: 'rock', slots: { J: S('lob', { dialect: 'rock', tex: 'boulderA', scale: 0.8, r: 24, arcH: 34 }), K: S('roll', { dialect: 'rock', size: 1.6, ms: 420, speed: 220, hitR: 18 }) } },
   graveler: { kitType: 'rock', slots: { J: S('lob', { dialect: 'rock', tex: 'boulderA', scale: 1.1, r: 28, hitStop: 40 }), K: S('roll', { dialect: 'rock', size: 2.0, ms: 520, speed: 230, hitR: 22 }), L: S('fallers', { dialect: 'rock', tex: 'slabR', count: 6, spread: 70, offset: { x: -90, y: -130 }, rotate: true, r: 24, scorch: true }), U: S('fallers', { dialect: 'rock', tex: 'slabR', count: 9, spread: 90, mode: 'line', offset: { x: -110, y: -150 }, rotate: true, r: 26 }) } },
-  golem: { kitType: 'rock', ult: 'wavefront', slots: { J: S('lob', { dialect: 'rock', tex: 'boulderA', scale: 1.5, r: 34, hitStop: 70, shake: 0.01 }), K: S('roll', { dialect: 'rock', size: 2.8, ms: 620, speed: 250, hitR: 28 }), L: S('fallers', { dialect: 'rock', tex: 'slabR', count: 10, spread: 100, offset: { x: -110, y: -160 }, rotate: true, r: 28, scorch: true }), U: S('roll', { dialect: 'rock', size: 3.4, ms: 760, speed: 270, hitR: 34, powerMult: 1.2 }) }, ultParams: { dialect: 'rock', shape: 'rock', ms: 1600 } },
+  golem: { kitType: 'rock', ult: 'rockfall', slots: { J: S('lob', { dialect: 'rock', tex: 'boulderA', scale: 1.5, r: 34, hitStop: 70, shake: 0.01 }), K: S('roll', { dialect: 'rock', size: 2.8, ms: 620, speed: 250, hitR: 28 }), L: S('fallers', { dialect: 'rock', tex: 'slabR', count: 10, spread: 100, offset: { x: -110, y: -160 }, rotate: true, r: 28, scorch: true }), U: S('roll', { dialect: 'rock', size: 3.4, ms: 760, speed: 270, hitR: 34, powerMult: 1.2 }) }, ultParams: { dialect: 'rock' } },
   // --- Đất: bùn vàng cát, đào hố, gờ đất, cát lún
   sandshrew: { kitType: 'ground', slots: { J: S('lob', { dialect: 'ground', tex: 'mudball', scale: 0.9, r: 22 }), K: S('roll', { dialect: 'ground', tex: 'mudball', size: 2.4, ms: 420, hitR: 18 }), L: S('ambush', { dialect: 'ground', undergroundMs: 520, hitR: 38 }) } },
   sandslash: { kitType: 'ground', slots: { J: S('lob', { dialect: 'ground', tex: 'mudball', scale: 1.1, r: 26 }), K: S('roll', { dialect: 'ground', tex: 'mudball', size: 2.8, ms: 500, hitR: 22 }), L: S('ambush', { dialect: 'ground', undergroundMs: 600, hitR: 46 }), U: S('sweep', { dialect: 'ground', reach: 50, spanDeg: 160, fill: 0xb08850, edge: 0x4a3010, spikes: 4 }) } },
@@ -1106,10 +1108,13 @@ export function kitFor(speciesId: string): SpeciesKit | undefined {
     const slots0: NonNullable<SpeciesKit['slots']> = { ...(merged.slots ?? {}) };
     let changed = false;
     for (const s of sp0?.skills ?? []) {
-      if (slots0[s.slot]) continue;
       const m = MOVES[s.move];
-      if (!m || m.archetype) continue;
+      if (!m) continue;
       const v = moveVisual(m, evoDepth(speciesId));
+      // chiêu "chữ ký anime" (phân thân, nhảy đè) luôn dùng đúng hình của nó, kể cả khi ô đã có hình khác
+      const signature = v && (v.archetype === 'bodyslam' || v.archetype === 'clones');
+      if (slots0[s.slot] && !signature) continue;
+      if (!signature && m.archetype) continue;
       if (v) {
         slots0[s.slot] = v;
         changed = true;
@@ -1167,9 +1172,24 @@ function mergedKit(speciesId: string): SpeciesKit | undefined {
 /** Tuyệt chiêu riêng của loài (null = tuyệt chiêu theo hệ như cũ) */
 export function resolveUlt(speciesId: string, types: PokemonType[]): UltSpec | null {
   const sk = kitFor(speciesId);
-  // hệ Độc chưa có tuyệt chiêu riêng: dùng Biển Độc (sóng độc quét sân + đầm lầy) thay cho bản chung
-  if (!sk?.ult && types.includes('poison')) return { archetype: 'wavefront', params: { ...ULT_DEFAULTS.wavefront, dialect: 'poison', shape: 'sludge', status: 'poison', ms: 1900 } } as UltSpec;
+  // chưa có tuyệt chiêu riêng: hệ chính Độc / Đá / Ma dùng bản có hình đúng tên (Biển Độc / Mưa Thiên Thạch / Bóng Đêm Vĩnh Cửu)
+  if (!sk?.ult && types[0] === 'poison') return { archetype: 'wavefront', params: { ...ULT_DEFAULTS.wavefront, dialect: 'poison', shape: 'sludge', status: 'poison', ms: 1900 } } as UltSpec;
+  if (!sk?.ult && types[0] === 'rock') return { archetype: 'rockfall', params: { ...ULT_DEFAULTS.rockfall } } as UltSpec;
+  if (!sk?.ult && types[0] === 'ghost') return { archetype: 'nightfall', params: { ...ULT_DEFAULTS.nightfall } } as UltSpec;
   if (!sk?.ult) return null;
   const typeUlt = TYPE_KITS[(sk.kitType ?? types[0]) as PokemonType]?.[sk.ult];
   return { archetype: sk.ult, params: { ...ULT_DEFAULTS[sk.ult], ...typeUlt, ...sk.ultParams } } as UltSpec;
+}
+
+
+/** Hệ của HIỆU ỨNG tuyệt chiêu thực tế (để tên tuyệt chiêu luôn khớp hiệu ứng, vd Slowbro dùng Ngưng Đọng Thời Gian → hệ Siêu linh) */
+export function ultEffectType(speciesId: string, types: PokemonType[]): PokemonType {
+  const r = resolveUlt(speciesId, types);
+  if (!r) return types[0];
+  const NAT: Record<string, PokemonType> = { inferno: 'fire', tsunami: 'water', thunderstorm: 'electric', bloom: 'grass', timestop: 'psychic', mindbreak: 'psychic', absolutezero: 'ice', komode: 'fighting', draco: 'dragon', flock: 'flying', chasm: 'ground', rockfall: 'rock', nightfall: 'ghost', hyperbeam: 'normal', phoenix: 'fire', judgement: 'electric', aurorafall: 'ice' };
+  if (r.archetype === 'wavefront') {
+    const shape = (r.params as { shape?: string }).shape;
+    return shape === 'rock' ? 'rock' : shape === 'swarm' ? 'bug' : 'poison';
+  }
+  return NAT[r.archetype] ?? types[0];
 }

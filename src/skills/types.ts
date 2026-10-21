@@ -23,11 +23,11 @@ import type { StatusKind } from '../data/moveKit';
  *  trap   – vùng gài, kích hoạt sau một lúc · summon – gọi trợ thủ / tháp bắn tạm thời
  */
 export type ArchetypeId = 'bolt' | 'dashStrike' | 'stream' | 'blast' | 'nova' | 'chain' | 'rain' | 'whip' | 'cloud' | 'tether' | 'telekinesis' | 'blizzard' | 'lance' | 'gale' | 'strike' | 'counter' | 'slam' | 'cross' | 'boomerang' | 'barrier' | 'singularity'
-  | 'wingslash' | 'sonic' | 'fan' | 'sweep' | 'serpent' | 'dive' | 'lob' | 'roll' | 'fallers' | 'ridge' | 'quicksand' | 'ambush' | 'twister' | 'web' | 'swarm' | 'triattack' | 'beam'
+  | 'wingslash' | 'sonic' | 'clones' | 'bodyslam' | 'fan' | 'sweep' | 'serpent' | 'dive' | 'lob' | 'roll' | 'fallers' | 'ridge' | 'quicksand' | 'ambush' | 'twister' | 'web' | 'swarm' | 'triattack' | 'beam'
   | 'arcshot' | 'phoenixdash' | 'xslash' | 'forkbolt' | 'blink' | 'stormcloud' | 'powergrid' | 'aurora' | 'iceglide' | 'prism' | 'icewall';
 export type PlannedArchetypeId = 'trap' | 'summon';
 export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStrike', 'stream', 'blast', 'nova', 'chain', 'rain', 'whip', 'cloud', 'tether', 'telekinesis', 'blizzard', 'lance', 'gale', 'strike', 'counter', 'slam', 'cross', 'boomerang', 'barrier', 'singularity',
-  'wingslash', 'sonic', 'fan', 'sweep', 'serpent', 'dive', 'lob', 'roll', 'fallers', 'ridge', 'quicksand', 'ambush', 'twister', 'web', 'swarm', 'triattack', 'beam', 'arcshot', 'phoenixdash', 'xslash', 'forkbolt', 'blink', 'stormcloud', 'powergrid', 'aurora', 'iceglide', 'prism', 'icewall'];
+  'wingslash', 'sonic', 'clones', 'bodyslam', 'fan', 'sweep', 'serpent', 'dive', 'lob', 'roll', 'fallers', 'ridge', 'quicksand', 'ambush', 'twister', 'web', 'swarm', 'triattack', 'beam', 'arcshot', 'phoenixdash', 'xslash', 'forkbolt', 'blink', 'stormcloud', 'powergrid', 'aurora', 'iceglide', 'prism', 'icewall'];
 
 /**
  * Nguyên mẫu tuyệt chiêu (phím I).
@@ -36,7 +36,7 @@ export const IMPLEMENTED_ARCHETYPES: readonly ArchetypeId[] = ['bolt', 'dashStri
  *  thunderstorm = trời tối, sét giáng dày đặc + sét nảy chuỗi
  *  bloom        = bão cánh hoa xoay / rễ gai trồi khắp sân + đóa hoa khổng lồ nở rộ (hệ cỏ)
  */
-export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 'timestop' | 'absolutezero' | 'komode' | 'mindbreak' | 'draco' | 'flock' | 'wavefront' | 'chasm' | 'hyperbeam' | 'phoenix' | 'judgement' | 'aurorafall';
+export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 'timestop' | 'absolutezero' | 'komode' | 'mindbreak' | 'draco' | 'flock' | 'wavefront' | 'chasm' | 'rockfall' | 'nightfall' | 'hyperbeam' | 'phoenix' | 'judgement' | 'aurorafall';
 
 /** "Bộ từ vựng" hiệu ứng (vệt, nổ trúng, khói, vụ nổ, cháy xém, cột, vuốt) – xem dialects.ts */
 export type FxDialectId = 'fire' | 'water' | 'electric' | 'grass' | 'ghost' | 'psychic' | 'ice' | 'fighting' | 'dragon' | 'rock' | 'ground' | 'flying' | 'poison' | 'bug' | 'normal' | 'generic';
@@ -696,6 +696,8 @@ export interface ArchetypeParamMap {
   sweep: LooseParams;
   wingslash: LooseParams;
   sonic: LooseParams;
+  clones: LooseParams;
+  bodyslam: LooseParams;
   serpent: LooseParams;
   dive: LooseParams;
   lob: LooseParams;
@@ -758,6 +760,8 @@ export interface UltParamMap {
   flock: LooseParams;
   wavefront: LooseParams;
   chasm: LooseParams;
+  rockfall: LooseParams;
+  nightfall: LooseParams;
   hyperbeam: LooseParams;
   phoenix: LooseParams;
   judgement: LooseParams;
@@ -800,6 +804,8 @@ export interface TypeKit {
   sweep?: KitEntry<LooseParams>;
   wingslash?: KitEntry<LooseParams>;
   sonic?: KitEntry<LooseParams>;
+  clones?: KitEntry<LooseParams>;
+  bodyslam?: KitEntry<LooseParams>;
   serpent?: KitEntry<LooseParams>;
   dive?: KitEntry<LooseParams>;
   lob?: KitEntry<LooseParams>;
@@ -837,6 +843,8 @@ export interface TypeKit {
   flock?: Partial<LooseParams>;
   wavefront?: Partial<LooseParams>;
   chasm?: Partial<LooseParams>;
+  rockfall?: Partial<LooseParams>;
+  nightfall?: Partial<LooseParams>;
   hyperbeam?: Partial<LooseParams>;
   phoenix?: Partial<LooseParams>;
   judgement?: Partial<LooseParams>;
