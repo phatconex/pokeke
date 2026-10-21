@@ -41,7 +41,7 @@ export type UltArchetypeId = 'inferno' | 'tsunami' | 'thunderstorm' | 'bloom' | 
 /** "Bộ từ vựng" hiệu ứng (vệt, nổ trúng, khói, vụ nổ, cháy xém, cột, vuốt) – xem dialects.ts */
 export type FxDialectId = 'fire' | 'water' | 'electric' | 'grass' | 'ghost' | 'psychic' | 'ice' | 'fighting' | 'dragon' | 'rock' | 'ground' | 'flying' | 'poison' | 'bug' | 'normal' | 'generic';
 
-/** Hiệu ứng từ sprite sheet (ảnh) thay cho hình vẽ bằng code: khung bay lặp lại, khung nổ khi trúng */
+/** Đạn dùng ảnh: khung bay lặp lại, khung nổ khi trúng */
 export interface SheetFx {
   /** khóa texture đã nạp (BootScene) */
   key: string;
@@ -135,6 +135,8 @@ export interface DashStrikeParams {
   arc2?: { r: number; color: number; core: number };
   /** vài nhát cào nhỏ tại điểm cuối (không lửa): số nhát, dài, màu, lõi */
   scratch?: { n: number; len: number; color: number; core: number };
+  /** vệt chém dạng ảnh tại điểm đánh (thay cho scratch vẽ bằng code) */
+  sheet?: import('./sheetFx').SheetRef;
   /** dây leo cong vút (sào nhảy) từ chỗ xuất phát tới điểm cuối: độ cong (px), màu, lõi */
   vine?: { h: number; color: number; core: number };
   /** rễ gai trồi dọc đường lao: số rễ, khoảng cách, chiều cao, trễ mỗi rễ (ms) */
@@ -151,6 +153,8 @@ export interface StreamLayer {
 }
 
 export interface StreamParams {
+  /** luồng lửa dạng ảnh: các khung hình nón (apex tại miệng), kéo dài theo tầm; thay cho các lớp nêm vẽ bằng code */
+  sheet?: { key: string; frames: number[]; fps: number; lenMult: number; widthMult: number };
   /** tia xoắn gen (huyền thoại): hai sợi sin quấn nhau + nấc ngang */
   helix?: { colors: [number, number]; amp: number; wave: number };
   /** tia vòng (Siêu linh): chuỗi vòng elip chạy dọc đường bắn thay cho các hình nêm màu */
@@ -196,6 +200,8 @@ export interface StreamParams {
 }
 
 export interface BlastParams {
+  /** nổ dạng ảnh (vd vòng lửa) tại điểm nổ, thay cho nổ vẽ bằng code; scale = hệ số theo bán kính nổ (1 = vừa bán kính) */
+  sheet?: { key: string; scale: number; ms: number };
   dialect: FxDialectId;
   telegraphMs: number;
   /** tốc độ cầu bay (px/s) */
@@ -596,6 +602,8 @@ export interface TetherParams {
 }
 
 export interface InfernoParams {
+  /** thiên thạch dạng ảnh: khung bay (lặp) + khung nổ khi chạm đất */
+  sheet?: { key: string; fly: number[]; hit: number[]; scale: number; hitScale: number };
   dialect: FxDialectId;
   /** gồng trước khi bung (ms) */
   windupMs: number;

@@ -13,6 +13,7 @@ import type {
 } from './types';
 import type { Enemy } from '../entities/Enemy';
 import { bulbCharge, crackBetween, flattenedGrass, groundCracks, leafBurst, windStreak } from '../fx/GrassFx';
+import { sheetOnce, sheetReady } from './sheetFx';
 import { castCloud, castTether, castWhip } from './grassArchetypes';
 import { castTelekinesis, castTimeStop } from './psyArchetypes';
 import { castBarrier, castBoomerang, castMindBreak, castSingularity } from './legendArchetypes';
@@ -319,7 +320,10 @@ function castDashStrike(h: SkillHost, f: Fighter, m: MoveDef, P: DashStrikeParam
       const a = Math.atan2(aim.y, aim.x);
       h.fx.foamArc(ex, ey, P.arc2.r, a - Math.PI * 0.55, a + Math.PI * 0.95, P.arc2.color, P.arc2.core);
     }
-    if (P.scratch) {
+    if (P.sheet && sheetReady(h.scene, P.sheet.key)) {
+      // vệt chém lửa dạng ảnh tại điểm đánh, xoay theo hướng đánh
+      sheetOnce(h.scene, P.sheet.key, ex + aim.x * 20, ey + aim.y * 14, { ms: P.sheet.ms ?? 360, scale: P.sheet.scale, rotation: Math.atan2(aim.y, aim.x) + Phaser.Math.DegToRad(P.sheet.rot ?? 0), depth: ey + 2100 });
+    } else if (P.scratch) {
       const S = P.scratch;
       h.fx.scratchMarks(ex + aim.x * 14, ey + aim.y * 10, Math.atan2(aim.y, aim.x), S.n, S.len, S.color, S.core);
     }
@@ -436,6 +440,7 @@ function castStream(h: SkillHost, f: Fighter, m: MoveDef, P: StreamParams, dir: 
         h.fx.muzzleFlash(m1.x - aim.y * off + aim.x * 4, m1.y + aim.x * off + aim.y * 3, ang0, P.muzzle.color, P.muzzle.size);
       }
     }
+    const coneSprites = new Map<number, Phaser.GameObjects.Sprite>();
     h.addFrameTask(dur, (now, dt) => {
       if (f.dead || !f.onField || f.isBurrowed(now)) return;
       track(dt, P.turnRate);
@@ -489,6 +494,16 @@ function castStream(h: SkillHost, f: Fighter, m: MoveDef, P: StreamParams, dir: 
           for (let k = 0; k < 2; k++) core.lineStyle(5, H.colors[k], 0.95).strokePoints(strands[k], false);
           core.lineStyle(2, 0xffffff, 0.8);
           for (let sIdx = 1; sIdx < 34; sIdx += 3) core.lineBetween(strands[0][sIdx].x, strands[0][sIdx].y, strands[1][sIdx].x, strands[1][sIdx].y);
+        } else if (P.sheet && sheetReady(sc, P.sheet.key)) {
+          // luồng lửa dạng ảnh: một hình nón kéo từ miệng tới hết tầm, đổi khung theo thời gian
+          const SHT = P.sheet;
+          let spr = coneSprites.get(off);
+          if (!spr) {
+            spr = sc.add.sprite(o.x, o.y, SHT.key, SHT.frames[0]).setOrigin(0.37, 0.5).setDepth(99997);
+            coneSprites.set(off, spr);
+          }
+          spr.setFrame(SHT.frames[Math.floor(((now - ts) / 1000) * SHT.fps) % SHT.frames.length]);
+          spr.setPosition(o.x, o.y).setRotation(ang).setScale((len * SHT.lenMult) / 76, ((w * SHT.widthMult) / 76) * flick);
         } else
         for (const L of P.layers) {
           const l = len * L.len * flick;
@@ -527,6 +542,7 @@ function castStream(h: SkillHost, f: Fighter, m: MoveDef, P: StreamParams, dir: 
       }
     }, () => {
       g.destroy();
+      for (const spr of coneSprites.values()) sc.tweens.add({ targets: spr, alpha: 0, duration: 140, onComplete: () => spr.destroy() });
       sc.tweens.add({ targets: core, alpha: 0, duration: 120, onComplete: () => core.destroy() });
     });
   });
@@ -601,7 +617,10 @@ function castBlast(h: SkillHost, f: Fighter, m: MoveDef, P: BlastParams) {
 function blastExplode(h: SkillHost, m: MoveDef, P: BlastParams, x: number, y: number, r: number, amount: number) {
   const d = dialectFor(P.dialect, h.fx, m, h);
   const L = P.linger;
-  d.explosion(x, y, r);
+  if (P.sheet && sheetReady(h.scene, P.sheet.key)) {
+    // nổ dạng ảnh (vòng lửa lan rộng) vừa bán kính nổ
+    sheetOnce(h.scene, P.sheet.key, x, y, { ms: P.sheet.ms, scale: ((r * 2.4) / 175) * P.sheet.scale, originY: 0.55, depth: y + 2100 });
+  } else d.explosion(x, y, r);
   d.scorch(x, y, r * 0.85, (L?.ms ?? 0) + 1200);
   const shk = P.shake ?? [0.012, 320];
   h.fx.shake(shk[0], shk[1]);
@@ -707,20 +726,23 @@ function castInferno(h: SkillHost, f: Fighter, P: InfernoParams, u: UltimateDef,
       if (h.over) return;
       const sx = x + M.fromDx;
       const sy = y + M.fromDy;
-      const ball = sc.add.image(sx, sy, 'fireball').setScale(M.scale).setDepth(100003);
-      const halo = sc.add.image(sx, sy, 'softglow').setScale(M.haloScale).setTint(M.haloTint).setDepth(100002);
+      const SHM = P.sheet && sheetReady(sc, P.sheet.key) ? P.sheet : null;
+      const ball = SHM ? sc.add.sprite(sx, sy, SHM.key, SHM.fly[0]).setScale(SHM.scale).setOrigin(0.5, 0.6).setFlipX(M.fromDx > 0).setDepth(100003) : sc.add.image(sx, sy, 'fireball').setScale(M.scale).setDepth(100003);
+      const halo = sc.add.image(sx, sy, 'softglow').setScale(M.haloScale).setTint(M.haloTint).setDepth(100002).setVisible(!SHM);
       const start = h.clock;
       h.addFrameTask(M.flyMs, (now) => {
         const k = Math.min(1, (now - start) / M.flyMs);
         const px = sx + (x - sx) * k;
         const py = sy + (y - sy) * k * k;
         ball.setPosition(px, py);
+        if (SHM) (ball as Phaser.GameObjects.Sprite).setFrame(SHM.fly[Math.floor(((now - start) / 1000) * 14) % SHM.fly.length]);
         halo.setPosition(px, py);
-        d.trail(px, py, 3);
+        if (!SHM) d.trail(px, py, 3);
       }, () => {
         ball.destroy();
         halo.destroy();
-        d.explosion(x, y, 30);
+        if (SHM) sheetOnce(sc, SHM.key, x, y, { frames: SHM.hit, ms: 420, scale: SHM.hitScale, originY: 0.75, depth: y + 2100 });
+        else d.explosion(x, y, 30);
         d.scorch(x, y, M.scorchR, M.scorchMs);
         h.fx.shake(0.009, 160);
         playSfx('boom');
