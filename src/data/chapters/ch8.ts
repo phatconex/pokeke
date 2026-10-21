@@ -144,6 +144,19 @@ export const CHAPTER: ChapterContent = {
         { species: 'nidoking', level: 51 },
         { species: 'rhydon', level: 54, boss: true },
       ],
+      // hội quán động: 3 con bốc từ kho (khác loài), rồi át chủ bài
+      pool: [
+        { species: 'dugtrio', level: 50 },
+        { species: 'nidoqueen', level: 50 },
+        { species: 'nidoking', level: 51 },
+        { species: 'rhyhorn', level: 50 },
+        { species: 'golem', level: 51 },
+        { species: 'sandslash', level: 50 },
+        { species: 'marowak', level: 50 },
+      ],
+      pick: 3,
+      ace: { species: 'rhydon', level: 54, boss: true },
+      tuning: { attackSpeed: 1.2, aceHp: 0.45, aceDmg: 0.85 },
       intro: [
         'Sakaki: Cuối cùng cậu cũng tìm đến đây. Ta là Sakaki, thủ lĩnh Hội quán Viridian.',
         'Sakaki: Ở tòa nhà Silph, cậu đã phá hỏng kế hoạch của Đội Hỏa Tiễn. Hôm nay ta đứng đây với tư cách thủ lĩnh, và ta sẽ không nương tay.',

@@ -349,6 +349,18 @@ export const CHAPTER: ChapterContent = {
         { species: 'rapidash', level: 46 },
         { species: 'arcanine', level: 49, boss: true },
       ],
+      // hội quán động: 3 con bốc từ kho (khác loài), rồi át chủ bài
+      pool: [
+        { species: 'growlithe', level: 45 },
+        { species: 'ponyta', level: 45 },
+        { species: 'rapidash', level: 46 },
+        { species: 'flareon', level: 46 },
+        { species: 'magmar', level: 46 },
+        { species: 'ninetales', level: 47 },
+      ],
+      pick: 3,
+      ace: { species: 'arcanine', level: 49, boss: true },
+      tuning: { attackSpeed: 1.2, aceHp: 0.45, aceDmg: 0.85 },
       intro: [
         'Katsura: Hô hô! Ta là Katsura, thủ lĩnh nóng bỏng nhất đảo Cinnabar!',
         'Katsura: Câu đố đây: thứ gì càng dội nước càng sôi sục? Đáp án: ý chí chiến đấu của ta! Hô hô!',

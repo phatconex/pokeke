@@ -541,7 +541,7 @@ const GYM_VIRIDIAN: ArenaDef = (f) => {
       slowImmuneTypes: ['ground'],
       hazards: [{
         kind: 'rain', count: 3, radius: 22, periodMs: 3000, warnMs: 900, fx: 'rock', color: 0xc8a060,
-        damagePct: 0.09, type: 'rock',
+        damagePct: 0.06, type: 'rock',
       }],
     },
   };

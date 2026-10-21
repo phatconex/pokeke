@@ -850,7 +850,7 @@ export const ARENAS: Record<string, ArenaDef> = {
         solids: [...g.braziers, ...g.lava],
         hazards: [{
           kind: 'pulse', areas: g.vents, periodMs: 2800, warnMs: 1000, fx: 'flame', color: 0xff7a30,
-          damagePct: 0.12, type: 'fire', immuneTypes: ['fire'],
+          damagePct: 0.07, type: 'fire', immuneTypes: ['fire'],
         }],
       },
     };

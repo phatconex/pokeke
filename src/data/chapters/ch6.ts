@@ -239,6 +239,20 @@ export const CHAPTER: ChapterContent = {
         { species: 'hypno', level: 41 },
         { species: 'alakazam', level: 44, boss: true },
       ],
+      // hội quán động: 3 con bốc từ kho (khác loài), rồi át chủ bài
+      pool: [
+        { species: 'kadabra', level: 40 },
+        { species: 'mrmime', level: 41 },
+        { species: 'hypno', level: 41 },
+        { species: 'drowzee', level: 40 },
+        { species: 'slowbro', level: 41 },
+        { species: 'exeggutor', level: 41 },
+        { species: 'starmie', level: 41 },
+        { species: 'jynx', level: 41 },
+      ],
+      pick: 3,
+      ace: { species: 'alakazam', level: 44, boss: true },
+      tuning: { attackSpeed: 1.2, aceHp: 0.45, aceDmg: 0.85 },
       intro: [
         'Natsume: Ta đã thấy trước cậu sẽ đến đây. Từ năm ba tuổi, ta đã có thể bẻ cong một chiếc thìa chỉ bằng ý nghĩ.',
         'Natsume: Những ô sáng hồng trên sàn sẽ đưa cậu đến nơi khác trong chớp mắt. Còn khi sàn ánh lên, sóng siêu linh sắp quét qua — đừng đứng yên.',

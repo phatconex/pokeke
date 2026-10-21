@@ -654,7 +654,7 @@ const saffron: ArenaDef = (f) => {
         { kind: 'teleport', pads },
         {
           kind: 'pulse', areas: plates, periodMs: 3000, warnMs: 1000, fx: 'psychic', color: 0xf85888,
-          damagePct: 0.08, type: 'psychic', slowMs: 600,
+          damagePct: 0.06, type: 'psychic', slowMs: 600,
         },
       ],
     },

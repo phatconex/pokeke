@@ -52,7 +52,10 @@ Luật chung (mục 1–2) giống nhau, nhưng **mỗi hội quán có một đ
 | Pewter | Đá rơi từ trần hang (báo trước rồi đập xuống) |
 | Cerulean | Cột nước phun từ nắp thoát nước trên sàn; hồ giữa sân làm chậm |
 | Vermilion | Ô sàn điện phóng luân phiên |
-| Các hội quán sau | (chưa làm — thêm mỗi hội quán một cơ chế riêng, làm mockup trước, duyệt rồi mới code) |
+| Tứ Thiên Vương (Kanna, Shiba, Kikuko, Wataru) | (chưa làm — thêm mỗi hội quán một cơ chế riêng, làm mockup trước, duyệt rồi mới code) |
+
+Celadon (bãi bào tử), Fuchsia (mưa độc), Saffron (cổng dịch chuyển + tấm sàn), Cinnabar (miệng phun lửa), Viridian (đá rơi): cơ chế có từ trước, đã hạ sát thương về mức 6–7% máu; chưa làm lại mockup.
+Tất cả hội quán Cerulean → Viridian đã có kho 6–8 Pokémon (`pool`) + `tuning` (đánh nhanh ×1,2, át chủ bài máu ×0,45, sát thương ×0,85).
 
 ## 5. Thêm một hội quán mới — danh sách việc
 1. Thêm `GymDef` vào `CORE_GYMS` hoặc `chapters/*` (có ít nhất một con `boss`).

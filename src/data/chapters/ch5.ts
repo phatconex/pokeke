@@ -404,6 +404,19 @@ const gyms: Record<string, GymDef> = {
       { species: 'koffing', level: 36 },
       { species: 'weezing', level: 39, boss: true },
     ],
+    // hội quán động: 3 con bốc từ kho (khác loài), rồi át chủ bài
+    pool: [
+      { species: 'koffing', level: 35 },
+      { species: 'muk', level: 36 },
+      { species: 'grimer', level: 35 },
+      { species: 'tentacruel', level: 36 },
+      { species: 'venomoth', level: 36 },
+      { species: 'golbat', level: 36 },
+      { species: 'arbok', level: 36 },
+    ],
+    pick: 3,
+    ace: { species: 'weezing', level: 39, boss: true },
+    tuning: { attackSpeed: 1.2, aceHp: 0.45, aceDmg: 0.85 },
     intro: [
       'Kyo: Hừm hừm hừm... Ngươi lần được tới đây cơ à? Ta là Kyo, ninja độc dược của Fuchsia!',
       'Kyo: Sàn đấu của ta giăng đầy tường tàng hình — chỉ khi va phải ngươi mới thấy nó. Còn trên đầu thì mưa độc rơi không ngớt.',

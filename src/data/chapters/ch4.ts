@@ -218,6 +218,18 @@ export const CHAPTER: ChapterContent = {
         { species: 'weepinbell', level: 30 },
         { species: 'vileplume', level: 33, boss: true },
       ],
+      // hội quán động: 2 con bốc từ kho (khác loài), rồi át chủ bài
+      pool: [
+        { species: 'tangela', level: 29 },
+        { species: 'weepinbell', level: 30 },
+        { species: 'gloom', level: 29 },
+        { species: 'exeggcute', level: 29 },
+        { species: 'parasect', level: 30 },
+        { species: 'victreebel', level: 31 },
+      ],
+      pick: 2,
+      ace: { species: 'vileplume', level: 33, boss: true },
+      tuning: { attackSpeed: 1.2, aceHp: 0.45, aceDmg: 0.85 },
       intro: [
         'Erika: Ôi... xin lỗi, tôi lỡ thiu thiu ngủ giữa vườn hoa. Chào mừng cậu đến Hội quán Celadon.',
         'Erika: Tôi là Erika. Những bồn hoa kia thỉnh thoảng sẽ tỏa bào tử — đứng trong đó đúng lúc hoa phun thì chân cậu sẽ nặng trĩu đấy.',
