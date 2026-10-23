@@ -250,6 +250,11 @@ export function captureLevel(speciesId: string, encounteredLevel: number): numbe
   return Math.max(encounteredLevel, minimum(speciesId));
 }
 
+/** Alpha encounters reward catching the stage leader with three extra levels. */
+export function wildEncounterLevel(speciesId: string, level: number, alpha = false): number {
+  return captureLevel(speciesId, level) + (alpha ? 3 : 0);
+}
+
 /** loài có dạng tiền tiến hóa trong game (vd. Charmeleon ← Charmander) */
 export function hasPreEvolution(id: string): boolean {
   return Object.values(POKEMON).some((sp) => evolutionsOf(sp).some((e) => e.into === id));

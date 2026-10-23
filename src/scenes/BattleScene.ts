@@ -5,7 +5,7 @@ import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, GYM_R
 import { makeFrame } from '../art/chapters';
 import { arenaLayout, generateArena } from '../art/arenaArt';
 import { METRONOME_POOL, MOVES, MoveDef, slotScaledMove, STATUS_COLOR, upgradeMove } from '../data/moves';
-import { captureLevel, hasUltimate, POKEMON, SKILL_SLOTS, SkillSlot } from '../data/pokemon';
+import { captureLevel, hasUltimate, POKEMON, SKILL_SLOTS, SkillSlot, wildEncounterLevel } from '../data/pokemon';
 import { STAGES, STAGE_BY_ID, StageDef, TUTORIAL_STAGE_ID } from '../data/stages';
 import { CRIT_MULT } from '../data/stats';
 import { BADGES, GYMS, GymDef, GymPokemon } from '../data/trainers';
@@ -3362,7 +3362,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       const trainer = !!this.gym;
       const pos = trainer ? { ...this.gymPos.foe } : this.findStageSpawn(p.flank);
       const catchable = !trainer && !!this.stage?.catchable?.includes(p.species);
-      const level = catchable ? captureLevel(p.species, p.level) : p.level;
+      const level = !trainer && (catchable || p.alpha) ? wildEncounterLevel(p.species, p.level, !!p.alpha) : p.level;
       const e = p.boss ? new Boss(this, pos.x, pos.y, this.clock, level, trainer, p.species) : new Enemy(this, p.species, pos.x, pos.y, this.clock, level, trainer, p.alpha);
       markSeen(getGame(), p.species);
       e.catchable = catchable;
@@ -3398,7 +3398,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         e.maxHp = e.hp = Math.max(1, Math.round(e.maxHp * r.hp));
         e.dmgMult *= r.dmg;
         e.rangedCdMult /= Math.max(0.5, r.dmg);
-        if (!trainer && idx < STAGE_RAMP.wildSkillsFromIndex) e.skillsOff = true;
+        if (!trainer && !p.alpha && !p.boss && idx < STAGE_RAMP.wildSkillsFromIndex) e.skillsOff = true;
       }
       // huyền thoại (ải sự kiện): trâu hơn nữa
       if (!trainer && legendOf(p.species)) e.maxHp = e.hp = Math.round(e.maxHp * CATCH.legendHpMult);

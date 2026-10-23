@@ -27,3 +27,8 @@ for (const [id, encountered, expected] of [
     assert.equal(data.captureLevel(id, encountered), expected);
   });
 }
+test('stage alpha is three levels above the normal encounter, including evolution floor', () => {
+  assert.equal(data.wildEncounterLevel('rattata', 6, true), 9);
+  assert.equal(data.wildEncounterLevel('pidgeotto', 8, true), 21);
+  assert.equal(data.wildEncounterLevel('pidgeotto', 8, false), 18);
+});

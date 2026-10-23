@@ -87,7 +87,7 @@ const cache = new Map<string, Profile>();
 const hashOf = (id: string) => [...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 
 function profileFor(e: Enemy, boss: boolean): Profile {
-  const key = e.species.id + (boss ? ':b' : '');
+  const key = e.species.id + (boss ? ':b' : e.alpha ? ':alpha' : '');
   const hit = cache.get(key);
   if (hit) return hit;
   const type = skillTypeOf(e);
@@ -115,6 +115,9 @@ function profileFor(e: Enemy, boss: boolean): Profile {
   };
   const o = OVERRIDE[e.species.id];
   if (o) Object.assign(prof, o);
+  // Retain species-specific attacks, then fill out the alpha's rotation.
+  // Copy the array: OVERRIDE and ordinary enemies must remain unchanged.
+  if (e.alpha && !boss) prof.kinds = [...new Set<Kind>([...prof.kinds, ...seq, 'zone', 'volley', 'nova', 'charge'])].slice(0, 4);
   cache.set(key, prof);
   return prof;
 }
@@ -137,7 +140,7 @@ const STUB = { id: 'enemySkill', name: '', type: 'normal', power: 0, cooldownMs:
 export function tickEnemySkill(e: Enemy, ctx: BattleCtx, target: Fighter, boss = false) {
   if (e.dead || e.dummy || e.beingCaught || e.skillsOff || e.usesKit || legendOf(e.species.id)) return;
   const now = ctx.clock;
-  if (e.nextSkillAt === 0) e.nextSkillAt = now + (e.trainer || boss ? 900 + Math.random() * 1500 : 2500 + Math.random() * 5000);
+  if (e.nextSkillAt === 0) e.nextSkillAt = now + (e.trainer || boss || e.alpha ? 900 + Math.random() * 1500 : 2500 + Math.random() * 5000);
   if (now < e.nextSkillAt || e.isStunned(now)) return;
   const dist = Math.hypot(target.x - e.x, target.y - e.y);
   if (dist > 300) return;
