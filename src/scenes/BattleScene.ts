@@ -5,7 +5,7 @@ import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, GYM_R
 import { makeFrame } from '../art/chapters';
 import { arenaLayout, generateArena } from '../art/arenaArt';
 import { METRONOME_POOL, MOVES, MoveDef, slotScaledMove, STATUS_COLOR, upgradeMove } from '../data/moves';
-import { hasUltimate, POKEMON, SKILL_SLOTS, SkillSlot } from '../data/pokemon';
+import { captureLevel, hasUltimate, POKEMON, SKILL_SLOTS, SkillSlot } from '../data/pokemon';
 import { STAGES, STAGE_BY_ID, StageDef, TUTORIAL_STAGE_ID } from '../data/stages';
 import { CRIT_MULT } from '../data/stats';
 import { BADGES, GYMS, GymDef, GymPokemon } from '../data/trainers';
@@ -2259,7 +2259,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     }
     for (const f of this.fighters) {
       if (f === this.player || f.onField || f.dead || f.member.hp >= f.maxHp) continue;
-      f.member.hp = Math.min(f.maxHp, f.member.hp + (f.maxHp * SWITCH.benchRegenPerSec * dt) / 1000);
+      f.member.hp = Math.min(f.maxHp, f.member.hp + (SWITCH.benchRegenPerSec * dt) / 1000);
     }
   }
 
@@ -2756,18 +2756,18 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       this.fx.floatingLabel(e.x, e.topY - 6, t('battle.caught', { name: e.species.name }), '#9fe08a');
       this.tweens.add({ targets: img, y: img.y - 6, alpha: 0, delay: 400, duration: 500, onComplete: () => img.destroy() });
       this.tut.caught++;
-      const m = makeMember(e.species.id, e.level);
+      const m = makeMember(e.species.id, captureLevel(e.species.id, e.level));
       m.caughtAt = this.stage?.id;
       if (!this.tutReplay) addToBox(game, m);
       // loài mới (chưa có trong Pokédex): thưởng tiền theo cấp
       if (!dexOf(game).caught.includes(m.speciesId) && this.stage) {
-        const bonus = STAGE_REWARD.newSpeciesPerLevel * e.level;
+        const bonus = STAGE_REWARD.newSpeciesPerLevel * m.level;
         this.newSpeciesMoney += bonus;
         this.fx.floatingLabel(e.x, e.topY - 22, t('battle.newSpeciesMoney', { n: bonus }), '#ffd34a');
         this.events.emit('toast', t('battle.newSpeciesMoney', { n: bonus }));
       }
       markCaught(game, m.speciesId);
-      this.caught.push({ species: e.species.id, level: e.level });
+      this.caught.push({ species: e.species.id, level: m.level });
       e.dead = true;
       this.killEnemy(e, true);
       this.events.emit('caught', e.species.name);
@@ -3361,9 +3361,11 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       this.pending.splice(this.pending.indexOf(p), 1);
       const trainer = !!this.gym;
       const pos = trainer ? { ...this.gymPos.foe } : this.findStageSpawn(p.flank);
-      const e = p.boss ? new Boss(this, pos.x, pos.y, this.clock, p.level, trainer, p.species) : new Enemy(this, p.species, pos.x, pos.y, this.clock, p.level, trainer, p.alpha);
+      const catchable = !trainer && !!this.stage?.catchable?.includes(p.species);
+      const level = catchable ? captureLevel(p.species, p.level) : p.level;
+      const e = p.boss ? new Boss(this, pos.x, pos.y, this.clock, level, trainer, p.species) : new Enemy(this, p.species, pos.x, pos.y, this.clock, level, trainer, p.alpha);
       markSeen(getGame(), p.species);
-      e.catchable = !trainer && !!this.stage?.catchable?.includes(p.species);
+      e.catchable = catchable;
       if (trainer && p.ridx !== undefined) e.gymIdx = p.ridx;
       if (trainer && !p.boss) {
         const ok = (['J', 'K', 'L', 'U'] as SkillSlot[]).some((sl) => {
@@ -3937,12 +3939,21 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
       active: { id: p.species.id, name: p.species.name, level: p.level, hp: p.hp, maxHp: p.maxHp, xp: p.xp, xpToNext: p.xpToNext, types: p.species.types, guard: this.clock < p.guardUntil, evo: this.activeEvo(game) },
       bench: this.fighters.map((f, i) => ({ id: f.species.id, level: f.level, hp: f.hp, maxHp: f.maxHp, active: i === this.activeIdx, dead: f.dead, healing: !f.dead && !f.onField && f.member.hp < f.maxHp })),
       skills: [
-        ...p.skills.map((s) => ({
-          key: s.slot, name: moveName(s.move), upgrade: s.upgrade, icon: s.move.icon, color: TYPE_COLOR[s.move.type],
-          left: p.cooldownLeft(s.slot, this.clock), total: p.cooldownTotal(s.slot), locked: !s.unlocked, unlockLevel: s.unlockLevel,
-          cost: s.spec.cost, affordable: p.energy >= s.spec.cost,
-          ...(s.unlocked || this.config.kind === 'survival' ? {} : (() => { const l = slotLockShort(p.member, s.slot); return { lockTop: l.top, lockLabel: l.label }; })()),
-        })),
+        // Keep the bar geometry stable when switching to a species with fewer moves.
+        ...SKILL_SLOTS.map((slot) => {
+          const s = p.skills.find((skill) => skill.slot === slot);
+          if (!s) return {
+            key: slot, name: '???', upgrade: 0, icon: 'lock', color: 0x5a6488,
+            left: 0, total: 0, locked: true, unlockLevel: 0,
+            lockTop: '', lockLabel: '???', cost: 0, affordable: false,
+          };
+          return {
+            key: s.slot, name: moveName(s.move), upgrade: s.upgrade, icon: s.move.icon, color: TYPE_COLOR[s.move.type],
+            left: p.cooldownLeft(s.slot, this.clock), total: p.cooldownTotal(s.slot), locked: !s.unlocked, unlockLevel: s.unlockLevel,
+            cost: s.spec.cost, affordable: p.energy >= s.spec.cost,
+            ...(s.unlocked || this.config.kind === 'survival' ? {} : (() => { const l = slotLockShort(p.member, s.slot); return { lockTop: l.top, lockLabel: l.label }; })()),
+          };
+        }),
         { key: 'Space', name: t('battle.dash'), upgrade: 0, icon: 'play', color: 0xf0e0b0, left: p.cooldownLeft('dash', this.clock), total: p.cooldownTotal('dash'), locked: false, unlockLevel: 1, cost: 0, affordable: true },
       ],
       switchLeft: Math.max(0, this.switchReadyAt - this.clock),

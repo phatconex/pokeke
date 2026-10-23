@@ -476,6 +476,7 @@ export class HudScene extends Phaser.Scene {
       const x = bx + i * (SLOT + SLOT_GAP);
       const st = this.slotTexts[i];
       if (!st) return;
+      this.alignSkillSlot(st, x, by, c.key);
       const ready = c.left <= 0 && !c.locked;
       g.fillStyle(0x0b0f1e, 1).fillRect(x, by, SLOT, SLOT);
       g.fillStyle(c.color, c.locked ? 0.1 : 0.35).fillRect(x + 3, by + 3, SLOT - 6, SLOT - 6);
@@ -630,6 +631,17 @@ export class HudScene extends Phaser.Scene {
     const c = this.add.container(px, y - 12, [bg, msg]).setDepth(45).setAlpha(0);
     this.tweens.add({ targets: c, alpha: 1, y: y - 16, duration: 250 });
     this.tweens.add({ targets: c, alpha: 0, delay: 7000, duration: 600, onComplete: () => c.destroy() });
+  }
+
+  /** Use the same slot coordinates as the background on every frame. */
+  private alignSkillSlot(st: HudScene['slotTexts'][number], x: number, y: number, key: string) {
+    st.icon.setPosition(x + SLOT / 2, y + SLOT / 2 + 2);
+    st.key.setPosition(x + 4, y + 2).setText(key);
+    st.up.setPosition(x + SLOT - 3, y + 2);
+    st.name.setPosition(x + SLOT / 2, y + SLOT + 3);
+    st.cd.setPosition(x + SLOT / 2, y + SLOT / 2);
+    st.lock.setPosition(x + SLOT / 2, y + SLOT - 12);
+    st.cost.setPosition(x + 4, y + SLOT - 3);
   }
 
   /** chuyển các đối tượng vào khối vùng: giữ thứ tự theo depth (container bỏ qua depth của con) */

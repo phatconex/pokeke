@@ -234,6 +234,22 @@ export function evolutionsOf(sp: PokemonSpecies | undefined): { into: string; le
   return [...(sp.evolution ? [sp.evolution] : []), ...(sp.evolutions ?? [])].filter((e) => !!POKEMON[e.into]);
 }
 
+/** Wild evolved forms cannot be caught below their evolution line's level requirements.
+ * Item evolutions add no level requirement, but retain requirements of earlier forms.
+ */
+export function captureLevel(speciesId: string, encounteredLevel: number): number {
+  const minimum = (id: string): number => {
+    const paths: number[] = [];
+    for (const sp of Object.values(POKEMON)) {
+      for (const evo of evolutionsOf(sp)) {
+        if (evo.into === id) paths.push(Math.max(evo.level ?? 1, minimum(sp.id)));
+      }
+    }
+    return paths.length ? Math.min(...paths) : 1;
+  };
+  return Math.max(encounteredLevel, minimum(speciesId));
+}
+
 /** loài có dạng tiền tiến hóa trong game (vd. Charmeleon ← Charmander) */
 export function hasPreEvolution(id: string): boolean {
   return Object.values(POKEMON).some((sp) => evolutionsOf(sp).some((e) => e.into === id));

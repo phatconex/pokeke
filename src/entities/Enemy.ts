@@ -644,12 +644,27 @@ export class Enemy {
         this.slowUntil = 0;
       }
     }
-    // nếu đang kẹt vào vật cản thì trượt sang ngang
+    // Static walls/world bounds set blocked; enemy contacts set touching.
+    // Remove the component into the obstacle and retain a tangential escape.
     const t = this.body.touching;
-    if (!t.none && (vx || vy)) {
+    const b = this.body.blocked;
+    const left = b.left || t.left;
+    const right = b.right || t.right;
+    const up = b.up || t.up;
+    const down = b.down || t.down;
+    const hitX = (vx < 0 && left) || (vx > 0 && right);
+    const hitY = (vy < 0 && up) || (vy > 0 && down);
+    if ((hitX || hitY) && (vx || vy)) {
+      const speed = Math.hypot(vx, vy);
       const side = Math.sin(this.wobbleSeed) > 0 ? 1 : -1;
-      vx += -vy * 0.8 * side;
-      vy += vx * 0.8 * side;
+      if (hitX) {
+        vx = 0;
+        if (hitY || Math.abs(vy) < 1) vy = speed * (up ? 1 : down ? -1 : side);
+      }
+      if (hitY) {
+        vy = 0;
+        if (Math.abs(vx) < 1) vx = speed * (left ? 1 : right ? -1 : side);
+      }
     }
     this.body.setVelocity(vx + this.kb.x, vy + this.kb.y);
     const decay = Math.exp(-dtMs / 90);
