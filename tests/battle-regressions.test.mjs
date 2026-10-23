@@ -124,15 +124,15 @@ test('restarting Battle clears tutorial XP suppression and old enemy freeze dead
   assert.equal(scene.swapFreezeUntil, 0);
   assert.equal(scene.evoActive, false);
 });
-test('HUD shows the badge level cap when Survival uses an owned Pokemon', () => {
+test('HUD uses the same global cap as XP awards in Survival', () => {
   let displayedCap;
   const activeEvo = method('src/scenes/BattleScene.ts', 'activeEvo', {
-    levelCap: () => 15,
+    levelCap: () => 70,
     evoStatus: (_member, _game, cap) => { displayedCap = cap; return { state: 'capped', levelsLeft: 1 }; },
   });
-  const scene = { survivalOwn: {}, player: { member: {}, level: 15 } };
+  const scene = { survivalOwn: {}, player: { member: {}, level: 70 } };
   const result = activeEvo.call(scene, null);
-  assert.equal(displayedCap, 15);
+  assert.equal(displayedCap, 70);
   assert.equal(result.atCap, true);
 });
 test('a Survival run after the tutorial awards XP again', () => {
@@ -142,6 +142,7 @@ test('a Survival run after the tutorial awards XP again', () => {
   scene.fighters = [{ member, species: { name: 'Pikachu' }, xpMult: 1 }];
   scene.activeIdx = 0;
   const awardXp = method('src/scenes/BattleScene.ts', 'awardXp', {
+    levelCap: () => 70,
     evolutionReady: () => null,
     gainXp: (m, amount) => { m.xp += amount; return 0; },
   });

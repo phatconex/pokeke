@@ -43,6 +43,8 @@ export const STATS = {
   xpForLevel: (level: number) => Math.round(5 + 4 * level + 0.15 * level * level),
   /** EXP nhận được khi hạ một Pokémon */
   xpYield: (baseXp: number, level: number) => Math.max(1, Math.round(baseXp * level * 1.2)),
+  /** Full EXP through a 3-level advantage; then -10% per extra level, minimum 10%. */
+  xpLevelMult: (playerLevel: number, enemyLevel: number) => Math.max(0.1, 1 - Math.max(0, playerLevel - enemyLevel - 3) * 0.1),
   /** Pokémon của huấn luyện viên (hội quán / Tứ Thiên Vương / Shigeru) trâu hơn hoang dã (trước: 3) */
   trainerHpMult: 5,
   /** boss của thủ lĩnh (vd. Onix) đã có máu gốc lớn nên nhân ít hơn (trước: 1.5) */
@@ -50,9 +52,8 @@ export const STATS = {
   maxLevel: 70,
 } as const;
 
-/** Giới hạn cấp theo số huy hiệu (index = số huy hiệu đang có) */
-export const LEVEL_CAP = [15, 20, 25, 30, 35, 40, 45, 50, 60] as const;
-export const levelCapFor = (badges: number) => LEVEL_CAP[Math.min(badges, LEVEL_CAP.length - 1)];
+/** One global level limit; badges gate progression and skill upgrades, not EXP. */
+export const levelCapFor = (_badges: number) => STATS.maxLevel;
 
 /** Đổi Pokémon trong trận */
 export const SWITCH = {

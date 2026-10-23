@@ -95,7 +95,7 @@ export function rivalTeam(game: GameState, stage: StageDef): GymPokemon[] {
   if (!tier) return [];
   const rs = COUNTER[playerStarter(game)];
   const team = teamAvgLevel(game);
-  // nhỉnh hơn đội người chơi, tối đa giới hạn cấp + aboveCap; starter (boss) cao hơn aceBonus cấp (TRAINER.rival)
+  // nhỉnh hơn đội người chơi, tối đa giới hạn cấp chung + aboveCap; starter cao hơn aceBonus cấp
   const R = TRAINER.rival;
   const lv = Math.max(tier.base, Math.min(levelCapFor(game.badges.length) + R.aboveCap, team + R.aboveTeam));
   const members = tier.team

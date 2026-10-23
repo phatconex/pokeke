@@ -2,7 +2,7 @@
 // - 'ready'        : đã đủ cấp → tiến hóa sau trận
 // - 'soon'         : còn ≤ 2 cấp
 // - 'far'          : còn > 2 cấp
-// - 'capped'       : cấp tiến hóa cao hơn giới hạn cấp hiện tại (cần thêm huy hiệu)
+// - 'capped'       : cấp tiến hóa cao hơn giới hạn cấp chung
 // - 'item-ready'   : tiến hóa bằng đá và đang có đá
 // - 'item-missing' : tiến hóa bằng đá nhưng chưa có
 // - 'final'        : không tiến hóa nữa

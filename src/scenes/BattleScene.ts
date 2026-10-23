@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { scatter } from '../fx/TypeFx';
 import { leafBurst } from '../fx/GrassFx';
-import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, GYM_RULES, PLAYER, POTION, SKILL_UNLOCK, SPAWN, STAGE_REWARD, STAGE_RAMP, STAGE_TUNING, SURVIVAL, SURVIVAL_REWARD, stageRamp, SWITCH, TRAINER, arenaSize } from '../config/balance';
+import { AIM, BOSS, CAPS, CATCH, COMBAT, combatProfile, ECONOMY, FINISHER, GYM_RULES, PLAYER, POTION, SKILL_UNLOCK, SPAWN, STAGE_REWARD, STAGE_RAMP, STAGE_TUNING, STATS, SURVIVAL, SURVIVAL_REWARD, stageRamp, SWITCH, TRAINER, arenaSize } from '../config/balance';
 import { makeFrame } from '../art/chapters';
 import { arenaLayout, generateArena } from '../art/arenaArt';
 import { METRONOME_POOL, MOVES, MoveDef, slotScaledMove, STATUS_COLOR, upgradeMove } from '../data/moves';
@@ -2662,7 +2662,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.fx.sparkBurst(e.x, e.centerY, e.isBoss ? 40 : 12);
     this.fx.dustPuff(e.x, e.feetY, 6);
     this.fx.clearTelegraphsOf(e);
-    const xp = e.xpYield * (this.stage ? STAGE_TUNING.xpMult : 1);
+    const xp = e.xpYield * (this.stage ? STAGE_TUNING.xpMult : 1) * STATS.xpLevelMult(this.player.level, e.level);
     if (byCatch) {
       this.awardXp(xp);
     } else {
@@ -3111,7 +3111,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   private awardXp(value: number) {
     // Thử thách chiêu / bài hướng dẫn: không thưởng EXP
     if (this.trial || this.tutorial) return;
-    const cap = this.stage || this.survivalOwn ? levelCap() : 50;
+    const cap = levelCap();
     this.fighters.forEach((f, i) => {
       if (f.dead || i !== this.activeIdx) return;
       // Thông thái (Huấn luyện) tăng EXP; Sinh tồn bằng Pokémon của mình nhận ít EXP
@@ -3749,7 +3749,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     const cap = levelCap(game);
     const ownRun = !!this.survivalOwn;
     for (const m of ownRun ? [] : team) {
-      if (m.level >= cap) continue; // đã chạm giới hạn cấp theo huy hiệu: không nhận EXP
+      if (m.level >= cap) continue; // global maximum level
       const amount = Math.round(Math.min(R.maxXp, (this.kills * R.xpPerKill + secs * R.xpPerSecond) * (0.6 + 0.03 * m.level)) * (won ? 1 : 0.6));
       gainXp(m, amount, cap);
       xp = Math.max(xp, amount);
@@ -3842,8 +3842,6 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
         game.badges.push(this.gym.badgeId);
         const b = BADGES[this.gym.badgeId];
         info.badge = { name: badgeName(this.gym.badgeId, b.name), texture: b.texture };
-        info.notes = info.notes.filter((n) => n !== capNote);
-        info.notes.push(t('battle.note.capUp', { n: levelCap(game) }));
         if (this.gym.reward) {
           game.items[this.gym.reward.item] += 1;
           info.notes.push(t('battle.note.item', { item: itemName(this.gym.reward.item) }));
@@ -3908,7 +3906,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   }
 
   private activeEvo(game: GameState | null): HudState['active']['evo'] {
-    const cap = this.stage || this.survivalOwn ? levelCap() : 50;
+    const cap = levelCap();
     const e = evoStatus(this.player.member, game, cap);
     return { state: e.state, into: e.into ? POKEMON[e.into].name : '', levelsLeft: e.levelsLeft, cap, item: e.item ? itemName(e.item) : undefined, atCap: this.player.level >= cap };
   }
