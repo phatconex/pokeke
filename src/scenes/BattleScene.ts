@@ -485,6 +485,12 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
     this.loadingText = null;
     // Scene được tái sử dụng → khởi tạo lại mọi trạng thái
     this.clock = 0;
+    // Scene instances survive restarts; none of these flags may leak into a new run.
+    this.tutorial = false;
+    this.tutReplay = false;
+    this.tutItems = null;
+    this.swapFreezeUntil = 0;
+    this.evoActive = false;
     this.enemies = [];
     this.zoneToEnemy = new Map();
     this.orbs = [];
@@ -3902,7 +3908,7 @@ export class BattleScene extends Phaser.Scene implements BattleCtx {
   }
 
   private activeEvo(game: GameState | null): HudState['active']['evo'] {
-    const cap = this.stage ? levelCap() : 50;
+    const cap = this.stage || this.survivalOwn ? levelCap() : 50;
     const e = evoStatus(this.player.member, game, cap);
     return { state: e.state, into: e.into ? POKEMON[e.into].name : '', levelsLeft: e.levelsLeft, cap, item: e.item ? itemName(e.item) : undefined, atCap: this.player.level >= cap };
   }

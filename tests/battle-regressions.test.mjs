@@ -108,3 +108,43 @@ test('HUD realigns every icon and label with its slot after the bar moves', () =
     assert.equal(slot.icon.y, 529);
   }
 });
+const resetBoundary = new Error('run initialization complete');
+const initializeBattle = method('src/scenes/BattleScene.ts', 'create', {
+  finalizeSpecies: () => {}, resetSfxThrottle: () => { throw resetBoundary; },
+});
+test('restarting Battle clears tutorial XP suppression and old enemy freeze deadline', () => {
+  const scene = {
+    tutorial: true, tutReplay: true, tutItems: { pokeball: 99 }, swapFreezeUntil: 85000, evoActive: true,
+    casts: new Map(), masteryGain: new Map(), clearFrameTasks() {},
+  };
+  assert.throws(() => initializeBattle.call(scene), e => e === resetBoundary);
+  assert.equal(scene.tutorial, false);
+  assert.equal(scene.tutReplay, false);
+  assert.equal(scene.tutItems, null);
+  assert.equal(scene.swapFreezeUntil, 0);
+  assert.equal(scene.evoActive, false);
+});
+test('HUD shows the badge level cap when Survival uses an owned Pokemon', () => {
+  let displayedCap;
+  const activeEvo = method('src/scenes/BattleScene.ts', 'activeEvo', {
+    levelCap: () => 15,
+    evoStatus: (_member, _game, cap) => { displayedCap = cap; return { state: 'capped', levelsLeft: 1 }; },
+  });
+  const scene = { survivalOwn: {}, player: { member: {}, level: 15 } };
+  const result = activeEvo.call(scene, null);
+  assert.equal(displayedCap, 15);
+  assert.equal(result.atCap, true);
+});
+test('a Survival run after the tutorial awards XP again', () => {
+  const scene = { tutorial: true, casts: new Map(), masteryGain: new Map(), clearFrameTasks() {} };
+  assert.throws(() => initializeBattle.call(scene), e => e === resetBoundary);
+  const member = { level: 5, xp: 0 };
+  scene.fighters = [{ member, species: { name: 'Pikachu' }, xpMult: 1 }];
+  scene.activeIdx = 0;
+  const awardXp = method('src/scenes/BattleScene.ts', 'awardXp', {
+    evolutionReady: () => null,
+    gainXp: (m, amount) => { m.xp += amount; return 0; },
+  });
+  awardXp.call(scene, 7);
+  assert.equal(member.xp, 7);
+});
